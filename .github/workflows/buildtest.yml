@@ -53,7 +53,7 @@ jobs:
     - name: Tidy up old package versions
       uses: actions/delete-package-versions@v3
       with: 
-        package-name: 'uk.co.spudsoft.tokenvalidation'
+        package-name: 'uk.co.spudsoft.jwtvalidatorvertx'
         min-versions-to-keep: 10
         delete-only-pre-release-versions: "true" 
                 

@@ -6,9 +6,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>uk.co.spudsoft</groupId>
-  <artifactId>vertx-token-validation</artifactId>
+  <artifactId>jwt-validator-vertx</artifactId>
   <version>0.0.0-SNAPSHOT</version>
-  <name>Vertx Token Validation</name>
+  <name>JWT Validator - Vertx</name>
   <description>A basic library to parse and verify JWTs, with OpenID discovery used to obtain JWKs asynchronously (via Vertx)</description>
   
   <licenses>
@@ -22,21 +22,21 @@
     <developer>
       <id>yaytay</id>
       <name>Jim Talbut</name>
-      <email>jim-vertx-token-validation @ spudsoft.co.uk</email>
+      <email>jim-jwt-validator-vertx @ spudsoft.co.uk</email>
     </developer>
   </developers>
     
   <scm>
-    <connection>scm:git:git@github.com:Yaytay/vertx-token-validation.git</connection>
-    <developerConnection>scm:git:ssh://github.com:Yaytay/vertx-token-validation.git</developerConnection>
-    <url>https://github.com/Yaytay/vertx-token-validation.git</url>
+    <connection>scm:git:git@github.com:Yaytay/jwt-validator-vertx.git</connection>
+    <developerConnection>scm:git:ssh://github.com:Yaytay/jwt-validator-vertx.git</developerConnection>
+    <url>https://github.com/Yaytay/jwt-validator-vertx.git</url>
   </scm>  
 
   <distributionManagement>
     <repository>
       <id>github</id>
       <name>GitHub Yaytay Vertx Token Validation Apache Maven Packages</name>
-      <url>https://maven.pkg.github.com/Yaytay/vertx-token-validation</url>
+      <url>https://maven.pkg.github.com/Yaytay/jwt-validator-vertx</url>
     </repository>
   </distributionManagement>
     

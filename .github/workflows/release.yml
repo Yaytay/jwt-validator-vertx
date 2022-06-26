@@ -76,12 +76,12 @@ jobs:
     - name: Create release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "target/vertx-token-validation*.jar*,target/site"
+        artifacts: "target/jwt-validator-vertx*.jar*,target/site"
         token: ${{ github.token }} 
         
     - uses: actions/delete-package-versions@v3
       with: 
-        package-name: 'uk.co.spudsoft.vertx-token-validation'
+        package-name: 'uk.co.spudsoft.jwt-validator-vertx'
         min-versions-to-keep: 10
         delete-only-pre-release-versions: "true" 
         

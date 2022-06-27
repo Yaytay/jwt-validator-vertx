@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AsyncLoadingCache.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.impl</a> &gt; <span class="el_source">AsyncLoadingCache.java</span></div><h1>AsyncLoadingCache.java</h1><pre class="source lang-java linenums">/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.impl;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableSet;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Class backed by a Guava Cache that returns a Future for all elements whilst
+ * still ensuring that the loader is only called once at a time per element.
+ * @author njt
+ * @param &lt;K&gt; The key type for the cache.
+ * @param &lt;V&gt; The value type stored in the cache.
+ */
+public class AsyncLoadingCache&lt;K, V&gt; {
+  
+  @SuppressWarnings(&quot;constantname&quot;)
+<span class="fc" id="L32">  private static final Logger logger = LoggerFactory.getLogger(AsyncLoadingCache.class);</span>
+ 
+  /**
+   * Data class for items stored in the backing cache.
+   */
+  private class Data {
+    private List&lt;Promise&lt;V&gt;&gt; initialPromises;
+    private boolean completed;
+    private boolean succeeded;
+    private long expiry;
+    private V result;
+
+<span class="fc" id="L44">    Data() {</span>
+<span class="fc" id="L45">      this.initialPromises = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L46">      this.expiry = Long.MAX_VALUE;</span>
+<span class="fc" id="L47">    }    </span>
+    
+    void update(boolean succeeded, V value) {
+<span class="fc" id="L50">      this.initialPromises = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L51">      this.completed = true;</span>
+<span class="fc" id="L52">      this.succeeded = succeeded;</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">      if (succeeded) {</span>
+<span class="fc" id="L54">        this.expiry = getExpiry.apply(value);</span>
+<span class="fc" id="L55">        this.result = value;</span>
+      }
+<span class="fc" id="L57">    }</span>
+  }
+  
+<span class="fc" id="L60">  private final Object lock = new Object();</span>
+<span class="fc" id="L61">  private final Cache&lt;K, Data&gt; backing = CacheBuilder.newBuilder().build();</span>
+  private final Function&lt;V, Long&gt; getExpiry;
+
+  /**
+   * Constructor.
+   * @param getExpiry Function to extract the expiry time (in ms since epoch) from a V type.
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L69">  public AsyncLoadingCache(Function&lt;V, Long&gt; getExpiry) {</span>
+<span class="fc" id="L70">    this.getExpiry = getExpiry;</span>
+<span class="fc" id="L71">  }</span>
+
+  /**
+   * Return true if the cache already contains a value for the provided key.
+   * @param key the key to check.
+   * @return true if the cache already contains a value for the provided key.
+   */
+  public boolean containsKey(K key) {
+<span class="fc" id="L79">    return backing.asMap().containsKey(key);</span>
+  }
+
+  /**
+   * Associates {@code value} with {@code key} in this cache.
+   * 
+   * If the cache previously contained a value associated with {@code key}, the old value is replaced by {@code value}.
+   * 
+   * p&gt;Prefer {@link #get(Object, Callable)} when using the conventional &quot;if cached, return; otherwise create, cache and return&quot; pattern.
+   *
+   * @param key the key to set.
+   * @param value the value to set.
+   */
+  public void put(K key, V value) {
+<span class="fc" id="L93">    Data data = new Data();</span>
+<span class="fc" id="L94">    data.update(true, value);</span>
+<span class="fc" id="L95">    backing.put(key, new Data());</span>
+<span class="fc" id="L96">  }</span>
+  
+  /**
+   * Get an item from the cache, returning a Future in case the item is not already there.
+   * @param key The key for the item in the cache.
+   * @param loader Callable that actually gets the value.
+   * @return The value returned either by this Callable or some previous instance of it.
+   */
+  public Future&lt;V&gt; get(K key, Callable&lt;Future&lt;V&gt;&gt; loader) {
+    Promise&lt;V&gt; promise;
+    Data data;
+<span class="fc" id="L107">    synchronized (lock) {</span>
+<span class="fc" id="L108">      data = backing.getIfPresent(key);</span>
+<span class="pc bpc" id="L109" title="1 of 4 branches missed.">      if (data != null &amp;&amp; (data.expiry &gt; System.currentTimeMillis())) {</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (data.completed) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">          if (data.succeeded) {</span>
+<span class="fc" id="L112">            return Future.succeededFuture(data.result);</span>
+          } else {
+            // Previous request failed, so try again (don't cache failures)
+<span class="fc" id="L115">            promise = createAndAddInitialPromise(data.initialPromises);</span>
+<span class="fc" id="L116">            data.completed = false;</span>
+          }
+        } else {
+<span class="nc" id="L119">          promise = createAndAddInitialPromise(data.initialPromises);</span>
+<span class="nc" id="L120">          return promise.future();</span>
+        }
+      } else {
+<span class="fc" id="L123">        data = new Data();</span>
+<span class="fc" id="L124">        promise = createAndAddInitialPromise(data.initialPromises);</span>
+<span class="fc" id="L125">        backing.put(key, data);</span>
+      }
+<span class="fc" id="L127">    }</span>
+<span class="fc" id="L128">    Data finalData = data;</span>
+    try {
+<span class="fc" id="L130">      loader.call().onComplete(ar -&gt; handleAfterLoaderCall(ar, finalData));</span>
+<span class="nc" id="L131">    } catch (Throwable ex) {</span>
+<span class="nc" id="L132">      logger.error(&quot;Failed to call loader: &quot;, ex);</span>
+<span class="nc" id="L133">      return Future.failedFuture(ex);</span>
+<span class="fc" id="L134">    }</span>
+<span class="fc" id="L135">    return promise.future();</span>
+  }
+
+  /**
+   * Get an immutable view of the keys currently in the backing map.
+   * @return an immutable view of the keys currently in the backing map.
+   */
+  public Set&lt;K&gt; keySet() {
+<span class="nc" id="L143">    return ImmutableSet.copyOf(backing.asMap().keySet());</span>
+  }
+  
+  private Promise&lt;V&gt; createAndAddInitialPromise(List&lt;Promise&lt;V&gt;&gt; initialPromises) {
+<span class="fc" id="L147">    Promise&lt;V&gt; promise = Promise.promise();</span>
+<span class="fc" id="L148">    initialPromises.add(promise);</span>
+<span class="fc" id="L149">    return promise;</span>
+  }
+
+  private void handleAfterLoaderCall(AsyncResult&lt;V&gt; asyncResult, Data data) {
+<span class="fc" id="L153">    boolean succeeded = asyncResult.succeeded();</span>
+<span class="fc" id="L154">    V result = asyncResult.result();</span>
+    List&lt;Promise&lt;V&gt;&gt; initialPromises;
+<span class="fc" id="L156">    synchronized (lock) {</span>
+<span class="fc" id="L157">      initialPromises = data.initialPromises;</span>
+<span class="fc" id="L158">      data.update(succeeded, result);</span>
+<span class="fc" id="L159">    }</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">    if (succeeded) {</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">      for (Promise&lt;V&gt; initialPromise : initialPromises) {</span>
+<span class="fc" id="L162">        initialPromise.complete(result);</span>
+<span class="fc" id="L163">      }</span>
+    } else {
+<span class="fc bfc" id="L165" title="All 2 branches covered.">      for (Promise&lt;V&gt; initialPromise : initialPromises) {</span>
+<span class="fc" id="L166">        initialPromise.fail(asyncResult.cause());</span>
+<span class="fc" id="L167">      }</span>
+    }
+<span class="fc" id="L169">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

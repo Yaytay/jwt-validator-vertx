@@ -10,6 +10,7 @@
   <version>0.0.0-SNAPSHOT</version>
   <name>JWT Validator - Vertx</name>
   <description>A basic library to parse and verify JWTs, with OpenID discovery used to obtain JWKs asynchronously (via Vertx)</description>
+  <url>https://github.com/Yaytay/jwt-validator-vertx</url>
   
   <licenses>
     <license>

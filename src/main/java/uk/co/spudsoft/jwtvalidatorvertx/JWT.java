@@ -51,8 +51,8 @@ public class JWT {
    * @param signature The signature from the JWT.
    */
   public JWT(JsonObject header, JsonObject payload, String signatureBase, String signature) {
-    this.header = header;
-    this.payload = payload;
+    this.header = header == null ? new JsonObject() : header;
+    this.payload = payload == null ? new JsonObject() : payload;
     this.signatureBase = signatureBase;
     this.signature = signature;
   }

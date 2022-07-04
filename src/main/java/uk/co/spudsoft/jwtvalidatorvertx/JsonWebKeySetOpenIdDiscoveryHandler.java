@@ -29,7 +29,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.impl.JWKSOpenIdDiscoveryHandlerImpl;
  * 
  * @author jtalbut
  */
-public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandler {
+public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandler, OpenIdDiscoveryHandler {
  
   /**
    * Construct an instance of the implementation class.
@@ -47,21 +47,6 @@ public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandle
   static JsonWebKeySetOpenIdDiscoveryHandler create(WebClient webClient, Collection<String> acceptableIssuerRegexes, Duration defaultJwkCacheDuration) {
     return new JWKSOpenIdDiscoveryHandlerImpl(webClient, acceptableIssuerRegexes, defaultJwkCacheDuration.toSeconds());
   }
-  
-  /**
-   * Obtain the discovery data for an issuer as per <a href="https://openid.net/specs/openid-connect-discovery-1_0.html">openid-connect-discovery-1_0</a>.
-   * 
-   * If discovery data has not already been cached this will result in a call to 
-   * <pre>
-   * issuer + (issuer.endsWith("/") ? "" : "/") + ".well-known/openid-configuration"
-   * </pre>
-   * 
-   * The resulting Discovery Data will be cached against the issuer.
-   * 
-   * @param issuer The issuer to obtain the discovery data for.
-   * @return A Future that will be completed with the Discovery Data.
-   */
-  Future<DiscoveryData> performOpenIdDiscovery(String issuer);
   
   /**
    * Find a JWK using the jwks_uri value from the Discovery Data.

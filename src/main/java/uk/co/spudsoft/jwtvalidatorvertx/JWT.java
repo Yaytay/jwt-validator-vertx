@@ -249,7 +249,7 @@ public class JWT {
    * Get the jwk cached by a successful call to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler)}.
    * This method should only be called in a handler chain following a successful called to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler)}.
    * 
-   * @return the jwk cached by a successful called to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.OpenIdDiscoveryHandler)}.
+   * @return the jwk cached by a successful called to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler)}.
    */
   public JWK getJwk() {
     return jwk;

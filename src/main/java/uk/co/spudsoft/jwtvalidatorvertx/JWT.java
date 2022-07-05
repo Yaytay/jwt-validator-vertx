@@ -16,13 +16,17 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx;
 
+import com.google.common.base.Strings;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A JWT as defined by <A href="https://datatracker.ietf.org/doc/html/rfc7519">RFC7519</A>.
@@ -98,6 +102,38 @@ public class JWT {
   }
   
   /**
+   * Get a payload claim by name returning a List or Strings.
+   * @param claim The name of the claim to return.
+   * @return the claim with the given name, as a List of Strings.
+   */
+  public List<String> getClaimAsList(String claim) {
+    List<String> result = new ArrayList<>();
+    
+    Object value = payload.getValue(claim);
+    if (value instanceof String) {
+      result.add((String) value);
+    } else if (value instanceof Iterable<?>) {
+      ((Iterable<?>) value).forEach(a -> {
+        if (a instanceof String) {
+          result.add((String) a);
+        } else if (a != null) {
+          result.add(a.toString());
+        }
+      });
+    } else if (value instanceof Object[]) {
+      Object[] objArray = (Object[]) value;
+      for (int i = 0; i < objArray.length; ++i) {
+        if (objArray[i] instanceof String) {
+          result.add((String) objArray[i]);
+        } else if (objArray[i] != null) {
+          result.add(objArray[i].toString());
+        }
+      }
+    }
+    return result;
+  }
+  
+  /**
    * Get the value used to calculate the signature - base64(header) + "." + base64(payload).
    * @return the value used to calculate the signature - base64(header) + "." + base64(payload).
    */
@@ -127,7 +163,12 @@ public class JWT {
    * @return the algorithm specified in the JWT header as a {@link uk.co.spudsoft.jwtvalidatorvertx.JsonWebAlgorithm}.
    */
   public JsonWebAlgorithm getJsonWebAlgorithm() {
-    return JsonWebAlgorithm.valueOf(header.getString("alg"));
+    String alg = getAlgorithm();
+    if (Strings.isNullOrEmpty(alg)) {
+      return null;
+    } else {
+      return JsonWebAlgorithm.valueOf(alg);
+    }
   }
   
   /**
@@ -159,21 +200,38 @@ public class JWT {
    * The audience can be specified as either a single value or a JSON array, this method normalizes the result to an array of strings.
    * @return the token audience specified in the JWT payload.
    */
-  public String[] getAudience() {
-    Object aud = payload.getValue("aud");
-    if (aud instanceof String) {
-      return new String[]{(String) aud};
-    } else if (aud instanceof Iterable<?>) {
-      ArrayList<String> result = new ArrayList<>();
-      ((Iterable<?>) aud).forEach(a -> {
-        if (a instanceof String) {
-          result.add((String) a);
-        }
-      });
-      return result.toArray(size -> new String[size]);
+  public List<String> getAudience() {
+    return getClaimAsList("aud");
+  }
+  
+  /**
+   * Get the scopes specified in the JWT payload.
+   * Note that this method parses the scope string into separate scopes.
+   * @return the scopes specified in the JWT payload.
+   */
+  public List<String> getScope() {
+    String scopeString = payload.getString("scope");
+    if (Strings.isNullOrEmpty(scopeString)) {
+      return Collections.emptyList();
     } else {
-      return null;
+      return Arrays.asList(scopeString.split(" "));
     }
+  }
+  
+  /**
+   * Get the groups specified in the JWT payload.
+   * @return the groups specified in the JWT payload.
+   */
+  public List<String> getGroups() {
+    return getClaimAsList("groups");
+  }
+  
+  /**
+   * Get the roles specified in the JWT payload.
+   * @return the roles specified in the JWT payload.
+   */
+  public List<String> getRoles() {
+    return getClaimAsList("roles");
   }
   
   /**

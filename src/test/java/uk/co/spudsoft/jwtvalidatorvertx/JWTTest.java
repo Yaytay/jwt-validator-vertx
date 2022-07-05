@@ -16,16 +16,21 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx;
 
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Base64;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -34,15 +39,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class JWTTest {
   
+  private static final Logger logger = LoggerFactory.getLogger(JWTTest.class);
+  
   private static final Base64.Encoder BASE64 = Base64.getUrlEncoder().withoutPadding();  
   
-  private static String buildJwt(JsonObject header, JsonObject payload) {
+  private static String buildJwtString(JsonObject header, JsonObject payload) {
     return BASE64.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8))
             + "."
             + BASE64.encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8))
             + "."
             + BASE64.encodeToString("SIGNATURE".getBytes(StandardCharsets.UTF_8))
             ;
+  }
+  
+  private static JWT buildJwt(JsonObject header, JsonObject payload) {
+    return new JWT(header, payload, null, null);
   }
   
   @Test
@@ -55,10 +66,33 @@ public class JWTTest {
   public void testGetPayloadSize() {
   }
 
+  
+  @Test
+  public void testEmptyJwt() {
+    JWT jwt = new JWT(null, null, null, null);
+    assertNull(jwt.getAlgorithm());
+    assertThat(jwt.getAudience(), empty());
+    assertNull(jwt.getClaim("bob"));
+    assertNull(jwt.getExpiration());
+    assertNull(jwt.getExpirationLocalDateTime());
+    assertThat(jwt.getGroups(), empty());
+    assertNull(jwt.getIssuer());
+    assertNull(jwt.getJsonWebAlgorithm());
+    assertNull(jwt.getJwk());
+    assertNull(jwt.getKid());
+    assertNull(jwt.getNotBefore());
+    assertNull(jwt.getNotBeforeLocalDateTime());
+    assertEquals(0, jwt.getPayloadSize());
+    assertThat(jwt.getRoles(), empty());
+    assertThat(jwt.getScope(), empty());
+    assertNull(jwt.getSignature());
+    assertNull(jwt.getSignatureBase());
+    assertNull(jwt.getSubject());
+  }
   @Test
   public void testGetClaim() {
     JWT jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                     , 
                     new JsonObject()
@@ -77,7 +111,7 @@ public class JWTTest {
     JsonObject payload = new JsonObject()
             .put("key", "value")
             ;
-    JWT jwt = JWT.parseJws(buildJwt(header, payload));
+    JWT jwt = JWT.parseJws(buildJwtString(header, payload));
     String requiredSignatureBase = 
             BASE64.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8))
             + "."
@@ -89,7 +123,7 @@ public class JWTTest {
   @Test
   public void testGetSignature() {
     JWT jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                     , 
                     new JsonObject()
@@ -102,7 +136,7 @@ public class JWTTest {
   @Test
   public void testGetAlgorithm() {
     JWT jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
                     , 
@@ -116,7 +150,7 @@ public class JWTTest {
   @Test
   public void testGetJsonWebAlgorithm() {
     JWT jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
                     , 
@@ -130,30 +164,36 @@ public class JWTTest {
   @Test
   public void testGetAudience() {
     JWT jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
                     , 
                     new JsonObject()
             )
     );
-    assertNull(jwt.getAudience());
-    jwt = JWT.parseJws(
-            buildJwt(
-                    new JsonObject()
-                            .put("alg", "none")
-                    , 
-                    new JsonObject()
-                            .put("aud", new String[] {"Bob", "Carol"})
-            )
+    assertThat(jwt.getAudience(), empty());
+    jwt = buildJwt(
+            new JsonObject()
+                    .put("alg", "none")
+            , 
+            new JsonObject()
+                    .put("aud", new Object[] {"Bob", "Carol", null, 9})
     );
-    assertArrayEquals(new String[] {"Bob", "Carol"}, jwt.getAudience());
+    assertEquals(Arrays.asList("Bob", "Carol", "9"), jwt.getAudience());
+    jwt = buildJwt(
+            new JsonObject()
+                    .put("alg", "none")
+            , 
+            new JsonObject()
+                    .put("aud", Arrays.asList("Bob", "Carol", null, 9))
+    );
+    assertEquals(Arrays.asList("Bob", "Carol", "9"), jwt.getAudience());
   }
 
   @Test
   public void testGetExpiration() {
     JWT jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
                     , 
@@ -163,7 +203,7 @@ public class JWTTest {
     assertNull(jwt.getExpiration());
     assertNull(jwt.getExpirationLocalDateTime());
     jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
                     , 
@@ -179,7 +219,7 @@ public class JWTTest {
   @Test
   public void testGetNotBefore() {
     JWT jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
                     , 
@@ -189,7 +229,7 @@ public class JWTTest {
     assertNull(jwt.getNotBefore());
     assertNull(jwt.getNotBeforeLocalDateTime());
     jwt = JWT.parseJws(
-            buildJwt(
+            buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
                     , 
@@ -201,21 +241,50 @@ public class JWTTest {
     assertEquals(1234567, jwt.getNotBefore());
     assertEquals(LocalDateTime.of(1970, 01, 15, 06, 56, 07), jwt.getNotBeforeLocalDateTime());
   }
-
+  
   @Test
-  public void testGetDiscoveryData_OpenIdDiscoveryHandler() {
+  public void testGetScopes() {
+    JWT jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one")));
+    assertEquals(Arrays.asList("one"), jwt.getScope());
+    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scopes", "one")));
+    assertEquals(Arrays.asList(), jwt.getScope());
+    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two")));
+    assertEquals(Arrays.asList("one", "two"), jwt.getScope());
   }
 
-  @Test
-  public void testGetDiscoveryData_0args() {
-  }
+  private final static class TestJwksHandler implements JsonWebKeySetHandler {
 
-  @Test
-  public void testGetJwk_OpenIdDiscoveryHandler() {
-  }
+    @Override
+    public void validateIssuer(String issuer) throws IllegalArgumentException {
+    }
 
+    @Override
+    public Future<JWK> findJwk(String issuer, String kid) {
+      try {
+        return Future.succeededFuture(
+                new JWK(0, new JsonObject("{\"kty\":\"EC\",\"use\":\"sig\",\"crv\":\"P-256\",\"kid\":\"d480cda8-8461-44cb-80cc-9ae13f8dafa8\",\"x\":\"IhfvcFBxDBU1jXMlNQmf77IbzIfuj2jMcx8Vd3dUZeA\",\"y\":\"ZfAvxJn56o8IJoHAysSKZ5LQt9mKMb2_nIB0ohmpCsY\"}"))
+        );
+      } catch(Throwable ex) {
+        logger.error("Failed: ", ex);
+        return null;
+      }
+    }
+  }
+  
   @Test
-  public void testGetJwk_0args() {
+  public void testGetJwk() {
+    JWT jwt = JWT.parseJws(
+            buildJwtString(
+                    new JsonObject()
+                            .put("alg", "none")
+                    , 
+                    new JsonObject()
+            )
+    );
+    assertNull(jwt.getJwk());
+    assertEquals("d480cda8-8461-44cb-80cc-9ae13f8dafa8", jwt.getJwk(new TestJwksHandler()).result().getKid());
+    assertEquals("d480cda8-8461-44cb-80cc-9ae13f8dafa8", jwt.getJwk(new TestJwksHandler()).result().getKid());
+    assertEquals("d480cda8-8461-44cb-80cc-9ae13f8dafa8", jwt.getJwk().getKid());
   }
   
 }

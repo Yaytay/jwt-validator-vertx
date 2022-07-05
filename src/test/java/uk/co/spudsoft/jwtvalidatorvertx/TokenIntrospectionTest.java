@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
@@ -103,9 +104,9 @@ public class TokenIntrospectionTest {
 
                 assertThat(jwt.getPayloadSize(), greaterThan(0));
                 
-                String audFromPayload[] = jwt.getAudience();
+                List<String> audFromPayload = jwt.getAudience();
                 for (int i = 0; i < aud.size(); i++) {
-                  assertEquals(aud.get(i).textValue(), audFromPayload[i]);
+                  assertEquals(aud.get(i).textValue(), audFromPayload.get(i));
                 }
 
                 assertEquals("bob@", jwt.getClaim("email"));
@@ -114,13 +115,13 @@ public class TokenIntrospectionTest {
                 assertEquals(100, ((Number) jwt.getClaim("age")).intValue());
                 assertEquals(0.5, jwt.getClaim("some_decimal"));
 
-                final Map moviesAndYearsFromPayload = (Map) jwt.getClaim("movies_and_years");
+                final Map<?,?> moviesAndYearsFromPayload = (Map) jwt.getClaim("movies_and_years");
                 assertEquals(2019, ((Number) moviesAndYearsFromPayload.get("1917")).intValue());
                 assertEquals(1999, ((Number) moviesAndYearsFromPayload.get("The Matrix")).intValue());
                 assertEquals(1982, ((Number) moviesAndYearsFromPayload.get("Blade Runner")).intValue());
                 assertEquals(2017, ((Number) moviesAndYearsFromPayload.get("Blade Runner 2049")).intValue());
 
-                final Map userIdMap = (Map) jwt.getClaim("user_id");
+                final Map<?,?> userIdMap = (Map) jwt.getClaim("user_id");
                 assertEquals("tester", userIdMap.get("example.com"));                
               });
 //              return validator.introspectToken(token, null, null);

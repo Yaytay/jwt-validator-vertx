@@ -39,6 +39,7 @@ import java.util.List;
 public class JWT {
   
   private static final Base64.Decoder BASE64 = Base64.getUrlDecoder();
+  private static final int SPACE = " ".codePointAt(0);
   
   private final JsonObject header;
   private final JsonObject payload;
@@ -134,6 +135,53 @@ public class JWT {
   }
   
   /**
+   * Checks whether the JWT has the given claim with the given value.
+   * If the claim has multiple values this check returns true if any of the values matches value.
+   * The comparison with value is case sensitive.
+   * Note that this method cannot be used for scope claims because they are a single space-delimited string.
+   * @param claim The name of the claim to check.
+   * @param requiredValue The value to check it against.
+   * @return True if any value of the claim in the JWT matches the value.
+   */
+  public boolean has(String claim, String requiredValue) {
+    Object value = payload.getValue(claim);
+    if (value instanceof String) {
+      return requiredValue.equals(value);
+    } else if (value instanceof Iterable<?>) {
+      for (Object item : (Iterable<?>) value) {
+        if (item != null) {
+          if (item instanceof String) {
+            if (requiredValue.equals(item)) {
+              return true;
+            }
+          } else {
+            if (requiredValue.equals(item.toString())) {
+              return true;
+            }
+          }
+        }
+      }
+    } else if (value instanceof Object[]) {
+      Object[] objArray = (Object[]) value;
+      for (int i = 0; i < objArray.length; ++i) {
+        Object item = objArray[i];
+        if (item != null) {
+          if (item instanceof String) {
+            if (requiredValue.equals(item)) {
+              return true;
+            }
+          } else {
+            if (requiredValue.equals(item.toString())) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+  
+  /**
    * Get the value used to calculate the signature - base64(header) + "." + base64(payload).
    * @return the value used to calculate the signature - base64(header) + "." + base64(payload).
    */
@@ -205,6 +253,15 @@ public class JWT {
   }
   
   /**
+   * Return true if the aud claim contains the requiredValue.
+   * @param requiredValue The value being sought in the aud claim.
+   * @return true if the aud claim contains the requiredValue. 
+   */
+  public boolean hasAudience(String requiredValue) {
+    return has("aud", requiredValue);
+  }
+  
+  /**
    * Get the scopes specified in the JWT payload.
    * Note that this method parses the scope string into separate scopes.
    * @return the scopes specified in the JWT payload.
@@ -219,6 +276,37 @@ public class JWT {
   }
   
   /**
+   * Return true if the requiredValue is found in the scope.
+   * 
+   * The scope claim in JWTs is space delimited, which means that:
+   * <ul>
+   * <li>Either the requiredValue is found at the beginning of the claim or the code point before the requiredValue is s space.
+   * <li>Either the requiredValue is found at the end of the claim or the code point after the requiredValue is s space.
+   * </ul>
+   * 
+   * @param requiredValue The value being sought in the scope.
+   * @return True if the requiredValue is found in the scope.
+   */
+  public boolean hasScope(String requiredValue) {
+    String scopeString = payload.getString("scope");
+    if (Strings.isNullOrEmpty(scopeString)) {
+      return false;
+    } else {
+      int idx = scopeString.indexOf(requiredValue);
+      if (idx < 0) {
+        return false;
+      }
+      if (idx == 0 || scopeString.codePointBefore(idx) == SPACE) {
+        int reqLen = requiredValue.length();
+        if (idx == (scopeString.length() - reqLen) || scopeString.codePointAt(idx + reqLen) == SPACE) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+  
+  /**
    * Get the groups specified in the JWT payload.
    * @return the groups specified in the JWT payload.
    */
@@ -227,12 +315,30 @@ public class JWT {
   }
   
   /**
+   * Return true if the groups claim contains the requiredValue.
+   * @param requiredValue The value being sought in the groups claim.
+   * @return true if the groups claim contains the requiredValue. 
+   */
+  public boolean hasGroup(String requiredValue) {
+    return has("groups", requiredValue);
+  }    
+  
+  /**
    * Get the roles specified in the JWT payload.
    * @return the roles specified in the JWT payload.
    */
   public List<String> getRoles() {
     return getClaimAsList("roles");
   }
+  
+  /**
+   * Return true if the roles claim contains the requiredValue.
+   * @param requiredValue The value being sought in the roles claim.
+   * @return true if the roles claim contains the requiredValue. 
+   */
+  public boolean hasRole(String requiredValue) {
+    return has("roles", requiredValue);
+  }    
   
   /**
    * Get the expiration timestamp specified in the JWT payload.

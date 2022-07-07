@@ -41,7 +41,17 @@ public interface JwtValidatorVertx {
    */
   static JwtValidatorVertx create(Vertx vertx, Collection&lt;String&gt; acceptableIssuerRegexes, Duration defaultJwkCacheDuration) {
 <span class="fc" id="L43">    JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(WebClient.create(vertx), acceptableIssuerRegexes, defaultJwkCacheDuration);</span>
-<span class="fc" id="L44">    return new JwtValidatorVertxImpl(openIdDiscoveryHandler);</span>
+<span class="fc" id="L44">    return create(openIdDiscoveryHandler);</span>
+  }
+
+  /**
+   * Create a JwtValidatorVertx.
+   * 
+   * @param jsonWebKeySetHandler The JsonWebKeySet handler used for OpenID discovery and JWK Set discovery.
+   * @return A newly created JwtValidatorVertx.
+   */
+  static JwtValidatorVertx create(JsonWebKeySetHandler jsonWebKeySetHandler) {
+<span class="fc" id="L54">    return new JwtValidatorVertxImpl(jsonWebKeySetHandler);</span>
   }
 
   /**

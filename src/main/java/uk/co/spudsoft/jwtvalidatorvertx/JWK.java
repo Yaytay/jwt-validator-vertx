@@ -38,10 +38,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.InvalidAlgorithmParameterException;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.EdECPoint;
 import java.security.spec.EdECPublicKeySpec;
 import java.security.spec.NamedParameterSpec;
 import java.util.Base64;
+import javax.annotation.Nullable;
 
 /**
  * Represent a single Json Web Key as defined in RFC 7517.
@@ -55,6 +57,7 @@ public class JWK {
   
   private final long expiryMs;
   
+  private final JsonObject json;
   private final String kid;
   private final String use;
   private final String kty;
@@ -73,6 +76,7 @@ public class JWK {
   public JWK(long expiryMs, JsonObject jo) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
     this.expiryMs = expiryMs;
     
+    this.json = jo;
     this.kid = jo.getString("kid");
     this.use = jo.getString("use");
     this.kty = jo.getString("kty");
@@ -138,6 +142,7 @@ public class JWK {
    * Get the key use string.
    * <a href="https://datatracker.ietf.org/doc/html/rfc7517#section-4.2">https://datatracker.ietf.org/doc/html/rfc7517#section-4.2</a>
    * This should be "sig" for all known uses, but its presence is optional, so it's ignored.
+   *
    * @return the key use string.
    */
   public String getUse() {
@@ -146,35 +151,64 @@ public class JWK {
 
   /**
    * Get the key represented by this JWK.
+   *
    * @return the key represented by this JWK.
    */
   public Key getKey() {
     return key;
   }
-  
+
+  /**
+   * Get the key in its original, JWK compatible, JSON format.
+   *
+   * @return the key in its original, JWK compatible, JSON format.
+   */
+  public JsonObject getJson() {
+    return json;
+  }
+
   /**
    * Verify a signature using the key in this JWK.
-   * 
+   *
    * @param algorithm The algorithm specified in the token, which may not be the same as the JWK algorithm (RSA-PSS).
    * @param signature The signature that has been provided for the JWT.
    * @param data The data to be verified.
    * @return True if the signature can only have been created using this key and the data provided.
-   * 
+   *
    * @throws InvalidKeyException if the key is not appropriate for the signer.
    * @throws NoSuchAlgorithmException if the algorithm is not known to the JDK security subsystem,.
    * @throws SignatureException if the signature is invalid
    * @throws InvalidAlgorithmParameterException if the algorithm is configured with incorrect parameters.
    */
   public boolean verify(JsonWebAlgorithm algorithm, byte[] signature, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
-    Signature signer = Signature.getInstance(algorithm.getJdkAlgName());
-    if (algorithm.getParameter() != null) {
-      signer.setParameter(algorithm.getParameter());
+    return verify(algorithm.getJdkAlgName(), algorithm.getParameter(), (PublicKey) key, signature, data);
+  }
+
+  /**
+   * Verify a signature using JDK terminology.
+   *
+   * @param jdkAlgName The name of the algorithm as used by the JDK.
+   * @param parameter Any parameter required by the algorithm.
+   * @param key The public key to verify the signature.
+   * @param signature The signature that has been provided for the JWT.
+   * @param data The data to be verified.
+   * @return True if the signature can only have been created using this key and the data provided.
+   *
+   * @throws InvalidKeyException if the key is not appropriate for the signer.
+   * @throws NoSuchAlgorithmException if the algorithm is not known to the JDK security subsystem,.
+   * @throws SignatureException if the signature is invalid
+   * @throws InvalidAlgorithmParameterException if the algorithm is configured with incorrect parameters.
+   */
+  public static boolean verify(String jdkAlgName, @Nullable AlgorithmParameterSpec parameter, PublicKey key, byte[] signature, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
+    Signature signer = Signature.getInstance(jdkAlgName);
+    if (parameter != null) {
+      signer.setParameter(parameter);
     }
-    signer.initVerify((PublicKey) key);
+    signer.initVerify(key);
     signer.update(data);
     return signer.verify(signature);
   }
-  
+
   private static boolean hasValue(String s) {
     return s != null && !s.isBlank();
   }
@@ -189,9 +223,9 @@ public class JWK {
     }
     throw new IllegalArgumentException("JWK (" + json + ") does not contain valid RSA public key");
   }
-  
+
   private static String getJdkEcCurveName(String curve) {
-   if (!hasValue(curve)) {
+    if (!hasValue(curve)) {
       throw new IllegalArgumentException("JWK does not contain valid EC public key (curve not specified)");
     }
     switch (curve) {
@@ -208,7 +242,7 @@ public class JWK {
   
   private static Key createEC(JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
     AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
-    
+
     String curve = getJdkEcCurveName(json.getString("crv"));
     parameters.init(new ECGenParameterSpec(curve));
 
@@ -230,11 +264,11 @@ public class JWK {
     BigInteger y = new BigInteger(1, arr);
     return new EdECPoint(xOdd, y);
   }
-  
+
   private static Key createOKP(JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException {
     String xStr = json.getString("x");
     String curve = json.getString("crv");
-    
+
     if (hasValue(xStr) && hasValue(curve)) {
       KeyFactory kf = KeyFactory.getInstance("EdDSA");
       NamedParameterSpec paramSpec = new NamedParameterSpec(curve);
@@ -243,5 +277,5 @@ public class JWK {
     }
     throw new IllegalArgumentException("JWK (" + json + ") does not contain valid OKP public key");
   }
-
+  
 }

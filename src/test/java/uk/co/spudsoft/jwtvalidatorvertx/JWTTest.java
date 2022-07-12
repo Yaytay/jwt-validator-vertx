@@ -380,10 +380,10 @@ public class JWTTest {
     }
 
     @Override
-    public Future<JWK> findJwk(String issuer, String kid) {
+    public Future<JWK<?>> findJwk(String issuer, String kid) {
       try {
         return Future.succeededFuture(
-                new JWK(0, new JsonObject("{\"kty\":\"EC\",\"use\":\"sig\",\"crv\":\"P-256\",\"kid\":\"d480cda8-8461-44cb-80cc-9ae13f8dafa8\",\"x\":\"IhfvcFBxDBU1jXMlNQmf77IbzIfuj2jMcx8Vd3dUZeA\",\"y\":\"ZfAvxJn56o8IJoHAysSKZ5LQt9mKMb2_nIB0ohmpCsY\"}"))
+                JWK.create(0, new JsonObject("{\"kty\":\"EC\",\"use\":\"sig\",\"crv\":\"P-256\",\"kid\":\"d480cda8-8461-44cb-80cc-9ae13f8dafa8\",\"x\":\"IhfvcFBxDBU1jXMlNQmf77IbzIfuj2jMcx8Vd3dUZeA\",\"y\":\"ZfAvxJn56o8IJoHAysSKZ5LQt9mKMb2_nIB0ohmpCsY\"}"))
         );
       } catch(Throwable ex) {
         logger.error("Failed: ", ex);

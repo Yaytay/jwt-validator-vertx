@@ -57,7 +57,7 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
   /**
    * Map from jwks_uri to Map from kid to JWK.
    */
-  private final Map<String, AsyncLoadingCache<String, JWK>> kidCache;
+  private final Map<String, AsyncLoadingCache<String, JWK<?>>> kidCache;
 
   private final List<Pattern> acceptableIssuers;
   
@@ -132,16 +132,16 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
   }
 
   @Override
-  public Future<JWK> findJwk(DiscoveryData discoveryData, String kid) {
+  public Future<JWK<?>> findJwk(DiscoveryData discoveryData, String kid) {
     
     String jwksUri = discoveryData.getJwksUri();
     if (Strings.isNullOrEmpty(jwksUri)) {
       return Future.failedFuture("Discovery data does not contain jwks_uri");
     }
     
-    AsyncLoadingCache<String, JWK> finalJwkCache;
+    AsyncLoadingCache<String, JWK<?>> finalJwkCache;
     synchronized (kidCache) {
-      AsyncLoadingCache<String, JWK> jwkCache = kidCache.get(jwksUri);
+      AsyncLoadingCache<String, JWK<?>> jwkCache = kidCache.get(jwksUri);
       if (jwkCache == null) {
         jwkCache = new AsyncLoadingCache<>(jwk -> jwk == null ? null : jwk.getExpiryMs());
         kidCache.put(jwksUri, jwkCache);
@@ -156,14 +156,14 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
   }
 
   @Override
-  public Future<JWK> findJwk(String issuer, String kid) {
+  public Future<JWK<?>> findJwk(String issuer, String kid) {
     return performOpenIdDiscovery(issuer)
             .compose(dd -> findJwk(dd, kid));
   }
   
-  static Future<JWK> processJwkSet(AsyncLoadingCache<String, JWK> jwkCache, TimedJsonObject data, String kid) {
+  static Future<JWK<?>> processJwkSet(AsyncLoadingCache<String, JWK<?>> jwkCache, TimedJsonObject data, String kid) {
     long expiry = data.expiresMs;
-    JWK result = null;
+    JWK<?> result = null;
     JsonObject foundKey = null;
     
     try {
@@ -177,10 +177,10 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
               JsonObject jo = (JsonObject) keyData;
               String keyId = jo.getString("kid");
               if (kid.equals(keyId)) {
-                result = new JWK(expiry, jo);
+                result = JWK.create(expiry, jo);
                 foundKey = jo;
               } else {
-                JWK other = new JWK(expiry, jo);
+                JWK<?> other = JWK.create(expiry, jo);
                 jwkCache.put(keyId, other);
               }
             }

@@ -26,8 +26,8 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
   @SuppressWarnings("constantname")
   private static final Logger logger = LoggerFactory.getLogger(JwtValidatorVertxImpl.class);
 
-  private static final Base64.Decoder DECODER = Base64.getUrlDecoder();
-
+  private static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();
+  
   private static final EnumSet<JsonWebAlgorithm> DEFAULT_PERMITTED_ALGS = EnumSet.of(
           JsonWebAlgorithm.RS256, JsonWebAlgorithm.RS384, JsonWebAlgorithm.RS512
   );
@@ -154,7 +154,7 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
     }
   }
 
-  private void verify(JsonWebAlgorithm jwa, JWK jwk, JWT jwt) throws IllegalArgumentException {
+  private void verify(JsonWebAlgorithm jwa, JWK<?> jwk, JWT jwt) throws IllegalArgumentException {
 
     // empty signature is never allowed
     if (Strings.isNullOrEmpty(jwt.getSignature())) {
@@ -166,7 +166,7 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
       throw new IllegalStateException("Algorithm \"none\" not allowed");
     }
 
-    byte[] payloadInput = Base64.getUrlDecoder().decode(jwt.getSignature());
+    byte[] payloadInput = B64DECODER.decode(jwt.getSignature());
 
     byte[] signingInput = jwt.getSignatureBase().getBytes(StandardCharsets.UTF_8);
 

@@ -59,7 +59,7 @@ public interface JsonWebKeySetStaticHandler extends JsonWebKeySetHandler {
    * @param key The key being added.
    * @return this for fluent configuration.
    */
-  JsonWebKeySetStaticHandler addKey(String issuer, JWK key);
+  JsonWebKeySetStaticHandler addKey(String issuer, JWK<?> key);
   
   /**
    * Remove a JWK from the known set.

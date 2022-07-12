@@ -38,7 +38,7 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
   private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);
   
   private final List<Pattern> acceptableIssuers;
-  private final Map<String, JWK> keys = new HashMap<>();
+  private final Map<String, JWK<?>> keys = new HashMap<>();
 
   /**
    * Constructor.
@@ -74,7 +74,7 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
   }
 
   @Override
-  public JsonWebKeySetStaticHandler addKey(String issuer, JWK key) {
+  public JsonWebKeySetStaticHandler addKey(String issuer, JWK<?> key) {
     keys.put(issuer + '^' + key.getKid(), key);
     return this;
   }
@@ -97,8 +97,8 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
   }
 
   @Override
-  public Future<JWK> findJwk(String issuer, String kid) {
-    JWK jwk = keys.get(issuer + '^' + kid);
+  public Future<JWK<?>> findJwk(String issuer, String kid) {
+    JWK<?> jwk = keys.get(issuer + '^' + kid);
     if (null == jwk) {
       logger.error("Failed to find key {} from store from {}", kid, keys.keySet());
       return Future.failedFuture(

@@ -47,7 +47,7 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     ECPublicKey key = (ECPublicKey) pair.getPublic();
     
-    JWK jwk = new JWK(1000, JdkJwksHandler.ECPublicKeyToJson(kid, key));
+    JWK<?> jwk = JWK.create(1000, kid, key);
     assertEquals(kid, jwk.getKid());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
@@ -65,7 +65,7 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     ECPublicKey key = (ECPublicKey) pair.getPublic();
     
-    JWK jwk = new JWK(1000, JdkJwksHandler.ECPublicKeyToJson(kid, key));
+    JWK<?> jwk = JWK.create(1000, kid, key);
     assertEquals(kid, jwk.getKid());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
@@ -83,7 +83,7 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     ECPublicKey key = (ECPublicKey) pair.getPublic();
     
-    JWK jwk = new JWK(1000, JdkJwksHandler.ECPublicKeyToJson(kid, key));
+    JWK<?> jwk = JWK.create(1000, kid, key);
     assertEquals(kid, jwk.getKid());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
@@ -100,7 +100,7 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     RSAPublicKey key = (RSAPublicKey) pair.getPublic();
     
-    JWK jwk = new JWK(1000, JdkJwksHandler.RSAPublicKeyToJson(kid, key));
+    JWK<?> jwk = JWK.create(1000, kid, key);
     assertEquals(kid, jwk.getKid());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
@@ -117,7 +117,7 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     RSAPublicKey key = (RSAPublicKey) pair.getPublic();
     
-    JWK jwk = new JWK(1000, JdkJwksHandler.RSAPublicKeyToJson(kid, key));
+    JWK<?> jwk = JWK.create(1000, kid, key);
     assertEquals(kid, jwk.getKid());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
@@ -134,7 +134,7 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     RSAPublicKey key = (RSAPublicKey) pair.getPublic();
     
-    JWK jwk = new JWK(1000, JdkJwksHandler.RSAPublicKeyToJson(kid, key));
+    JWK<?> jwk = JWK.create(1000, kid, key);
     assertEquals(kid, jwk.getKid());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
@@ -151,7 +151,7 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.generateKeyPair();
     EdECPublicKey key = (EdECPublicKey) pair.getPublic();
     
-    JWK jwk = new JWK(1000, JdkJwksHandler.publicKeyToJson(kid, key));
+    JWK<?> jwk = JWK.create(1000, kid, key);
     assertEquals(kid, jwk.getKid());
     logger.debug("JWK: {}", jwk.getJson());
     
@@ -166,28 +166,28 @@ public class JWKSelfMadeKeysTest {
 //  @Test  
 //  public void testBadEdJwks() throws Throwable {
 //    // Sample good one:
-//    JWK jwk = new JWK(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}"));
+//    JWK jwk = JWK.create(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}"));
 //    // No kty
-//    assertThrows(IllegalArgumentException.class, () -> new JWK(0, new JsonObject("{\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}")));
+//    assertThrows(IllegalArgumentException.class, () -> JWK.create(0, new JsonObject("{\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}")));
 //    // No crv
-//    assertThrows(IllegalArgumentException.class, () -> new JWK(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}")));
+//    assertThrows(IllegalArgumentException.class, () -> JWK.create(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}")));
 //    // No kid
-//    assertThrows(IllegalArgumentException.class, () -> new JWK(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}")));
+//    assertThrows(IllegalArgumentException.class, () -> JWK.create(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}")));
 //    // No x
-//    assertThrows(IllegalArgumentException.class, () -> new JWK(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\"}")));
+//    assertThrows(IllegalArgumentException.class, () -> JWK.create(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\"}")));
 //  }
 //
 //  @Test  
 //  public void testBadRsaJwks() throws Throwable {
 //    // Sample good one:
-//    JWK jwk = new JWK(0, new JsonObject("{\"kty\":\"RSA\",\"e\":\"AQAB\",\"kid\":\"02ccbee4-57ae-4919-b93f-30853469f2fd\",\"alg\":\"RS256\",\"n\":\"AMhg9V1sVBq3nLWtmP0Nxi7dD38dpqCD_PI0KnE1qr55FUld1jSkrRCiyY7VWr6iiEs0pbEVr7PKVWcsuYyCWrRImtlwwwvtJ2nXwkyFvW3mWmbKj7bgwKKqUZXpSRNA76SaoE34bnNh6lm93Dco_1B8jXcMbcn0nP2F4HFtD3wL9vEZRXTgskUA1NLRM6pApJFjtUQFn64AFtKXL3n4OhuojHPRIXP1Nx0T9SRO81ue0Uo2B4qpQlWkogBvVqbg1Fw3tEl6Z7XHyUzNGwhNLEdtQVl_7NjTX4jrRnhOXJnMXbpSDbrIFPu2AIG4mUpOJE6WVXR9BQ2VlX00vndqNcs\"}"));
+//    JWK jwk = JWK.create(0, new JsonObject("{\"kty\":\"RSA\",\"e\":\"AQAB\",\"kid\":\"02ccbee4-57ae-4919-b93f-30853469f2fd\",\"alg\":\"RS256\",\"n\":\"AMhg9V1sVBq3nLWtmP0Nxi7dD38dpqCD_PI0KnE1qr55FUld1jSkrRCiyY7VWr6iiEs0pbEVr7PKVWcsuYyCWrRImtlwwwvtJ2nXwkyFvW3mWmbKj7bgwKKqUZXpSRNA76SaoE34bnNh6lm93Dco_1B8jXcMbcn0nP2F4HFtD3wL9vEZRXTgskUA1NLRM6pApJFjtUQFn64AFtKXL3n4OhuojHPRIXP1Nx0T9SRO81ue0Uo2B4qpQlWkogBvVqbg1Fw3tEl6Z7XHyUzNGwhNLEdtQVl_7NjTX4jrRnhOXJnMXbpSDbrIFPu2AIG4mUpOJE6WVXR9BQ2VlX00vndqNcs\"}"));
 //    // No kty
-//    assertThrows(IllegalArgumentException.class, () -> new JWK(0, new JsonObject("{\"e\":\"AQAB\",\"kid\":\"02ccbee4-57ae-4919-b93f-30853469f2fd\",\"alg\":\"RS256\",\"n\":\"AMhg9V1sVBq3nLWtmP0Nxi7dD38dpqCD_PI0KnE1qr55FUld1jSkrRCiyY7VWr6iiEs0pbEVr7PKVWcsuYyCWrRImtlwwwvtJ2nXwkyFvW3mWmbKj7bgwKKqUZXpSRNA76SaoE34bnNh6lm93Dco_1B8jXcMbcn0nP2F4HFtD3wL9vEZRXTgskUA1NLRM6pApJFjtUQFn64AFtKXL3n4OhuojHPRIXP1Nx0T9SRO81ue0Uo2B4qpQlWkogBvVqbg1Fw3tEl6Z7XHyUzNGwhNLEdtQVl_7NjTX4jrRnhOXJnMXbpSDbrIFPu2AIG4mUpOJE6WVXR9BQ2VlX00vndqNcs\"}")));
+//    assertThrows(IllegalArgumentException.class, () -> JWK.create(0, new JsonObject("{\"e\":\"AQAB\",\"kid\":\"02ccbee4-57ae-4919-b93f-30853469f2fd\",\"alg\":\"RS256\",\"n\":\"AMhg9V1sVBq3nLWtmP0Nxi7dD38dpqCD_PI0KnE1qr55FUld1jSkrRCiyY7VWr6iiEs0pbEVr7PKVWcsuYyCWrRImtlwwwvtJ2nXwkyFvW3mWmbKj7bgwKKqUZXpSRNA76SaoE34bnNh6lm93Dco_1B8jXcMbcn0nP2F4HFtD3wL9vEZRXTgskUA1NLRM6pApJFjtUQFn64AFtKXL3n4OhuojHPRIXP1Nx0T9SRO81ue0Uo2B4qpQlWkogBvVqbg1Fw3tEl6Z7XHyUzNGwhNLEdtQVl_7NjTX4jrRnhOXJnMXbpSDbrIFPu2AIG4mUpOJE6WVXR9BQ2VlX00vndqNcs\"}")));
 //    // No e
-//    assertThrows(IllegalArgumentException.class, () -> new JWK(0, new JsonObject("{\"kty\":\"RSA\",\"kid\":\"02ccbee4-57ae-4919-b93f-30853469f2fd\",\"alg\":\"RS256\",\"n\":\"AMhg9V1sVBq3nLWtmP0Nxi7dD38dpqCD_PI0KnE1qr55FUld1jSkrRCiyY7VWr6iiEs0pbEVr7PKVWcsuYyCWrRImtlwwwvtJ2nXwkyFvW3mWmbKj7bgwKKqUZXpSRNA76SaoE34bnNh6lm93Dco_1B8jXcMbcn0nP2F4HFtD3wL9vEZRXTgskUA1NLRM6pApJFjtUQFn64AFtKXL3n4OhuojHPRIXP1Nx0T9SRO81ue0Uo2B4qpQlWkogBvVqbg1Fw3tEl6Z7XHyUzNGwhNLEdtQVl_7NjTX4jrRnhOXJnMXbpSDbrIFPu2AIG4mUpOJE6WVXR9BQ2VlX00vndqNcs\"}")));
+//    assertThrows(IllegalArgumentException.class, () -> JWK.create(0, new JsonObject("{\"kty\":\"RSA\",\"kid\":\"02ccbee4-57ae-4919-b93f-30853469f2fd\",\"alg\":\"RS256\",\"n\":\"AMhg9V1sVBq3nLWtmP0Nxi7dD38dpqCD_PI0KnE1qr55FUld1jSkrRCiyY7VWr6iiEs0pbEVr7PKVWcsuYyCWrRImtlwwwvtJ2nXwkyFvW3mWmbKj7bgwKKqUZXpSRNA76SaoE34bnNh6lm93Dco_1B8jXcMbcn0nP2F4HFtD3wL9vEZRXTgskUA1NLRM6pApJFjtUQFn64AFtKXL3n4OhuojHPRIXP1Nx0T9SRO81ue0Uo2B4qpQlWkogBvVqbg1Fw3tEl6Z7XHyUzNGwhNLEdtQVl_7NjTX4jrRnhOXJnMXbpSDbrIFPu2AIG4mUpOJE6WVXR9BQ2VlX00vndqNcs\"}")));
 //    // No kid
-//    assertThrows(IllegalArgumentException.class, () -> new JWK(0, new JsonObject("{\"kty\":\"RSA\",\"e\":\"AQAB\",\"alg\":\"RS256\",\"n\":\"AMhg9V1sVBq3nLWtmP0Nxi7dD38dpqCD_PI0KnE1qr55FUld1jSkrRCiyY7VWr6iiEs0pbEVr7PKVWcsuYyCWrRImtlwwwvtJ2nXwkyFvW3mWmbKj7bgwKKqUZXpSRNA76SaoE34bnNh6lm93Dco_1B8jXcMbcn0nP2F4HFtD3wL9vEZRXTgskUA1NLRM6pApJFjtUQFn64AFtKXL3n4OhuojHPRIXP1Nx0T9SRO81ue0Uo2B4qpQlWkogBvVqbg1Fw3tEl6Z7XHyUzNGwhNLEdtQVl_7NjTX4jrRnhOXJnMXbpSDbrIFPu2AIG4mUpOJE6WVXR9BQ2VlX00vndqNcs\"}")));
+//    assertThrows(IllegalArgumentException.class, () -> JWK.create(0, new JsonObject("{\"kty\":\"RSA\",\"e\":\"AQAB\",\"alg\":\"RS256\",\"n\":\"AMhg9V1sVBq3nLWtmP0Nxi7dD38dpqCD_PI0KnE1qr55FUld1jSkrRCiyY7VWr6iiEs0pbEVr7PKVWcsuYyCWrRImtlwwwvtJ2nXwkyFvW3mWmbKj7bgwKKqUZXpSRNA76SaoE34bnNh6lm93Dco_1B8jXcMbcn0nP2F4HFtD3wL9vEZRXTgskUA1NLRM6pApJFjtUQFn64AFtKXL3n4OhuojHPRIXP1Nx0T9SRO81ue0Uo2B4qpQlWkogBvVqbg1Fw3tEl6Z7XHyUzNGwhNLEdtQVl_7NjTX4jrRnhOXJnMXbpSDbrIFPu2AIG4mUpOJE6WVXR9BQ2VlX00vndqNcs\"}")));
 //    // No n
-//    assertThrows(IllegalArgumentException.class, () -> new JWK(0, new JsonObject("{\"kty\":\"RSA\",\"e\":\"AQAB\",\"kid\":\"02ccbee4-57ae-4919-b93f-30853469f2fd\",\"alg\":\"RS256\"}")));
+//    assertThrows(IllegalArgumentException.class, () -> JWK.create(0, new JsonObject("{\"kty\":\"RSA\",\"e\":\"AQAB\",\"kid\":\"02ccbee4-57ae-4919-b93f-30853469f2fd\",\"alg\":\"RS256\"}")));
 //  }
 }

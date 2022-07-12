@@ -47,6 +47,19 @@ public abstract class JwkBuilder<T extends PublicKey> {
    */
   protected static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();
   
+  /**
+   * Return true if the builder can create a JWK by parsing the correctly structured JSON with the given kty.
+   * @param kty The kty that the JSON has that this builder is being asked about.
+   * @return true if the builder can create a JWK by parsing the correctly structured JSON with the given kty.
+   */
+  public abstract boolean canCreateFromKty(String kty);
+  
+  /**
+   * Return true if the builder can create a JWK by generating JSON for the given PublicKey.
+   * @param key The key that that this builder is being asked about.
+   * @return true if the builder can create a JWK by generating JSON for the given PublicKey.
+   */
+  public abstract boolean canCreateFromKey(PublicKey key);
   
   /**
    * Confirm that any alg field specified in the JsonObject matches the family passed in.
@@ -100,6 +113,6 @@ public abstract class JwkBuilder<T extends PublicKey> {
    * @throws InvalidParameterSpecException if the data in the key does not represent a valid key (this should indicate a bug in this library).
    * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
    */
-  public abstract JWK<T> create(long expiryMs, String kid, T key) throws InvalidParameterSpecException, NoSuchAlgorithmException;
+  public abstract JWK<T> create(long expiryMs, String kid, PublicKey key) throws InvalidParameterSpecException, NoSuchAlgorithmException;
   
 }

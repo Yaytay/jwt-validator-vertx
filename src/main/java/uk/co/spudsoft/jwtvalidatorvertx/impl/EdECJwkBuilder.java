@@ -22,6 +22,7 @@ import io.vertx.core.json.JsonObject;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.interfaces.EdECPublicKey;
 import java.security.spec.EdECPoint;
 import java.security.spec.EdECPublicKeySpec;
@@ -36,12 +37,24 @@ import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
  */
 public class EdECJwkBuilder extends JwkBuilder<EdECPublicKey> {
   
+  private static final String KTY = "OKP";
+
   private static class EdECJwk extends JWK<EdECPublicKey> {
 
     EdECJwk(long expiryMs, JsonObject json, EdECPublicKey key) {
       super(expiryMs, json, key);
     }
     
+  }  
+  
+  @Override
+  public boolean canCreateFromKty(String kty) {
+    return KTY.equals(kty);
+  }
+
+  @Override
+  public boolean canCreateFromKey(PublicKey key) {
+    return key instanceof EdECPublicKey;
   }  
   
   private static EdECPoint byteArrayToEdPoint(byte[] arr) {
@@ -74,10 +87,12 @@ public class EdECJwkBuilder extends JwkBuilder<EdECPublicKey> {
   }
 
   @Override
-  public JWK<EdECPublicKey> create(long expiryMs, String kid, EdECPublicKey key) {
+  public JWK<EdECPublicKey> create(long expiryMs, String kid, PublicKey publicKey) {
+    EdECPublicKey key = (EdECPublicKey) publicKey;
+            
     JsonObject json = new JsonObject();
     json.put("kid", kid);
-    json.put("kty", "OKP");
+    json.put("kty", KTY);
     json.put("crv", key.getParams().getName());
     
     BigInteger y = key.getPoint().getY();

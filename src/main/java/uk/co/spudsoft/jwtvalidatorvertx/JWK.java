@@ -27,10 +27,9 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 
 import java.security.InvalidAlgorithmParameterException;
-import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.EdECPublicKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
+import java.util.List;
 import javax.annotation.Nullable;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.ECJwkBuilder;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.EdECJwkBuilder;
@@ -47,9 +46,11 @@ import uk.co.spudsoft.jwtvalidatorvertx.impl.RSAJwkBuilder;
  */
 public abstract class JWK<T extends PublicKey> {
   
-  private static final RSAJwkBuilder RSA = new RSAJwkBuilder();
-  private static final ECJwkBuilder EC = new ECJwkBuilder();
-  private static final EdECJwkBuilder EDEC = new EdECJwkBuilder();
+  private static final List<JwkBuilder> BUILDERS = Arrays.asList(
+    new RSAJwkBuilder()
+    , new ECJwkBuilder()
+    , new EdECJwkBuilder()
+  );
   
   private final long expiryMs;
   
@@ -103,17 +104,12 @@ public abstract class JWK<T extends PublicKey> {
     if (Strings.isNullOrEmpty(kty)) {
       throw new IllegalArgumentException("Key type (kty) not specified in JWK");
     } else {
-      switch (kty) {
-        case "RSA":
-        case "RSASSA":
-          return RSA.create(expiryMs, jo);
-        case "EC":
-          return EC.create(expiryMs, jo);
-        case "OKP":
-          return EDEC.create(expiryMs, jo);
-        default:
-          throw new IllegalArgumentException("Unsupported key type: " + kty);
+      for (JwkBuilder builder : BUILDERS) {
+        if (builder.canCreateFromKty(kty)) {
+          return builder.create(expiryMs, jo);
+        }
       }
+      throw new IllegalArgumentException("Unsupported key type: " + kty);
     }
   }
   
@@ -131,15 +127,12 @@ public abstract class JWK<T extends PublicKey> {
    * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
    */
   public static JWK<?> create(long expiryMs, String kid, PublicKey key) throws InvalidParameterSpecException, NoSuchAlgorithmException {
-    if (key instanceof RSAPublicKey) {
-      return RSA.create(expiryMs, kid, (RSAPublicKey) key);
-    } else if (key instanceof ECPublicKey) {
-      return EC.create(expiryMs, kid, (ECPublicKey) key);
-    } else if (key instanceof EdECPublicKey) {
-      return EDEC.create(expiryMs, kid, (EdECPublicKey) key);
-    } else {
-      throw new IllegalArgumentException("Cannot process key of type " + key.getClass().getSimpleName());
+    for (JwkBuilder builder : BUILDERS) {
+      if (builder.canCreateFromKey(key)) {
+        return builder.create(expiryMs, kid, key);
+      }
     }
+    throw new IllegalArgumentException("Cannot process key of type " + key.getClass().getSimpleName());
   }
     
   

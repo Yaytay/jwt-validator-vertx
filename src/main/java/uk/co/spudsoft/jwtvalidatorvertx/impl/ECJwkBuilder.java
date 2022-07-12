@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
@@ -29,7 +30,6 @@ import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidParameterSpecException;
-import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.JWK;
@@ -42,6 +42,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
   
   private static final Logger logger = LoggerFactory.getLogger(ECJwkBuilder.class);
+  private static final String KTY = "EC";
 
   private static class ECJwk extends JWK<ECPublicKey> {
 
@@ -49,6 +50,16 @@ public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
       super(expiryMs, json, key);
     }
     
+  }
+
+  @Override
+  public boolean canCreateFromKty(String kty) {
+    return KTY.equals(kty);
+  }
+
+  @Override
+  public boolean canCreateFromKey(PublicKey key) {
+    return key instanceof ECPublicKey;
   }
   
   private static String getJdkEcCurveName(String curve) {
@@ -70,7 +81,7 @@ public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
   @Override
   public JWK<ECPublicKey> create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidParameterSpecException, InvalidKeySpecException {
         
-    validateAlg(json, "EC");
+    validateAlg(json, KTY);
     AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
 
     String curve = getJdkEcCurveName(json.getString("crv"));
@@ -106,18 +117,14 @@ public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
     }
   }
   
-  private static byte[] modulusToByteArray(BigInteger modulus) {
-    // https://tools.ietf.org/html/rfc7518#section-6.3.1 specifies the that initial bytes must not be zero
-    byte[] modulusByteArray = modulus.toByteArray();
-    if ((modulus.bitLength() % 8 == 0) && (modulusByteArray[0] == 0) && modulusByteArray.length > 1) {
-      return Arrays.copyOfRange(modulusByteArray, 1, modulusByteArray.length - 1);
-    } else {
-      return modulusByteArray;
-    }
-  }
-
+  /**
+   * Convert the coordinate to a byte array, ensuring that the result is at least fieldSize bits long.
+   * @param fieldSize The minimum number of bits in the resulting array.
+   * @param coordinate The BigInteger to convert.
+   * @return a byte array of at least fieldSize bits containing coordinate.
+   */
   private static byte[] coordinateToByteArray(int fieldSize, BigInteger coordinate) {
-    byte[] coordinateByteArray = modulusToByteArray(coordinate);
+    byte[] coordinateByteArray = coordinate.toByteArray();
     int fullSize = (int) Math.ceil(fieldSize / 8d);
 
     if (fullSize > coordinateByteArray.length) {
@@ -130,10 +137,12 @@ public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
   }
   
   @Override
-  public JWK<ECPublicKey> create(long expiryMs, String kid, ECPublicKey key) throws InvalidParameterSpecException, NoSuchAlgorithmException {
+  public JWK<ECPublicKey> create(long expiryMs, String kid, PublicKey publicKey) throws InvalidParameterSpecException, NoSuchAlgorithmException {
+    ECPublicKey key = (ECPublicKey) publicKey;
+    
     JsonObject json = new JsonObject();
     json.put("kid", kid);
-    json.put("kty", "EC");
+    json.put("kty", KTY);
     
     AlgorithmParameters params = AlgorithmParameters.getInstance("EC");
     params.init(key.getParams());
@@ -142,7 +151,6 @@ public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
     json.put("crv", curve);
     
     int fieldSize = key.getParams().getCurve().getField().getFieldSize();
-    // This is just to test the alg handling in JWK constructor, we don't know (or care) whether it's RSA256, 384 or 512.
     json.put("x", B64ENCODER.encodeToString(coordinateToByteArray(fieldSize, key.getW().getAffineX())));
     json.put("y", B64ENCODER.encodeToString(coordinateToByteArray(fieldSize, key.getW().getAffineY())));
 

@@ -21,6 +21,7 @@ import io.vertx.core.json.JsonObject;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
@@ -33,6 +34,8 @@ import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
  */
 public class RSAJwkBuilder extends JwkBuilder<RSAPublicKey> {
 
+  private static final String KTY = "RSA";
+  
   private static class RSAJwk extends JWK<RSAPublicKey> {
 
     RSAJwk(long expiryMs, JsonObject json, RSAPublicKey key) {
@@ -41,6 +44,15 @@ public class RSAJwkBuilder extends JwkBuilder<RSAPublicKey> {
     
   }
   
+  @Override
+  public boolean canCreateFromKty(String kty) {
+    return KTY.equals(kty) || "RSASSA".equals(kty);
+  }
+
+  @Override
+  public boolean canCreateFromKey(PublicKey key) {
+    return key instanceof RSAPublicKey;
+  }
   
   @Override
   public JWK<RSAPublicKey> create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException {
@@ -61,7 +73,9 @@ public class RSAJwkBuilder extends JwkBuilder<RSAPublicKey> {
   }
 
   @Override
-  public JWK<RSAPublicKey> create(long expiryMs, String kid, RSAPublicKey key) {
+  public JWK<RSAPublicKey> create(long expiryMs, String kid, PublicKey publicKey) {
+    RSAPublicKey key = (RSAPublicKey) publicKey;
+    
     JsonObject json = new JsonObject();
     json.put("kid", kid);
     json.put("kty", "RSA");

@@ -57,7 +57,7 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
   /**
    * Map from jwks_uri to Map from kid to JWK.
    */
-  private final Map&lt;String, AsyncLoadingCache&lt;String, JWK&gt;&gt; kidCache;
+  private final Map&lt;String, AsyncLoadingCache&lt;String, JWK&lt;?&gt;&gt;&gt; kidCache;
 
   private final List&lt;Pattern&gt; acceptableIssuers;
   
@@ -132,16 +132,16 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
   }
 
   @Override
-  public Future&lt;JWK&gt; findJwk(DiscoveryData discoveryData, String kid) {
+  public Future&lt;JWK&lt;?&gt;&gt; findJwk(DiscoveryData discoveryData, String kid) {
     
 <span class="fc" id="L137">    String jwksUri = discoveryData.getJwksUri();</span>
 <span class="pc bpc" id="L138" title="1 of 2 branches missed.">    if (Strings.isNullOrEmpty(jwksUri)) {</span>
 <span class="nc" id="L139">      return Future.failedFuture(&quot;Discovery data does not contain jwks_uri&quot;);</span>
     }
     
-    AsyncLoadingCache&lt;String, JWK&gt; finalJwkCache;
+    AsyncLoadingCache&lt;String, JWK&lt;?&gt;&gt; finalJwkCache;
 <span class="fc" id="L143">    synchronized (kidCache) {</span>
-<span class="fc" id="L144">      AsyncLoadingCache&lt;String, JWK&gt; jwkCache = kidCache.get(jwksUri);</span>
+<span class="fc" id="L144">      AsyncLoadingCache&lt;String, JWK&lt;?&gt;&gt; jwkCache = kidCache.get(jwksUri);</span>
 <span class="fc bfc" id="L145" title="All 2 branches covered.">      if (jwkCache == null) {</span>
 <span class="pc bpc" id="L146" title="1 of 2 branches missed.">        jwkCache = new AsyncLoadingCache&lt;&gt;(jwk -&gt; jwk == null ? null : jwk.getExpiryMs());</span>
 <span class="fc" id="L147">        kidCache.put(jwksUri, jwkCache);</span>
@@ -156,14 +156,14 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
   }
 
   @Override
-  public Future&lt;JWK&gt; findJwk(String issuer, String kid) {
+  public Future&lt;JWK&lt;?&gt;&gt; findJwk(String issuer, String kid) {
 <span class="fc" id="L160">    return performOpenIdDiscovery(issuer)</span>
 <span class="fc" id="L161">            .compose(dd -&gt; findJwk(dd, kid));</span>
   }
   
-  static Future&lt;JWK&gt; processJwkSet(AsyncLoadingCache&lt;String, JWK&gt; jwkCache, TimedJsonObject data, String kid) {
+  static Future&lt;JWK&lt;?&gt;&gt; processJwkSet(AsyncLoadingCache&lt;String, JWK&lt;?&gt;&gt; jwkCache, TimedJsonObject data, String kid) {
 <span class="fc" id="L165">    long expiry = data.expiresMs;</span>
-<span class="fc" id="L166">    JWK result = null;</span>
+<span class="fc" id="L166">    JWK&lt;?&gt; result = null;</span>
 <span class="fc" id="L167">    JsonObject foundKey = null;</span>
     
     try {
@@ -177,10 +177,10 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
 <span class="fc" id="L177">              JsonObject jo = (JsonObject) keyData;</span>
 <span class="fc" id="L178">              String keyId = jo.getString(&quot;kid&quot;);</span>
 <span class="fc bfc" id="L179" title="All 2 branches covered.">              if (kid.equals(keyId)) {</span>
-<span class="fc" id="L180">                result = new JWK(expiry, jo);</span>
+<span class="fc" id="L180">                result = JWK.create(expiry, jo);</span>
 <span class="fc" id="L181">                foundKey = jo;</span>
               } else {
-<span class="fc" id="L183">                JWK other = new JWK(expiry, jo);</span>
+<span class="fc" id="L183">                JWK&lt;?&gt; other = JWK.create(expiry, jo);</span>
 <span class="fc" id="L184">                jwkCache.put(keyId, other);</span>
               }
             }

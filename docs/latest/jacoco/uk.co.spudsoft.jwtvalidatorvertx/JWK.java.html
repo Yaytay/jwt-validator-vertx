@@ -16,113 +16,132 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx;
 
-import com.google.common.primitives.Bytes;
+import com.google.common.base.Strings;
 import io.vertx.core.json.JsonObject;
-import java.math.BigInteger;
-import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.security.spec.ECGenParameterSpec;
-import java.security.spec.ECParameterSpec;
-import java.security.spec.ECPoint;
-import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
-import java.security.spec.RSAPublicKeySpec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.security.InvalidAlgorithmParameterException;
-import java.security.spec.EdECPoint;
-import java.security.spec.EdECPublicKeySpec;
-import java.security.spec.NamedParameterSpec;
-import java.util.Base64;
+import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
+import java.util.List;
+import javax.annotation.Nullable;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.ECJwkBuilder;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.EdECJwkBuilder;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.RSAJwkBuilder;
 
 /**
- * Represent a single Json Web Key as defined in RFC 7517.
- * https://datatracker.ietf.org/doc/html/rfc7517
+ * Represent a single Json Web Key as defined in RFC 7517.https://datatracker.ietf.org/doc/html/rfc7517.
+ * 
+ * This class (more specifically the implementations of JwkBuilder that this class uses) is the bridge between JDK {@link java.security.PublicKey}s and the JSON of a JWK.
  * 
  * @author jtalbut
+ * @param &lt;T&gt; The specific class of PublicKey represented by this JWK.
+ * A typical usage of the JWK should not care about the type of key and should be able to use JWK&amp;lt;?&gt;.
  */
-public class JWK {
+public abstract class JWK&lt;T extends PublicKey&gt; {
   
-<span class="fc" id="L54">  private static final Logger logger = LoggerFactory.getLogger(JWK.class);</span>
+<span class="fc" id="L49">  private static final List&lt;JwkBuilder&gt; BUILDERS = Arrays.asList(</span>
+    new RSAJwkBuilder()
+    , new ECJwkBuilder()
+    , new EdECJwkBuilder()
+  );
   
   private final long expiryMs;
   
+  private final JsonObject json;
   private final String kid;
   private final String use;
   private final String kty;
-  private final Key key;
+  private final T key;
 
   /**
-   * Constructor.
+   * Constructor, for use by (probably private) sub classes.
+   * 
+   * @param expiryMs The expiry time for the JWK.
+   * This value is only relevant if the JWK is cached, it is not part of the JWK itself.
+   * @param json The JSON for the JWK.
+   * @param key The key in the JWK.
+   */
+<span class="fc" id="L71">  protected JWK(long expiryMs, JsonObject json, T key) {</span>
+<span class="fc" id="L72">    this.expiryMs = expiryMs;</span>
+<span class="fc" id="L73">    this.json = json;</span>
+
+<span class="fc" id="L75">    this.kid = json.getString(&quot;kid&quot;);</span>
+<span class="fc" id="L76">    this.use = json.getString(&quot;use&quot;);</span>
+<span class="fc" id="L77">    this.kty = json.getString(&quot;kty&quot;);</span>
+    
+<span class="fc" id="L79">    this.key = key;</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">    assert(key != null);</span>
+
+<span class="fc bfc" id="L82" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(kid)) {</span>
+<span class="fc" id="L83">      throw new IllegalArgumentException(&quot;Key ID (kid) not specified in JWK&quot;);</span>
+    }    
+<span class="fc" id="L85">  }  </span>
+  
+  /**
+   * Factory method to create a JWK from its JSON representation.
+   * 
+   * This is expected to result in a call to the JWK constructor that takes in both the JSON and the PublicKey.
    * 
    * @param expiryMs The time in ms from the epoch (i.e. to be compared with System.currentTimeMillis) at which this data should be discarded.
    *    Should be found by parsing cache-control headers.
    * @param jo The JsonObject that contains the JWK as defined in RFC7517.
+   * @return a newly created JWK of an appropriate type.
    * @throws java.security.NoSuchAlgorithmException if the algorithm in the JWK is not known.
    * @throws java.security.spec.InvalidKeySpecException if the key specification in the JWK is inappropriate for the key factory to produce a key.
    * @throws java.security.spec.InvalidParameterSpecException  if there is a bug in the JWK code.
    */
-<span class="fc" id="L73">  public JWK(long expiryMs, JsonObject jo) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {</span>
-<span class="fc" id="L74">    this.expiryMs = expiryMs;</span>
-    
-<span class="fc" id="L76">    this.kid = jo.getString(&quot;kid&quot;);</span>
-<span class="fc" id="L77">    this.use = jo.getString(&quot;use&quot;);</span>
-<span class="fc" id="L78">    this.kty = jo.getString(&quot;kty&quot;);</span>
-    
-<span class="fc bfc" id="L80" title="All 2 branches covered.">    if (!hasValue(kid)) {</span>
-<span class="fc" id="L81">      throw new IllegalArgumentException(&quot;Key ID (kid) not specified in JWK&quot;);</span>
-    }
-    
-<span class="fc bfc" id="L84" title="All 2 branches covered.">    if (!hasValue(kty)) {</span>
-<span class="fc" id="L85">      throw new IllegalArgumentException(&quot;Key type (kty) not specified in JWK&quot;);</span>
-    } else {
-<span class="pc bpc" id="L87" title="1 of 4 branches missed.">      switch (kty) {</span>
-        case &quot;RSA&quot;:
-        case &quot;RSASSA&quot;:
-<span class="fc" id="L90">          validateAlg(jo, &quot;RSA&quot;);</span>
-<span class="fc" id="L91">          key = createRSA(jo);</span>
-<span class="fc" id="L92">          break;</span>
-        case &quot;EC&quot;:
-<span class="fc" id="L94">          validateAlg(jo, &quot;ECDSA&quot;);</span>
-<span class="fc" id="L95">          key = createEC(jo);</span>
-<span class="fc" id="L96">          break;</span>
-        case &quot;OKP&quot;:
-<span class="fc" id="L98">          validateAlg(jo, &quot;EdDSA&quot;);</span>
-<span class="fc" id="L99">          key = createOKP(jo);</span>
-<span class="fc" id="L100">          break;</span>
-        default:
-<span class="nc" id="L102">          throw new IllegalArgumentException(&quot;Unsupported key type: &quot; + kty);</span>
-      }
-    }
-<span class="fc" id="L105">  }</span>
-  
-  private void validateAlg(JsonObject jo, String requiredFamily) {
-    // From RFC 7515 alg is optional and I haven't ever seen it in the wild.
-    // If it is provided we just validate that it is compatible with the kty.
-<span class="fc" id="L110">    String algString = jo.getString(&quot;alg&quot;);</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">    if (algString != null) {</span>
-<span class="fc" id="L112">      JsonWebAlgorithm alg = JsonWebAlgorithm.valueOf(algString);</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">      if (!requiredFamily.equals(alg.getFamilyName())) {</span>
-<span class="fc" id="L114">        logger.warn(&quot;Algorithm ({}) does not match key type ({})&quot;, algString, kty);</span>
-<span class="fc" id="L115">        throw new IllegalArgumentException(&quot;Algorithm (&quot; + algString + &quot;) does not match key type (&quot; + kty + &quot;)&quot;);</span>
-      }
-    }
-<span class="fc" id="L118">  }</span>
+  public static JWK&lt;?&gt; create(long expiryMs, JsonObject jo) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
 
+<span class="fc" id="L102">    String kty = jo.getString(&quot;kty&quot;);</span>
+    
+<span class="fc bfc" id="L104" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(kty)) {</span>
+<span class="fc" id="L105">      throw new IllegalArgumentException(&quot;Key type (kty) not specified in JWK&quot;);</span>
+    } else {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">      for (JwkBuilder builder : BUILDERS) {</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (builder.canCreateFromKty(kty)) {</span>
+<span class="fc" id="L109">          return builder.create(expiryMs, jo);</span>
+        }
+<span class="fc" id="L111">      }</span>
+<span class="fc" id="L112">      throw new IllegalArgumentException(&quot;Unsupported key type: &quot; + kty);</span>
+    }
+  }
+  
+  /**
+   * Factory method to create a JWK from a PublicKey.
+   * 
+   * This is expected to result in a call to the JWK constructor that takes in both the JSON and the PublicKey.
+   * 
+   * @param expiryMs The expiry time for the JWK.
+   * This value is only relevant if the JWK is cached, it is not part of the JWK itself.
+   * @param kid The ID to use in the JWK.
+   * @param key The key to convert to JSON.
+   * @return a newly created JWK object containing both JSON and JDK PublicKey.
+   * @throws InvalidParameterSpecException if the data in the key does not represent a valid key (this should indicate a bug in this library).
+   * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
+   */
+  public static JWK&lt;?&gt; create(long expiryMs, String kid, PublicKey key) throws InvalidParameterSpecException, NoSuchAlgorithmException {
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">    for (JwkBuilder builder : BUILDERS) {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">      if (builder.canCreateFromKey(key)) {</span>
+<span class="fc" id="L132">        return builder.create(expiryMs, kid, key);</span>
+      }
+<span class="fc" id="L134">    }</span>
+<span class="nc" id="L135">    throw new IllegalArgumentException(&quot;Cannot process key of type &quot; + key.getClass().getSimpleName());</span>
+  }
+    
+  
   /**
    * Get the expiry time in ms from the epoch.
    * @return the expiry time in ms from the epoch.
    */
   public long getExpiryMs() {
-<span class="fc" id="L125">    return expiryMs;</span>
+<span class="fc" id="L144">    return expiryMs;</span>
   }
 
   /**
@@ -131,117 +150,86 @@ public class JWK {
    * @return the key identifier.
    */
   public String getKid() {
-<span class="fc" id="L134">    return kid;</span>
+<span class="fc" id="L153">    return kid;</span>
   }
 
+  /**
+   * Get the type of key represented by the JWK.
+   * @return the type of key represented by the JWK.
+   */
+  public String getKty() {
+<span class="nc" id="L161">    return kty;</span>
+  }
+  
   /**
    * Get the key use string.
    * &lt;a href=&quot;https://datatracker.ietf.org/doc/html/rfc7517#section-4.2&quot;&gt;https://datatracker.ietf.org/doc/html/rfc7517#section-4.2&lt;/a&gt;
    * This should be &quot;sig&quot; for all known uses, but its presence is optional, so it's ignored.
+   *
    * @return the key use string.
    */
   public String getUse() {
-<span class="fc" id="L144">    return use;</span>
+<span class="fc" id="L172">    return use;</span>
   }
 
   /**
    * Get the key represented by this JWK.
+   *
    * @return the key represented by this JWK.
    */
-  public Key getKey() {
-<span class="fc" id="L152">    return key;</span>
+  public T getKey() {
+<span class="fc" id="L181">    return key;</span>
   }
-  
+
+  /**
+   * Get the key in its original, JWK compatible, JSON format.
+   *
+   * @return the key in its original, JWK compatible, JSON format.
+   */
+  public JsonObject getJson() {
+<span class="fc" id="L190">    return json;</span>
+  }
+
   /**
    * Verify a signature using the key in this JWK.
-   * 
+   *
    * @param algorithm The algorithm specified in the token, which may not be the same as the JWK algorithm (RSA-PSS).
    * @param signature The signature that has been provided for the JWT.
    * @param data The data to be verified.
    * @return True if the signature can only have been created using this key and the data provided.
-   * 
+   *
    * @throws InvalidKeyException if the key is not appropriate for the signer.
    * @throws NoSuchAlgorithmException if the algorithm is not known to the JDK security subsystem,.
    * @throws SignatureException if the signature is invalid
    * @throws InvalidAlgorithmParameterException if the algorithm is configured with incorrect parameters.
    */
   public boolean verify(JsonWebAlgorithm algorithm, byte[] signature, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
-<span class="fc" id="L169">    Signature signer = Signature.getInstance(algorithm.getJdkAlgName());</span>
-<span class="fc bfc" id="L170" title="All 2 branches covered.">    if (algorithm.getParameter() != null) {</span>
-<span class="fc" id="L171">      signer.setParameter(algorithm.getParameter());</span>
-    }
-<span class="fc" id="L173">    signer.initVerify((PublicKey) key);</span>
-<span class="fc" id="L174">    signer.update(data);</span>
-<span class="fc" id="L175">    return signer.verify(signature);</span>
-  }
-  
-  private static boolean hasValue(String s) {
-<span class="pc bpc" id="L179" title="1 of 4 branches missed.">    return s != null &amp;&amp; !s.isBlank();</span>
+<span class="fc" id="L207">    return verify(algorithm.getJdkAlgName(), algorithm.getParameter(), (PublicKey) key, signature, data);</span>
   }
 
-  private static Key createRSA(JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException {
-<span class="fc" id="L183">    String nStr = json.getString(&quot;n&quot;);</span>
-<span class="fc" id="L184">    String eStr = json.getString(&quot;e&quot;);</span>
-<span class="fc bfc" id="L185" title="All 4 branches covered.">    if (hasValue(nStr) &amp;&amp; hasValue(eStr)) {</span>
-<span class="fc" id="L186">      final BigInteger n = new BigInteger(1, Base64.getUrlDecoder().decode(nStr));</span>
-<span class="fc" id="L187">      final BigInteger e = new BigInteger(1, Base64.getUrlDecoder().decode(eStr));</span>
-<span class="fc" id="L188">      return KeyFactory.getInstance(&quot;RSA&quot;).generatePublic(new RSAPublicKeySpec(n, e));</span>
+  /**
+   * Verify a signature using JDK terminology.
+   *
+   * @param jdkAlgName The name of the algorithm as used by the JDK.
+   * @param parameter Any parameter required by the algorithm.
+   * @param key The public key to verify the signature.
+   * @param signature The signature that has been provided for the JWT.
+   * @param data The data to be verified.
+   * @return True if the signature can only have been created using this key and the data provided.
+   *
+   * @throws InvalidKeyException if the key is not appropriate for the signer.
+   * @throws NoSuchAlgorithmException if the algorithm is not known to the JDK security subsystem,.
+   * @throws SignatureException if the signature is invalid
+   * @throws InvalidAlgorithmParameterException if the algorithm is configured with incorrect parameters.
+   */
+  public static boolean verify(String jdkAlgName, @Nullable AlgorithmParameterSpec parameter, PublicKey key, byte[] signature, byte[] data) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
+<span class="fc" id="L226">    Signature signer = Signature.getInstance(jdkAlgName);</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">    if (parameter != null) {</span>
+<span class="fc" id="L228">      signer.setParameter(parameter);</span>
     }
-<span class="fc" id="L190">    throw new IllegalArgumentException(&quot;JWK (&quot; + json + &quot;) does not contain valid RSA public key&quot;);</span>
-  }
-  
-  private static String getJdkEcCurveName(String curve) {
-<span class="fc bfc" id="L194" title="All 2 branches covered.">   if (!hasValue(curve)) {</span>
-<span class="fc" id="L195">      throw new IllegalArgumentException(&quot;JWK does not contain valid EC public key (curve not specified)&quot;);</span>
-    }
-<span class="pc bpc" id="L197" title="1 of 4 branches missed.">    switch (curve) {</span>
-      case &quot;P-256&quot;:
-<span class="fc" id="L199">        return &quot;secp256r1&quot;;</span>
-      case &quot;P-384&quot;:
-<span class="fc" id="L201">        return &quot;secp384r1&quot;;</span>
-      case &quot;P-521&quot;:
-<span class="fc" id="L203">        return &quot;secp521r1&quot;;</span>
-      default:
-<span class="nc" id="L205">        return curve;</span>
-    }
-  }
-  
-  private static Key createEC(JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException {
-<span class="fc" id="L210">    AlgorithmParameters parameters = AlgorithmParameters.getInstance(&quot;EC&quot;);</span>
-    
-<span class="fc" id="L212">    String curve = getJdkEcCurveName(json.getString(&quot;crv&quot;));</span>
-<span class="fc" id="L213">    parameters.init(new ECGenParameterSpec(curve));</span>
-
-<span class="fc" id="L215">    String xStr = json.getString(&quot;x&quot;);</span>
-<span class="fc" id="L216">    String yStr = json.getString(&quot;y&quot;);</span>
-<span class="fc bfc" id="L217" title="All 4 branches covered.">    if (hasValue(xStr) &amp;&amp; hasValue(yStr)) {</span>
-<span class="fc" id="L218">      final BigInteger x = new BigInteger(1, Base64.getUrlDecoder().decode(xStr));</span>
-<span class="fc" id="L219">      final BigInteger y = new BigInteger(1, Base64.getUrlDecoder().decode(yStr));</span>
-<span class="fc" id="L220">      return KeyFactory.getInstance(&quot;EC&quot;).generatePublic(new ECPublicKeySpec(new ECPoint(x, y), parameters.getParameterSpec(ECParameterSpec.class)));</span>
-    }
-<span class="fc" id="L222">    throw new IllegalArgumentException(&quot;JWK (&quot; + json + &quot;) does not contain valid EC public key&quot;);</span>
-  }
-  
-  private static EdECPoint byteArrayToEdPoint(byte[] arr) {
-<span class="fc" id="L226">    byte msb = arr[arr.length - 1];</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">    boolean xOdd = (msb &amp; 0x80) != 0;</span>
-<span class="fc" id="L228">    arr[arr.length - 1] &amp;= (byte) 0x7F;</span>
-<span class="fc" id="L229">    Bytes.reverse(arr, 0, arr.length);</span>
-<span class="fc" id="L230">    BigInteger y = new BigInteger(1, arr);</span>
-<span class="fc" id="L231">    return new EdECPoint(xOdd, y);</span>
-  }
-  
-  private static Key createOKP(JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException {
-<span class="fc" id="L235">    String xStr = json.getString(&quot;x&quot;);</span>
-<span class="fc" id="L236">    String curve = json.getString(&quot;crv&quot;);</span>
-    
-<span class="fc bfc" id="L238" title="All 4 branches covered.">    if (hasValue(xStr) &amp;&amp; hasValue(curve)) {</span>
-<span class="fc" id="L239">      KeyFactory kf = KeyFactory.getInstance(&quot;EdDSA&quot;);</span>
-<span class="fc" id="L240">      NamedParameterSpec paramSpec = new NamedParameterSpec(curve);</span>
-<span class="fc" id="L241">      EdECPublicKeySpec pubSpec = new EdECPublicKeySpec(paramSpec, byteArrayToEdPoint(Base64.getUrlDecoder().decode(xStr)));</span>
-<span class="fc" id="L242">      return kf.generatePublic(pubSpec);</span>
-    }
-<span class="fc" id="L244">    throw new IllegalArgumentException(&quot;JWK (&quot; + json + &quot;) does not contain valid OKP public key&quot;);</span>
+<span class="fc" id="L230">    signer.initVerify(key);</span>
+<span class="fc" id="L231">    signer.update(data);</span>
+<span class="fc" id="L232">    return signer.verify(signature);</span>
   }
 
 }

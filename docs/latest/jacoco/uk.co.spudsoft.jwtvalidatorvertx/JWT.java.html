@@ -38,7 +38,7 @@ import java.util.List;
  */
 public class JWT {
   
-<span class="fc" id="L41">  private static final Base64.Decoder BASE64 = Base64.getUrlDecoder();</span>
+<span class="fc" id="L41">  private static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();</span>
 <span class="fc" id="L42">  private static final int SPACE = &quot; &quot;.codePointAt(0);</span>
   
   private final JsonObject header;
@@ -46,7 +46,7 @@ public class JWT {
   private final String signatureBase;
   private final String signature;
   
-  private JWK jwk;
+  private JWK&lt;?&gt; jwk;
 
   /**
    * Constructor.
@@ -79,8 +79,8 @@ public class JWT {
 <span class="fc bfc" id="L79" title="All 2 branches covered.">    String signatureSeg = segments.length == 2 ? null : segments[2];</span>
 
     // base64 decode and parseJws JSON
-<span class="fc" id="L82">    JsonObject header = new JsonObject(new String(BASE64.decode(headerSeg), StandardCharsets.UTF_8));</span>
-<span class="fc" id="L83">    JsonObject payload = new JsonObject(new String(BASE64.decode(payloadSeg), StandardCharsets.UTF_8));</span>
+<span class="fc" id="L82">    JsonObject header = new JsonObject(new String(B64DECODER.decode(headerSeg), StandardCharsets.UTF_8));</span>
+<span class="fc" id="L83">    JsonObject payload = new JsonObject(new String(B64DECODER.decode(payloadSeg), StandardCharsets.UTF_8));</span>
 
 <span class="fc" id="L85">    return new JWT(header, payload, headerSeg + &quot;.&quot; + payloadSeg, signatureSeg);</span>
   }
@@ -400,7 +400,7 @@ public class JWT {
    * @param handler the OpenIdDiscoveryHandler that will perform the request for the JWK Set.
    * @return A Future that will be completed with a {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} object when the discovery completes.
    */
-  public Future&lt;JWK&gt; getJwk(JsonWebKeySetHandler handler) {
+  public Future&lt;JWK&lt;?&gt;&gt; getJwk(JsonWebKeySetHandler handler) {
 <span class="fc bfc" id="L404" title="All 2 branches covered.">    if (this.jwk == null) {</span>
 <span class="fc" id="L405">      return handler.findJwk(getIssuer(), getKid())</span>
 <span class="fc" id="L406">              .onSuccess(j -&gt; this.jwk = j);</span>
@@ -415,7 +415,7 @@ public class JWT {
    * 
    * @return the jwk cached by a successful called to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler)}.
    */
-  public JWK getJwk() {
+  public JWK&lt;?&gt; getJwk() {
 <span class="fc" id="L419">    return jwk;</span>
   }
   

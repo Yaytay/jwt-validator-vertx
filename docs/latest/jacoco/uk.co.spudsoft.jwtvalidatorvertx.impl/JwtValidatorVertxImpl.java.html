@@ -26,8 +26,8 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
   @SuppressWarnings(&quot;constantname&quot;)
 <span class="fc" id="L27">  private static final Logger logger = LoggerFactory.getLogger(JwtValidatorVertxImpl.class);</span>
 
-<span class="fc" id="L29">  private static final Base64.Decoder DECODER = Base64.getUrlDecoder();</span>
-
+<span class="fc" id="L29">  private static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();</span>
+  
 <span class="fc" id="L31">  private static final EnumSet&lt;JsonWebAlgorithm&gt; DEFAULT_PERMITTED_ALGS = EnumSet.of(</span>
           JsonWebAlgorithm.RS256, JsonWebAlgorithm.RS384, JsonWebAlgorithm.RS512
   );
@@ -154,7 +154,7 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
     }
   }
 
-  private void verify(JsonWebAlgorithm jwa, JWK jwk, JWT jwt) throws IllegalArgumentException {
+  private void verify(JsonWebAlgorithm jwa, JWK&lt;?&gt; jwk, JWT jwt) throws IllegalArgumentException {
 
     // empty signature is never allowed
 <span class="pc bpc" id="L160" title="1 of 2 branches missed.">    if (Strings.isNullOrEmpty(jwt.getSignature())) {</span>
@@ -166,7 +166,7 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
 <span class="nc" id="L166">      throw new IllegalStateException(&quot;Algorithm \&quot;none\&quot; not allowed&quot;);</span>
     }
 
-<span class="fc" id="L169">    byte[] payloadInput = Base64.getUrlDecoder().decode(jwt.getSignature());</span>
+<span class="fc" id="L169">    byte[] payloadInput = B64DECODER.decode(jwt.getSignature());</span>
 
 <span class="fc" id="L171">    byte[] signingInput = jwt.getSignatureBase().getBytes(StandardCharsets.UTF_8);</span>
 

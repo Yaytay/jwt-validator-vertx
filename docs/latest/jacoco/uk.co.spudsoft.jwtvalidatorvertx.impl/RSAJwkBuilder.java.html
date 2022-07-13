@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RSAJwkBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.impl</a> &gt; <span class="el_source">RSAJwkBuilder.java</span></div><h1>RSAJwkBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2022 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.impl;
+
+import com.google.common.base.Strings;
+import io.vertx.core.json.JsonObject;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPublicKeySpec;
+import uk.co.spudsoft.jwtvalidatorvertx.JWK;
+import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
+
+/**
+ *
+ * @author jtalbut
+ */
+<span class="fc" id="L35">public class RSAJwkBuilder extends JwkBuilder&lt;RSAPublicKey&gt; {</span>
+
+  private static final String KTY = &quot;RSA&quot;;
+  
+  private static class RSAJwk extends JWK&lt;RSAPublicKey&gt; {
+
+    RSAJwk(long expiryMs, JsonObject json, RSAPublicKey key) {
+<span class="fc" id="L42">      super(expiryMs, json, key);</span>
+<span class="fc" id="L43">    }</span>
+    
+  }
+  
+  @Override
+  public boolean canCreateFromKty(String kty) {
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">    return KTY.equals(kty) || &quot;RSASSA&quot;.equals(kty);</span>
+  }
+
+  @Override
+  public boolean canCreateFromKey(PublicKey key) {
+<span class="fc" id="L54">    return key instanceof RSAPublicKey;</span>
+  }
+  
+  @Override
+  public JWK&lt;RSAPublicKey&gt; create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    
+<span class="fc" id="L60">    validateAlg(json, &quot;RSA&quot;);</span>
+<span class="fc" id="L61">    String nStr = json.getString(&quot;n&quot;);</span>
+<span class="fc" id="L62">    String eStr = json.getString(&quot;e&quot;);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(nStr)) {</span>
+<span class="fc" id="L64">      throw new IllegalArgumentException(&quot;modulus has no value&quot;);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">    } else if (Strings.isNullOrEmpty(eStr)) {</span>
+<span class="fc" id="L66">      throw new IllegalArgumentException(&quot;exponent has no value&quot;);      </span>
+    } else {
+<span class="fc" id="L68">      final BigInteger n = new BigInteger(1, B64DECODER.decode(nStr));</span>
+<span class="fc" id="L69">      final BigInteger e = new BigInteger(1, B64DECODER.decode(eStr));</span>
+<span class="fc" id="L70">      RSAPublicKey key = (RSAPublicKey) KeyFactory.getInstance(&quot;RSA&quot;).generatePublic(new RSAPublicKeySpec(n, e));</span>
+<span class="fc" id="L71">      return new RSAJwk(expiryMs, json, key);</span>
+    }
+  }
+
+  @Override
+  public JWK&lt;RSAPublicKey&gt; create(long expiryMs, String kid, PublicKey publicKey) {
+<span class="fc" id="L77">    RSAPublicKey key = (RSAPublicKey) publicKey;</span>
+    
+<span class="fc" id="L79">    JsonObject json = new JsonObject();</span>
+<span class="fc" id="L80">    json.put(&quot;kid&quot;, kid);</span>
+<span class="fc" id="L81">    json.put(&quot;kty&quot;, &quot;RSA&quot;);</span>
+    // This is just to test the alg handling in JWK constructor, we don't know (or care) whether it's RSA256, 384 or 512.
+<span class="fc" id="L83">    json.put(&quot;alg&quot;, &quot;RS256&quot;);</span>
+<span class="fc" id="L84">    json.put(&quot;e&quot;, B64ENCODER.encodeToString(key.getPublicExponent().toByteArray()));</span>
+<span class="fc" id="L85">    json.put(&quot;n&quot;, B64ENCODER.encodeToString(key.getModulus().toByteArray()));</span>
+<span class="fc" id="L86">    return new RSAJwk(expiryMs, json, key);</span>
+  }
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

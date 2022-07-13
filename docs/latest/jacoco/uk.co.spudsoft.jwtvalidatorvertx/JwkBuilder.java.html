@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwkBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx</a> &gt; <span class="el_source">JwkBuilder.java</span></div><h1>JwkBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2022 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx;
+
+import io.vertx.core.json.JsonObject;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.InvalidParameterSpecException;
+import java.util.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * The JwkBuilder class is an SPI for containing the algorithm-specific conversions from Token to JWK or from JSON to JWK.
+ * 
+ * @author jtalbut
+ * @param &lt;T&gt; The specific class on PublicKey that is created.
+ */
+<span class="fc" id="L34">public abstract class JwkBuilder&lt;T extends PublicKey&gt; {</span>
+  
+<span class="fc" id="L36">  private static final Logger logger = LoggerFactory.getLogger(JwkBuilder.class);</span>
+
+  /**
+   * Instance of a {@link java.util.Base64.Encoder} for encoding values used in JWK JSON.
+   * Used when creating JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#create(long, java.lang.String, java.security.PublicKey)}.
+   */
+<span class="fc" id="L42">  protected static final Base64.Encoder B64ENCODER = Base64.getUrlEncoder().withoutPadding();</span>
+
+  /**
+   * Instance of a {@link java.util.Base64.Decoder} for decoding values found in JWK JSON.
+   * Used when reading JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#create(long, io.vertx.core.json.JsonObject) }.
+   */
+<span class="fc" id="L48">  protected static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();</span>
+  
+  /**
+   * Return true if the builder can create a JWK by parsing the correctly structured JSON with the given kty.
+   * @param kty The kty that the JSON has that this builder is being asked about.
+   * @return true if the builder can create a JWK by parsing the correctly structured JSON with the given kty.
+   */
+  public abstract boolean canCreateFromKty(String kty);
+  
+  /**
+   * Return true if the builder can create a JWK by generating JSON for the given PublicKey.
+   * @param key The key that that this builder is being asked about.
+   * @return true if the builder can create a JWK by generating JSON for the given PublicKey.
+   */
+  public abstract boolean canCreateFromKey(PublicKey key);
+  
+  /**
+   * Confirm that any alg field specified in the JsonObject matches the family passed in.
+   * 
+   * There is no requirement for JWKs to specify an algorithm (most don't, in my experience), but if one is specified then it must be correct.
+   * 
+   * @param jo The JWK as a JsonObject that may, or may not, contain an alg field.
+   * @param requiredFamily The family name (taken from {@link JsonWebAlgorithm#familyName}) that must match that for the algorithm
+   * @throws IllegalArgumentException is the required family is not the family for the algorithm passed in.
+   */
+  protected void validateAlg(JsonObject jo, String requiredFamily) {
+    // From RFC 7515 alg is optional and I haven't ever seen it in the wild.
+    // If it is provided we just validate that it is compatible with the kty.
+<span class="fc" id="L76">    String algString = jo.getString(&quot;alg&quot;);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">    if (algString != null) {</span>
+<span class="fc" id="L78">      JsonWebAlgorithm alg = JsonWebAlgorithm.valueOf(algString);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">      if (!requiredFamily.equals(alg.getFamilyName())) {</span>
+<span class="fc" id="L80">        String kty = jo.getString(&quot;kty&quot;);</span>
+<span class="fc" id="L81">        logger.warn(&quot;Algorithm ({}) does not match key type ({})&quot;, algString, kty);</span>
+<span class="fc" id="L82">        throw new IllegalArgumentException(&quot;Algorithm (&quot; + algString + &quot;) does not match key type (&quot; + kty + &quot;)&quot;);</span>
+      }
+    }
+<span class="fc" id="L85">  }</span>
+  
+  /**
+   * Create a JWK from a JSON.
+   * 
+   * This is expected to result in a call to the JWK constructor that takes in both the JSON and the PublicKey.
+   * 
+   * @param expiryMs The expiry time for the JWK.
+   * This value is only relevant if the JWK is cached, it is not part of the JWK itself.
+   * @param json The JSON representation of the JWK, as specified by RFC7517 (or one of its successors).
+   * @return a newly created JWK object containing both JSON and JDK PublicKey.
+   * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
+   * @throws InvalidKeySpecException if the data in the JSON does not represent a valid key.
+   * @throws InvalidParameterSpecException if the data in the JSON does not represent a valid key.
+   * @throws IllegalArgumentException if the JSON is not in a valid form for this algorithm family.
+   */
+  public abstract JWK&lt;T&gt; create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException, IllegalArgumentException;
+  
+  /**
+   * Create a JWK from a PublicKey.
+   * 
+   * This is expected to result in a call to the JWK constructor that takes in both the JSON and the PublicKey.
+   * 
+   * @param expiryMs The expiry time for the JWK.
+   * This value is only relevant if the JWK is cached, it is not part of the JWK itself.
+   * @param kid The ID to use in the JWK.
+   * @param key The key to convert to JSON.
+   * @return a newly created JWK object containing both JSON and JDK PublicKey.
+   * @throws InvalidParameterSpecException if the data in the key does not represent a valid key (this should indicate a bug in this library).
+   * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
+   */
+  public abstract JWK&lt;T&gt; create(long expiryMs, String kid, PublicKey key) throws InvalidParameterSpecException, NoSuchAlgorithmException;
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

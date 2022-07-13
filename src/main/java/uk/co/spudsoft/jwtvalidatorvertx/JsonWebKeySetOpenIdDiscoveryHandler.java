@@ -57,6 +57,6 @@ public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandle
    * @param kid The key ID being sought.
    * @return A Future that will be completed with the JWK.
    */
-  Future<JWK> findJwk(DiscoveryData discoveryData, String kid);
+  Future<JWK<?>> findJwk(DiscoveryData discoveryData, String kid);
   
 }

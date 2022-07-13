@@ -19,7 +19,6 @@ package uk.co.spudsoft.jwtvalidatorvertx;
 import com.google.common.primitives.Bytes;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
-import static io.vertx.ext.auth.impl.Codec.base64UrlDecode;
 import io.vertx.ext.auth.impl.asn.ASN1;
 import java.math.BigInteger;
 import java.security.Key;
@@ -77,6 +76,7 @@ public class TestOkpFromJwk {
 
     EdECPublicKey key1 = (EdECPublicKey) viaAsn(xStr);
     logger.info("Via ASN: {}: {}/{}", key1.getAlgorithm(), key1.getPoint().isXOdd(), key1.getPoint().getY());
+    
     EdECPublicKey key2 = (EdECPublicKey) viaConvert(xStr);
     logger.info("Via Convert: {}: {}/{}", key2.getAlgorithm(), key2.getPoint().isXOdd(), key2.getPoint().getY());
     assertEquals(key1.getPoint().isXOdd(), key2.getPoint().isXOdd());

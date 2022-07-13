@@ -38,7 +38,7 @@ import java.util.List;
  */
 public class JWT {
   
-  private static final Base64.Decoder BASE64 = Base64.getUrlDecoder();
+  private static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();
   private static final int SPACE = " ".codePointAt(0);
   
   private final JsonObject header;
@@ -46,7 +46,7 @@ public class JWT {
   private final String signatureBase;
   private final String signature;
   
-  private JWK jwk;
+  private JWK<?> jwk;
 
   /**
    * Constructor.
@@ -79,8 +79,8 @@ public class JWT {
     String signatureSeg = segments.length == 2 ? null : segments[2];
 
     // base64 decode and parseJws JSON
-    JsonObject header = new JsonObject(new String(BASE64.decode(headerSeg), StandardCharsets.UTF_8));
-    JsonObject payload = new JsonObject(new String(BASE64.decode(payloadSeg), StandardCharsets.UTF_8));
+    JsonObject header = new JsonObject(new String(B64DECODER.decode(headerSeg), StandardCharsets.UTF_8));
+    JsonObject payload = new JsonObject(new String(B64DECODER.decode(payloadSeg), StandardCharsets.UTF_8));
 
     return new JWT(header, payload, headerSeg + "." + payloadSeg, signatureSeg);
   }
@@ -400,7 +400,7 @@ public class JWT {
    * @param handler the OpenIdDiscoveryHandler that will perform the request for the JWK Set.
    * @return A Future that will be completed with a {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} object when the discovery completes.
    */
-  public Future<JWK> getJwk(JsonWebKeySetHandler handler) {
+  public Future<JWK<?>> getJwk(JsonWebKeySetHandler handler) {
     if (this.jwk == null) {
       return handler.findJwk(getIssuer(), getKid())
               .onSuccess(j -> this.jwk = j);
@@ -415,7 +415,7 @@ public class JWT {
    * 
    * @return the jwk cached by a successful called to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler)}.
    */
-  public JWK getJwk() {
+  public JWK<?> getJwk() {
     return jwk;
   }
   

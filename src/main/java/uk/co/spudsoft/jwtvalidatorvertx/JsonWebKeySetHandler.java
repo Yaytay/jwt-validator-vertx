@@ -38,7 +38,7 @@ public interface JsonWebKeySetHandler {
    * @param kid The key ID being sought.
    * @return A Future that will be completed with a JWK.
    */
-  Future<JWK> findJwk(String issuer, String kid);
+  Future<JWK<?>> findJwk(String issuer, String kid);
          
   
 }

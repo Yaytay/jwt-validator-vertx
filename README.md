@@ -9,6 +9,7 @@
 A basic library to parse and verify JWTs, with OpenID discovery used to obtain JWKs asynchronously (via Vertx).
 
 The library uses vertx-web, but does not use vertx-auth-common and does not attempt to provide a Vertx Auth solution (there is no implementation of AuthorizationProvider in this library).
+The crypto work is all carried out using JDK classes.
 
 # Getting Started
 Release versions should be in maven central, so declare the dependency in your pom.xml:
@@ -76,6 +77,12 @@ The aud check can be disabled with the ignoreRequiredAud parameter in the call t
 * [sub](https://www.rfc-editor.org/rfc/rfc7519.html#section-4.1.2)
 The sub field of the token must not be blank.
 
+### Handling Tokens and JWKs
+
+The JWK class represents a single instance of a Json Web Key (public key only).
+An instance of this class contains both the JWK JSON structure and the JDK PublicKey.
+
+The JwkBuilder subclasses contain the algorithm-specific implementations for parsing and generating the JSON structures.
 
 ## Caching
 If the response for the OpenId Discovery or JWK Set requests have [Cache-Control, max-age](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#max-age) headers the response is cached according to that age.

@@ -20,16 +20,14 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
-import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 
 /**
  * @author njt
@@ -125,32 +123,18 @@ public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler<JdkTo
     JsonArray jwks = new JsonArray();
     jwkSet.put("keys", jwks);
     for (Entry<String, KeyPair> keyEntry : keyMap.entrySet()) {
-      Map<String, Object> jwkObject = publicKeyToJson(keyEntry.getValue().getPublic());
-      jwkObject.put("kid", keyEntry.getKey());
-      jwks.add(jwkObject);
+      try {
+        JWK<?> jwk = JWK.create(0, keyEntry.getKey(), keyEntry.getValue().getPublic());
+        jwks.add(jwk.getJson());
+      } catch(Throwable ex) {
+        logger.error("Failed to add key {} to JWK Set: ", keyEntry.getKey(), ex);
+      }
     }
     exchange.getResponseHeaders().add("cache-control", "max-age=100");
     sendResponse(exchange, 200, jwkSet.encode());
   }
   
-  static Map<String, Object> publicKeyToJson(PublicKey key) {
-    Map<String, Object> result = new HashMap<>();
-    
-    if (key instanceof RSAPublicKey) {
-      RSAPublicKey rsa = (RSAPublicKey) key;
-      result.put("kty", "RSA");
-      // This is just to test the alg handling in JWK constructor, we don't know (or care) whether it's RSA256, 384 or 512.
-      result.put("alg", "RS256");
-      result.put("e", BASE64.encodeToString(rsa.getPublicExponent().toByteArray()));
-      result.put("n", BASE64.encodeToString(rsa.getModulus().toByteArray()));
-    }
-    
-    return result;
-  }
-  
-
-  protected void handleIntrospectRequest(HttpExchange exchange)
-          throws IOException {
+  protected void handleIntrospectRequest(HttpExchange exchange) throws IOException {
     ObjectNode config = MAPPER.createObjectNode();
     config.put("bobby", "bobby value");
     sendResponse(exchange, 200, config.toString());

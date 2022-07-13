@@ -51,7 +51,7 @@ public class JsonWebKeySetStaticHandlerTest {
     JsonWebKeySetStaticHandler impl = JsonWebKeySetStaticHandler.create();
     
     assertTrue(impl.findJwk("issuer", "kid").failed());
-    JWK jwk = new JWK(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}"));
+    JWK<?> jwk = JWK.create(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}"));
     impl.addKey("issuer", jwk);
     assertEquals("sig", impl.findJwk("issuer", "518a90bb-7cc7-4e5c-ab27-152fc8043bdd").result().getUse());
     impl.removeKey("issuer", jwk.getKid());

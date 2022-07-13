@@ -66,12 +66,11 @@ public class JdkTokenBuilder extends AbstractTokenBuilder {
         keys.put(kid, keyPair);
       }
     }
-    return generateSignature(keyPair.getPrivate(), algorithm, headerBase64, claimsBase64);
+    return generateSignature(keyPair.getPrivate(), algorithm, headerBase64 + "." + claimsBase64);
   }
 
-  private byte[] generateSignature(PrivateKey privateKey, JsonWebAlgorithm algorithm, String headerBase64, String claimsBase64) throws Exception {
+  public static byte[] generateSignature(PrivateKey privateKey, JsonWebAlgorithm algorithm, String signingInput) throws Exception {
     Signature signer = Signature.getInstance(algorithm.getJdkAlgName());
-    String signingInput = headerBase64 + "." + claimsBase64;
     signer.initSign(privateKey);
     signer.update(signingInput.getBytes(StandardCharsets.UTF_8));
     return signer.sign();

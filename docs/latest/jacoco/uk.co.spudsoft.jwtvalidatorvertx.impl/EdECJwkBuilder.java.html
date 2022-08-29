@@ -59,7 +59,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
   
   private static EdECPoint byteArrayToEdPoint(byte[] arr) {
 <span class="fc" id="L61">    byte msb = arr[arr.length - 1];</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">    boolean xOdd = (msb &amp; 0x80) != 0;</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">    boolean xOdd = (msb &amp; 0x80) != 0;</span>
 <span class="fc" id="L63">    arr[arr.length - 1] &amp;= (byte) 0x7F;</span>
 <span class="fc" id="L64">    Bytes.reverse(arr, 0, arr.length);</span>
 <span class="fc" id="L65">    BigInteger y = new BigInteger(1, arr);</span>

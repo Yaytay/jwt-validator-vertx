@@ -49,8 +49,8 @@
     <vertx.version>[4.2,)</vertx.version>
     <slf4j.version>[1.7,1.8.0-alpha0)</slf4j.version>
     <logback.version>[1.2,1.3.0-alpha0)</logback.version>
-    <junit-jupiter.version>5.8.2</junit-jupiter.version>
-    <junit-platform.version>1.8.2</junit-platform.version>
+    <junit-jupiter.version>5.9.0</junit-jupiter.version>
+    <junit-platform.version>1.9.0</junit-platform.version>
     <nimbus.version>[9.22,)</nimbus.version>
   </properties>
   
@@ -176,7 +176,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>4.6.1</version>
+      <version>4.7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -207,7 +207,7 @@
     <dependency>
       <groupId>com.google.crypto.tink</groupId>
       <artifactId>tink</artifactId>
-      <version>1.6.1</version>
+      <version>1.7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -337,7 +337,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.7.1.0</version>
+        <version>4.7.1.1</version>
         <configuration>
           <fork>false</fork>
           <effort>Max</effort>
@@ -387,7 +387,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>10.3.1</version>
+            <version>10.3.3</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -557,7 +557,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.4.0</version>
+        <version>3.4.1</version>
         <executions>
           <execution>
             <id>attach-javadocs</id>
@@ -595,7 +595,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>3.3.0</version>
+        <version>3.4.1</version>
       </plugin>
 
     </plugins>

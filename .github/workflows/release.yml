@@ -40,6 +40,7 @@ jobs:
         
     - name: Build with Maven
       env:
+        MAVEN_OPTS: -Djava.security.manager=allow
         MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       run: mvn -P ci-cd -B clean install site --file pom.xml
       

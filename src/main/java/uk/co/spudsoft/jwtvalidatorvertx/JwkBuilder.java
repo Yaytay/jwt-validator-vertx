@@ -36,6 +36,12 @@ public abstract class JwkBuilder<T extends PublicKey> {
   private static final Logger logger = LoggerFactory.getLogger(JwkBuilder.class);
 
   /**
+   * Protected constructor used by subclasses.
+   */
+  protected JwkBuilder() {
+  }
+  
+  /**
    * Instance of a {@link java.util.Base64.Encoder} for encoding values used in JWK JSON.
    * Used when creating JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#create(long, java.lang.String, java.security.PublicKey)}.
    */

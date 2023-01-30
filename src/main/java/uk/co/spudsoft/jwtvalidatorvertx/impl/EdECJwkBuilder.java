@@ -32,7 +32,8 @@ import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 
 /**
- *
+  * JWKBuilder that parses and serializes Edwards-Curve elliptic curve (EC) public keys.
+ * 
  * @author jtalbut
  */
 public class EdECJwkBuilder extends JwkBuilder<EdECPublicKey> {
@@ -46,6 +47,15 @@ public class EdECJwkBuilder extends JwkBuilder<EdECPublicKey> {
     }
     
   }  
+
+  /**
+   * Constructor.
+   * 
+   * Typically it is not necessary to construct an explicit instance of this class, the ones in the {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} class should suffice.
+   * 
+   */
+  public EdECJwkBuilder() {
+  }
   
   @Override
   public boolean canCreateFromKty(String kty) {

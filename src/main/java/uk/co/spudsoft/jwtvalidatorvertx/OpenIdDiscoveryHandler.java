@@ -19,8 +19,9 @@ package uk.co.spudsoft.jwtvalidatorvertx;
 import io.vertx.core.Future;
 
 /**
- *
+ * Interface for obtaining the OpenID Discovery Data for an issuer.
  * @author jtalbut
+ * @see <a href="https://openid.net/specs/openid-connect-discovery-1_0.html">openid-connect-discovery-1_0</a>.
  */
 public interface OpenIdDiscoveryHandler {
   

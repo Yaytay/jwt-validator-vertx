@@ -30,7 +30,8 @@ import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetStaticHandler;
 
 /**
- *
+ * Implementation of {@link JsonWebKeySetStaticHandler} that stores JWKs in a HashMap.
+ * 
  * @author jtalbut
  */
 public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {

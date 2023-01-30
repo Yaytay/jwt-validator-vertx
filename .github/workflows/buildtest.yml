@@ -41,7 +41,7 @@ jobs:
 
     - name: Build with Maven
       env:
-        JAVA_OPTS: -Djava.security.manager=allow
+        MAVEN_OPTS: -Djava.security.manager=allow
       run: mvn -B clean install site --file pom.xml
 
     - uses: codecov/codecov-action@v2

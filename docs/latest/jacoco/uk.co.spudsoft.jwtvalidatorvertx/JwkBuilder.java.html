@@ -31,21 +31,27 @@ import org.slf4j.LoggerFactory;
  * @author jtalbut
  * @param &lt;T&gt; The specific class on PublicKey that is created.
  */
-<span class="fc" id="L34">public abstract class JwkBuilder&lt;T extends PublicKey&gt; {</span>
+public abstract class JwkBuilder&lt;T extends PublicKey&gt; {
   
 <span class="fc" id="L36">  private static final Logger logger = LoggerFactory.getLogger(JwkBuilder.class);</span>
 
   /**
+   * Protected constructor used by subclasses.
+   */
+<span class="fc" id="L41">  protected JwkBuilder() {</span>
+<span class="fc" id="L42">  }</span>
+  
+  /**
    * Instance of a {@link java.util.Base64.Encoder} for encoding values used in JWK JSON.
    * Used when creating JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#create(long, java.lang.String, java.security.PublicKey)}.
    */
-<span class="fc" id="L42">  protected static final Base64.Encoder B64ENCODER = Base64.getUrlEncoder().withoutPadding();</span>
+<span class="fc" id="L48">  protected static final Base64.Encoder B64ENCODER = Base64.getUrlEncoder().withoutPadding();</span>
 
   /**
    * Instance of a {@link java.util.Base64.Decoder} for decoding values found in JWK JSON.
    * Used when reading JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#create(long, io.vertx.core.json.JsonObject) }.
    */
-<span class="fc" id="L48">  protected static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();</span>
+<span class="fc" id="L54">  protected static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();</span>
   
   /**
    * Return true if the builder can create a JWK by parsing the correctly structured JSON with the given kty.
@@ -73,16 +79,16 @@ import org.slf4j.LoggerFactory;
   protected void validateAlg(JsonObject jo, String requiredFamily) {
     // From RFC 7515 alg is optional and I haven't ever seen it in the wild.
     // If it is provided we just validate that it is compatible with the kty.
-<span class="fc" id="L76">    String algString = jo.getString(&quot;alg&quot;);</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">    if (algString != null) {</span>
-<span class="fc" id="L78">      JsonWebAlgorithm alg = JsonWebAlgorithm.valueOf(algString);</span>
-<span class="fc bfc" id="L79" title="All 2 branches covered.">      if (!requiredFamily.equals(alg.getFamilyName())) {</span>
-<span class="fc" id="L80">        String kty = jo.getString(&quot;kty&quot;);</span>
-<span class="fc" id="L81">        logger.warn(&quot;Algorithm ({}) does not match key type ({})&quot;, algString, kty);</span>
-<span class="fc" id="L82">        throw new IllegalArgumentException(&quot;Algorithm (&quot; + algString + &quot;) does not match key type (&quot; + kty + &quot;)&quot;);</span>
+<span class="fc" id="L82">    String algString = jo.getString(&quot;alg&quot;);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">    if (algString != null) {</span>
+<span class="fc" id="L84">      JsonWebAlgorithm alg = JsonWebAlgorithm.valueOf(algString);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">      if (!requiredFamily.equals(alg.getFamilyName())) {</span>
+<span class="fc" id="L86">        String kty = jo.getString(&quot;kty&quot;);</span>
+<span class="fc" id="L87">        logger.warn(&quot;Algorithm ({}) does not match key type ({})&quot;, algString, kty);</span>
+<span class="fc" id="L88">        throw new IllegalArgumentException(&quot;Algorithm (&quot; + algString + &quot;) does not match key type (&quot; + kty + &quot;)&quot;);</span>
       }
     }
-<span class="fc" id="L85">  }</span>
+<span class="fc" id="L91">  }</span>
   
   /**
    * Create a JWK from a JSON.

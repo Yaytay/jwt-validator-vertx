@@ -30,15 +30,16 @@ import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetStaticHandler;
 
 /**
- *
+ * Implementation of {@link JsonWebKeySetStaticHandler} that stores JWKs in a HashMap.
+ * 
  * @author jtalbut
  */
 public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
   
-<span class="fc" id="L38">  private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);</span>
+<span class="fc" id="L39">  private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);</span>
   
   private final List&lt;Pattern&gt; acceptableIssuers;
-<span class="fc" id="L41">  private final Map&lt;String, JWK&lt;?&gt;&gt; keys = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L42">  private final Map&lt;String, JWK&lt;?&gt;&gt; keys = new HashMap&lt;&gt;();</span>
 
   /**
    * Constructor.
@@ -47,67 +48,67 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
    * This JsonWebKeySet handler is entirely static, so the specification of acceptable issuers is not a vital security feature.
    * 
    */
-<span class="fc" id="L50">  public JWKSStaticSetHandlerImpl(Collection&lt;String&gt; acceptableIssuerRegexes) {</span>
-<span class="pc bpc" id="L51" title="1 of 4 branches missed.">    if (acceptableIssuerRegexes == null || acceptableIssuerRegexes.isEmpty()) {</span>
-<span class="fc" id="L52">      throw new IllegalArgumentException(&quot;Acceptable issuer regular expressions must be passed in&quot;);</span>
+<span class="fc" id="L51">  public JWKSStaticSetHandlerImpl(Collection&lt;String&gt; acceptableIssuerRegexes) {</span>
+<span class="pc bpc" id="L52" title="1 of 4 branches missed.">    if (acceptableIssuerRegexes == null || acceptableIssuerRegexes.isEmpty()) {</span>
+<span class="fc" id="L53">      throw new IllegalArgumentException(&quot;Acceptable issuer regular expressions must be passed in&quot;);</span>
     }
-<span class="fc" id="L54">    this.acceptableIssuers = acceptableIssuerRegexes.stream()</span>
-<span class="fc" id="L55">                    .map(re -&gt; {</span>
-<span class="pc bpc" id="L56" title="1 of 4 branches missed.">                      if (re == null || re.isBlank()) {</span>
-<span class="fc" id="L57">                        logger.warn(&quot;Null or empty pattern cannot be used: &quot;, re);</span>
-<span class="fc" id="L58">                        return null;</span>
+<span class="fc" id="L55">    this.acceptableIssuers = acceptableIssuerRegexes.stream()</span>
+<span class="fc" id="L56">                    .map(re -&gt; {</span>
+<span class="pc bpc" id="L57" title="1 of 4 branches missed.">                      if (re == null || re.isBlank()) {</span>
+<span class="fc" id="L58">                        logger.warn(&quot;Null or empty pattern cannot be used: &quot;, re);</span>
+<span class="fc" id="L59">                        return null;</span>
                       }
                       try {
-<span class="fc" id="L61">                        Pattern pattern = Pattern.compile(re);</span>
-<span class="fc" id="L62">                        logger.trace(&quot;Compiled acceptable issuer regex as {}&quot;, pattern.pattern());</span>
-<span class="fc" id="L63">                        return pattern;</span>
-<span class="fc" id="L64">                      } catch (Throwable ex) {</span>
-<span class="fc" id="L65">                        logger.warn(&quot;The pattern \&quot;{}\&quot; cannot be compiled: &quot;, re, ex);</span>
-<span class="fc" id="L66">                        return null;</span>
+<span class="fc" id="L62">                        Pattern pattern = Pattern.compile(re);</span>
+<span class="fc" id="L63">                        logger.trace(&quot;Compiled acceptable issuer regex as {}&quot;, pattern.pattern());</span>
+<span class="fc" id="L64">                        return pattern;</span>
+<span class="fc" id="L65">                      } catch (Throwable ex) {</span>
+<span class="fc" id="L66">                        logger.warn(&quot;The pattern \&quot;{}\&quot; cannot be compiled: &quot;, re, ex);</span>
+<span class="fc" id="L67">                        return null;</span>
                       }
                     })
-<span class="fc" id="L69">                    .filter(Objects::nonNull)</span>
-<span class="fc" id="L70">                    .collect(Collectors.toList());</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">    if (acceptableIssuers.isEmpty()) {</span>
-<span class="fc" id="L72">      throw new IllegalArgumentException(&quot;Acceptable issuer regular expressions must be passed in&quot;);</span>
+<span class="fc" id="L70">                    .filter(Objects::nonNull)</span>
+<span class="fc" id="L71">                    .collect(Collectors.toList());</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">    if (acceptableIssuers.isEmpty()) {</span>
+<span class="fc" id="L73">      throw new IllegalArgumentException(&quot;Acceptable issuer regular expressions must be passed in&quot;);</span>
     }
-<span class="fc" id="L74">  }</span>
+<span class="fc" id="L75">  }</span>
 
   @Override
   public JsonWebKeySetStaticHandler addKey(String issuer, JWK&lt;?&gt; key) {
-<span class="fc" id="L78">    keys.put(issuer + '^' + key.getKid(), key);</span>
-<span class="fc" id="L79">    return this;</span>
+<span class="fc" id="L79">    keys.put(issuer + '^' + key.getKid(), key);</span>
+<span class="fc" id="L80">    return this;</span>
   }
 
   @Override
   public JsonWebKeySetStaticHandler removeKey(String issuer, String kid) {
-<span class="fc" id="L84">    keys.remove(issuer + '^' + kid);</span>
-<span class="fc" id="L85">    return this;</span>
+<span class="fc" id="L85">    keys.remove(issuer + '^' + kid);</span>
+<span class="fc" id="L86">    return this;</span>
   }
 
   @Override
   public void validateIssuer(String issuer) throws IllegalArgumentException {
-<span class="fc bfc" id="L90" title="All 2 branches covered.">    for (Pattern acceptableIssuer : acceptableIssuers) {</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">      if (acceptableIssuer.matcher(issuer).matches()) {</span>
-<span class="nc" id="L92">        return;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">    for (Pattern acceptableIssuer : acceptableIssuers) {</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">      if (acceptableIssuer.matcher(issuer).matches()) {</span>
+<span class="nc" id="L93">        return;</span>
       }
-<span class="fc" id="L94">    }</span>
-<span class="fc" id="L95">    logger.warn(&quot;Failed to find issuer \&quot;{}\&quot; in {}&quot;, issuer, acceptableIssuers);</span>
-<span class="fc" id="L96">    throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
+<span class="fc" id="L95">    }</span>
+<span class="fc" id="L96">    logger.warn(&quot;Failed to find issuer \&quot;{}\&quot; in {}&quot;, issuer, acceptableIssuers);</span>
+<span class="fc" id="L97">    throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
   }
 
   @Override
   public Future&lt;JWK&lt;?&gt;&gt; findJwk(String issuer, String kid) {
-<span class="fc" id="L101">    JWK&lt;?&gt; jwk = keys.get(issuer + '^' + kid);</span>
-<span class="fc bfc" id="L102" title="All 2 branches covered.">    if (null == jwk) {</span>
-<span class="fc" id="L103">      logger.error(&quot;Failed to find key {} from store from {}&quot;, kid, keys.keySet());</span>
-<span class="fc" id="L104">      return Future.failedFuture(</span>
+<span class="fc" id="L102">    JWK&lt;?&gt; jwk = keys.get(issuer + '^' + kid);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">    if (null == jwk) {</span>
+<span class="fc" id="L104">      logger.error(&quot;Failed to find key {} from store from {}&quot;, kid, keys.keySet());</span>
+<span class="fc" id="L105">      return Future.failedFuture(</span>
               new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;,
                        new IllegalArgumentException(&quot;Failed to find key &quot; + kid)
               )
       );
     } else {
-<span class="fc" id="L110">      return Future.succeededFuture(jwk);</span>
+<span class="fc" id="L111">      return Future.succeededFuture(jwk);</span>
     }
   }
 

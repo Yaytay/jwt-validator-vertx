@@ -36,7 +36,8 @@ import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 
 /**
- *
+ * JWKBuilder that parses and serializes elliptic curve (EC) public keys.
+ * 
  * @author jtalbut
  */
 public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
@@ -52,6 +53,15 @@ public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
     
   }
 
+  /**
+   * Constructor.
+   * 
+   * Typically it is not necessary to construct an explicit instance of this class, the ones in the {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} class should suffice.
+   * 
+   */
+  public ECJwkBuilder() {
+  }
+  
   @Override
   public boolean canCreateFromKty(String kty) {
     return KTY.equals(kty);

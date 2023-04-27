@@ -49,8 +49,8 @@
     <vertx.version>[4.2,)</vertx.version>
     <slf4j.version>[1.7,)</slf4j.version>
     <logback.version>[1.2,)</logback.version>
-    <junit-jupiter.version>5.9.2</junit-jupiter.version>
-    <junit-platform.version>1.9.2</junit-platform.version>
+    <junit-jupiter.version>5.9.3</junit-jupiter.version>
+    <junit-platform.version>1.9.3</junit-platform.version>
     <nimbus.version>[9.22,)</nimbus.version>
   </properties>
   
@@ -176,7 +176,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.1.1</version>
+      <version>5.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -207,7 +207,7 @@
     <dependency>
       <groupId>com.google.crypto.tink</groupId>
       <artifactId>tink</artifactId>
-      <version>1.8.0</version>
+      <version>1.9.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -226,7 +226,7 @@
       <plugins>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.10.1</version>
+          <version>3.11.0</version>
           <configuration>
             <source>${jdk.version}</source>
             <target>${jdk.version}</target>
@@ -244,7 +244,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
-        <version>2.14.2</version>
+        <version>2.15.0</version>
         <executions>
           <execution>
             <id>display-plugin-updates</id>
@@ -266,7 +266,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.2.1</version>
+        <version>3.3.0</version>
         <executions>
           <execution>
             <id>enforce-versions</id>
@@ -337,9 +337,9 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.7.3.0</version>        
+        <version>4.7.3.4</version>        
         <configuration>
-          <fork>false</fork>
+          <fork>true</fork>
           <effort>Max</effort>
           <xmlOutput>true</xmlOutput>
           <excludeFilterFile>${basedir}/findbugsFilterFile.xml</excludeFilterFile>
@@ -387,7 +387,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>10.7.0</version>
+            <version>10.10.0</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -445,7 +445,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.8</version>
+        <version>0.8.9</version>
         <configuration>
           <destFile>${basedir}/target/coverage-reports/jacoco-unit.exec</destFile>
           <dataFile>${basedir}/target/coverage-reports/jacoco-unit.exec</dataFile>

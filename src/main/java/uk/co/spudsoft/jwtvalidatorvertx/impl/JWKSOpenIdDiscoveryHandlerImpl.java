@@ -23,19 +23,13 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.DiscoveryData;
+import uk.co.spudsoft.jwtvalidatorvertx.IssuerAcceptabilityHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetOpenIdDiscoveryHandler;
 
@@ -59,44 +53,23 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
    */
   private final Map<String, AsyncLoadingCache<String, JWK<?>>> kidCache;
 
-  private final List<Pattern> acceptableIssuers;
+  private final IssuerAcceptabilityHandler issuerAcceptabilityHandler;
   
   private final WebClient webClient;
   
   /**
    * Constructor.
    * @param webClient Vertx WebClient, for the discovery handler to make asynchronous web requests.
-   * @param acceptableIssuerRegexes Collection of regular expressions that any issues will be checked against.
+   * @param issuerAcceptabilityHandler Object used to determine the acceptability of JWT issuers.
    * @param defaultJwkCacheDurationS Time (in seconds) to keep JWKs in cache if no cache-control: max-age header is found.
    * 
    * It is vital for the security of any system using OpenID Connect Discovery that it is only used with trusted issuers.
    */
-  public JWKSOpenIdDiscoveryHandlerImpl(WebClient webClient, Collection<String> acceptableIssuerRegexes, long defaultJwkCacheDurationS) {
+  public JWKSOpenIdDiscoveryHandlerImpl(WebClient webClient, IssuerAcceptabilityHandler issuerAcceptabilityHandler, long defaultJwkCacheDurationS) {
     this.webClient = webClient;
-    if (acceptableIssuerRegexes == null || acceptableIssuerRegexes.isEmpty()) {
-      throw new IllegalArgumentException("Acceptable issuer regular expressions must be passed in");
-    }
     this.defaultJwkCacheDurationS = defaultJwkCacheDurationS;
-    this.acceptableIssuers = acceptableIssuerRegexes.stream()
-                    .map(re -> {
-                      if (re == null || re.isBlank()) {
-                        logger.warn("Null or empty pattern cannot be used: ", re);
-                        return null;
-                      }
-                      try {
-                        Pattern pattern = Pattern.compile(re);
-                        logger.trace("Compiled acceptable issuer regex as {}", pattern.pattern());
-                        return pattern;
-                      } catch (Throwable ex) {
-                        logger.warn("The pattern \"{}\" cannot be compiled: ", re, ex);
-                        return null;
-                      }
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-    if (acceptableIssuers.isEmpty()) {
-      throw new IllegalArgumentException("Acceptable issuer regular expressions must be passed in");
-    }
+    this.issuerAcceptabilityHandler = issuerAcceptabilityHandler;
+    issuerAcceptabilityHandler.validate();    
     this.discoveryDataCache = new AsyncLoadingCache<>(dd -> dd.getExpiry());  
     this.kidCache = new HashMap<>();
   }
@@ -106,12 +79,10 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
     if (discoveryDataCache.containsKey(issuer)) {
       return ;
     }
-    for (Pattern acceptableIssuer : acceptableIssuers) {
-      if (acceptableIssuer.matcher(issuer).matches()) {
-        return;
-      }
+    if (issuerAcceptabilityHandler.isAcceptable(issuer)) {
+      return;
     }
-    logger.warn("Failed to find issuer \"{}\" in {}", issuer, acceptableIssuers);
+    logger.warn("Issuer ({}) not considered acceptable by {}", issuer, issuerAcceptabilityHandler);
     throw new IllegalArgumentException("Parse of signed JWT failed");
   }
   
@@ -265,24 +236,23 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
   
   private Future<TimedJsonObject> get(String url) {
 
+    long requestTime = System.currentTimeMillis();
     try {
-      new URL(url);
-    } catch (MalformedURLException ex) {
+      return webClient.getAbs(url)
+              .send()
+              .map(response -> {
+                if (succeeded(response.statusCode())) {
+                  String body = response.bodyAsString();
+                  return new TimedJsonObject(calculateExpiry(requestTime, response), new JsonObject(body));
+                } else {
+                  logger.debug("Request to {} returned {}: {}", url, response.statusCode(), response.bodyAsString());
+                  throw new IllegalStateException("Request to " + url + " returned " + response.statusCode());
+                }
+              });
+    } catch (Exception ex) {
       logger.error("The JWKS URI ({}) is not a valid URL: ", url, ex);
-      return Future.failedFuture("Parse of signed JWT failed");
+      return Future.failedFuture(new IllegalArgumentException("Parse of signed JWT failed", ex));
     }
 
-    long requestTime = System.currentTimeMillis();
-    return webClient.getAbs(url)
-            .send()
-            .map(response -> {
-              if (succeeded(response.statusCode())) {
-                String body = response.bodyAsString();
-                return new TimedJsonObject(calculateExpiry(requestTime, response), new JsonObject(body));
-              } else {
-                logger.debug("Request to {} returned {}: {}", url, response.statusCode(), response.bodyAsString());
-                throw new IllegalStateException("Request to " + url + " returned " + response.statusCode());
-              }
-            });
   }
 }

@@ -98,7 +98,8 @@ public class JdkTokenValidatorTest {
   private final JwtValidatorVertx defaultValidator;
 
   public JdkTokenValidatorTest(Vertx vertx) {
-    defaultValidator = JwtValidatorVertx.create(vertx, Arrays.asList("http://localhost.*"), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    defaultValidator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
   }
 
   @Test
@@ -319,7 +320,8 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(13)
   public void testNoExpPermitted(VertxTestContext testContext) throws Exception {
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList("http://localhost.*"), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
     validator.setRequireExp(false);
 
     JdkTokenBuilder builder = new JdkTokenBuilder();
@@ -336,7 +338,8 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(14)
   public void testNoExpRejected(VertxTestContext testContext) throws Exception {
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList("http://localhost.*"), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
     validator.setRequireExp(true);
 
     JdkTokenBuilder builder = new JdkTokenBuilder();
@@ -353,7 +356,8 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(12)
   public void testExpInThePast() throws Throwable {
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList("http://localhost.*"), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
     validator.setTimeLeewaySeconds(6);
 
     JdkTokenBuilder builder = new JdkTokenBuilder();
@@ -380,7 +384,8 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(13)
   public void testNoNbfPermitted(VertxTestContext testContext) throws Throwable {
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList("http://localhost.*"), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
     validator.setRequireNbf(false);
 
     JdkTokenBuilder builder = new JdkTokenBuilder();
@@ -397,7 +402,8 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(14)
   public void testNoNbfRejected(VertxTestContext testContext) throws Throwable {
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList("http://localhost.*"), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
     validator.setRequireNbf(true);
 
     JdkTokenBuilder builder = new JdkTokenBuilder();
@@ -413,7 +419,8 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(13)
   public void testNbfInTheFuture() throws Throwable {
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList("http://localhost.*"), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
     validator.setTimeLeewaySeconds(6);
 
     JdkTokenBuilder builder = new JdkTokenBuilder();
@@ -440,7 +447,8 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(14)
   public void testBadIssAccepted(VertxTestContext testContext) throws Throwable {
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList(jwks.getBaseUrl().replace("bob", "carol")), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(jwks.getBaseUrl().replace("bob", "carol")), null, Duration.ofMillis(1000));
+    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
 
     JdkTokenBuilder builder = new JdkTokenBuilder();
     jwks.setTokenBuilder(builder);
@@ -575,20 +583,4 @@ public class JdkTokenValidatorTest {
             .onComplete(testContext.failingThenComplete());
   }
 
-  @Test
-  @Order(20)
-  public void testNoAcceptableIssuers() throws Throwable {
-
-    try {
-      JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, null, Duration.of(1, ChronoUnit.MINUTES));
-      fail("Expected exception");
-    } catch(IllegalArgumentException ex) {
-    }
-
-    try {
-      JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList(), Duration.of(1, ChronoUnit.MINUTES));
-      fail("Expected exception");
-    } catch(IllegalArgumentException ex) {
-    }
-  }
 }

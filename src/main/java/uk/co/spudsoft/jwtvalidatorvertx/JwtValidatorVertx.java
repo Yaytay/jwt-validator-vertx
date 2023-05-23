@@ -20,7 +20,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.JwtValidatorVertxImpl;
@@ -35,12 +34,12 @@ public interface JwtValidatorVertx {
    * Create a JwtValidatorVertx.
    * 
    * @param vertx The Vertx instance that will be used for asynchronous communication with JWKS endpoints.
-   * @param acceptableIssuerRegexes List of acceptable issuers.
+   * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
    * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
    * @return A newly created JwtValidatorVertx.
    */
-  static JwtValidatorVertx create(Vertx vertx, Collection<String> acceptableIssuerRegexes, Duration defaultJwkCacheDuration) {
-    JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(WebClient.create(vertx), acceptableIssuerRegexes, defaultJwkCacheDuration);
+  static JwtValidatorVertx create(Vertx vertx, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
+    JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(WebClient.create(vertx), issuerAcceptabilityHandler, defaultJwkCacheDuration);
     return create(openIdDiscoveryHandler);
   }
 

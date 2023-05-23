@@ -19,7 +19,6 @@ package uk.co.spudsoft.jwtvalidatorvertx;
 import io.vertx.core.Future;
 import io.vertx.ext.web.client.WebClient;
 import java.time.Duration;
-import java.util.Collection;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.JWKSOpenIdDiscoveryHandlerImpl;
 
 /**
@@ -34,18 +33,17 @@ public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandle
   /**
    * Construct an instance of the implementation class.
    * @param webClient Vertx WebClient instance, so that the discovery handler can make asynchronous web requests.
-   * @param acceptableIssuerRegexes Collection of regular expressions that any issues will be checked against.
+   * @param issuerAcceptabilityHandler Object used to determine the acceptability of the JWT issuer.
    * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
    * 
    * It is vital for the security of any system using OpenID Connect Discovery that it is only used with trusted issuers
    * (otherwise any key that has an RFC compliant discovery endpoint will be accepted).
-   * Equally the acceptable issuers must be accessed via https for the environment to offer any security, so it is strongly recommended that
-   * all regexes start 'https://' (this is not enforced in the code to make test setups easier).
+   * Equally the acceptable issuers must be accessed via https for the environment to offer any security.
    * 
    * @return a newly created instance of the implementation class.
    */
-  static JsonWebKeySetOpenIdDiscoveryHandler create(WebClient webClient, Collection<String> acceptableIssuerRegexes, Duration defaultJwkCacheDuration) {
-    return new JWKSOpenIdDiscoveryHandlerImpl(webClient, acceptableIssuerRegexes, defaultJwkCacheDuration.toSeconds());
+  static JsonWebKeySetOpenIdDiscoveryHandler create(WebClient webClient, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
+    return new JWKSOpenIdDiscoveryHandlerImpl(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration.toSeconds());
   }
   
   /**

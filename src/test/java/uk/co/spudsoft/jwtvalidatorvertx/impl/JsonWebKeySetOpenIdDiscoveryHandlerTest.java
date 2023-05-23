@@ -24,6 +24,8 @@ import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
+import java.time.Duration;
 import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import uk.co.spudsoft.jwtvalidatorvertx.DiscoveryData;
+import uk.co.spudsoft.jwtvalidatorvertx.IssuerAcceptabilityHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 
 
@@ -47,24 +50,38 @@ public class JsonWebKeySetOpenIdDiscoveryHandlerTest {
   @Test
   public void testIssuerRegexes(Vertx vertx) {
     WebClient webClient = WebClient.create(vertx);
-    assertThrows(IllegalArgumentException.class, () -> new JWKSOpenIdDiscoveryHandlerImpl(webClient, Arrays.asList(), 60));
-    assertThrows(IllegalArgumentException.class, () -> new JWKSOpenIdDiscoveryHandlerImpl(webClient, Arrays.asList(""), 60));
-    assertThrows(IllegalArgumentException.class, () -> new JWKSOpenIdDiscoveryHandlerImpl(webClient, Arrays.asList("[a-"), 60));
+    IssuerAcceptabilityHandler iah1 = IssuerAcceptabilityHandler.create(Arrays.asList(), null, Duration.ofMillis(1000));
+    assertThrows(IllegalArgumentException.class, () -> new JWKSOpenIdDiscoveryHandlerImpl(webClient, iah1, 60));
+    IssuerAcceptabilityHandler iah2 = IssuerAcceptabilityHandler.create(Arrays.asList(""), null, Duration.ofMillis(1000));
+    assertThrows(IllegalArgumentException.class, () -> new JWKSOpenIdDiscoveryHandlerImpl(webClient, iah2, 60));
+    IssuerAcceptabilityHandler iah3 = IssuerAcceptabilityHandler.create(Arrays.asList("[a-"), null, Duration.ofMillis(1000));
+    assertThrows(IllegalArgumentException.class, () -> new JWKSOpenIdDiscoveryHandlerImpl(webClient, iah3, 60));
   }
   
   @Test
   public void testValidateIssuer(Vertx vertx) {
     WebClient webClient = WebClient.create(vertx);
-    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, Arrays.asList("bob"), 60);
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("bob"), null, Duration.ofMillis(1000));
+    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, iah, 60);
     assertThrows(IllegalArgumentException.class, () -> impl.validateIssuer("fred"));
   }
 
   @Test
-  public void testPerformOpenIdDiscoveryWithBadUrl(Vertx vertx) {
+  public void testPerformOpenIdDiscoveryWithBadUrl(Vertx vertx, VertxTestContext testContext) {
     WebClient webClient = WebClient.create(vertx);
-    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, Arrays.asList(".*"), 60);
-    assertTrue(impl.performOpenIdDiscovery("fred").failed());    
-    assertEquals("Parse of signed JWT failed", impl.performOpenIdDiscovery("fred").cause().getMessage());    
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(".*"), null, Duration.ofMillis(1000));
+    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, iah, 60);
+    assertTrue(impl.performOpenIdDiscovery("fred").failed());
+    impl.performOpenIdDiscovery("fred")
+            .onSuccess(dd -> {
+              testContext.failNow("Should have failed.");
+            })
+            .onFailure(ex -> {
+              testContext.verify(() -> {
+                assertEquals("Parse of signed JWT failed", ex.getMessage());    
+              });
+              testContext.completeNow();
+            });
   }
 
   @Test
@@ -78,7 +95,8 @@ public class JsonWebKeySetOpenIdDiscoveryHandlerTest {
     when(request.send()).thenReturn(Future.succeededFuture(response));
     when(response.statusCode()).thenReturn(567);
     
-    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, Arrays.asList(".*"), 60);
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(".*"), null, Duration.ofMillis(1000));
+    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, iah, 60);
     assertEquals("Request to http://fred/.well-known/openid-configuration returned 567", impl.performOpenIdDiscovery("http://fred/").cause().getMessage());    
   }
 
@@ -95,7 +113,8 @@ public class JsonWebKeySetOpenIdDiscoveryHandlerTest {
     when(response.bodyAsString()).thenReturn("{\"jwks_uri\":\"http://henry/jwks\"}");
     when(response.headers()).thenReturn(MultiMap.caseInsensitiveMultiMap().add("cache-control", "bob=3,    max-age=1000, fred=1,max-age=900,max-age=-14, max-age=seven  "));
     
-    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, Arrays.asList(".*"), 60);
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(".*"), null, Duration.ofMillis(1000));
+    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, iah, 60);
     assertEquals("http://henry/jwks", impl.performOpenIdDiscovery("http://carol").result().getJwksUri());
   }
 
@@ -112,7 +131,8 @@ public class JsonWebKeySetOpenIdDiscoveryHandlerTest {
     when(response.bodyAsString()).thenReturn("{\"jwks_uri\":\"http://henry/jwks\"}");
     when(response.headers()).thenReturn(MultiMap.caseInsensitiveMultiMap().add("cache-control", "bob=3,    max-age=1000, fred=1,max-age=900,max-age=-14, max-age=seven  "));
     
-    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, Arrays.asList(".*"), 60);
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(".*"), null, Duration.ofMillis(1000));
+    JWKSOpenIdDiscoveryHandlerImpl impl = new JWKSOpenIdDiscoveryHandlerImpl(webClient, iah, 60);
     DiscoveryData dd1 = impl.performOpenIdDiscovery("http://carol").result();
     assertNotNull(dd1);
     assertEquals("http://henry/jwks", dd1.getJwksUri());

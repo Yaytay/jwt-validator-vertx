@@ -162,7 +162,7 @@ public class NimbusAllAlgorithmsTest {
             // The Vertx instance that will be used for make web requests
             vertx, 
             // Array of acceptable issuers (as regular expressions).
-            Arrays.asList("http://localhost.*"), 
+            IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000)),
             // Time to cache JWK keys for if they do have a cache-control(max-age) header
             Duration.of(1, ChronoUnit.MINUTES)
     );

@@ -66,7 +66,8 @@ public class TokenIntrospectionTest {
     JdkTokenBuilder builder = new JdkTokenBuilder();
     jwks.setTokenBuilder(builder);
 
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, Arrays.asList("http://localhost.*"), Duration.of(1, ChronoUnit.MINUTES));
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.of(1, ChronoUnit.MINUTES));
     
     ArrayNode aud = objectMapper.createArrayNode();
     aud.add("bob");

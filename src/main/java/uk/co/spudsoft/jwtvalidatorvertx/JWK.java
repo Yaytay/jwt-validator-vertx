@@ -46,7 +46,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.impl.RSAJwkBuilder;
  */
 public abstract class JWK<T extends PublicKey> {
   
-  private static final List<JwkBuilder> BUILDERS = Arrays.asList(
+  private static final List<JwkBuilder<?>> BUILDERS = Arrays.asList(
     new RSAJwkBuilder()
     , new ECJwkBuilder()
     , new EdECJwkBuilder()
@@ -104,7 +104,7 @@ public abstract class JWK<T extends PublicKey> {
     if (Strings.isNullOrEmpty(kty)) {
       throw new IllegalArgumentException("Key type (kty) not specified in JWK");
     } else {
-      for (JwkBuilder builder : BUILDERS) {
+      for (JwkBuilder<?> builder : BUILDERS) {
         if (builder.canCreateFromKty(kty)) {
           return builder.create(expiryMs, jo);
         }
@@ -127,7 +127,7 @@ public abstract class JWK<T extends PublicKey> {
    * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
    */
   public static JWK<?> create(long expiryMs, String kid, PublicKey key) throws InvalidParameterSpecException, NoSuchAlgorithmException {
-    for (JwkBuilder builder : BUILDERS) {
+    for (JwkBuilder<?> builder : BUILDERS) {
       if (builder.canCreateFromKey(key)) {
         return builder.create(expiryMs, kid, key);
       }

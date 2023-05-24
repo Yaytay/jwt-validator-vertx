@@ -63,6 +63,8 @@ public abstract class AbstractTokenValidationTester {
 
   protected class TestFailure extends Exception {
 
+    private static final long serialVersionUID = 1L;
+    
     public TestFailure(String message) {
       super(message);
     }

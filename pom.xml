@@ -84,6 +84,12 @@
       </exclusions>
     </dependency>
     <dependency>
+      <!-- This is only here to silence compiler warnings -->
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-codegen</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
@@ -220,7 +226,6 @@
       <version>${nimbus.version}</version>
       <scope>test</scope>
     </dependency>    
-    
     <!-- End of nimbus dependencies -->
   </dependencies>
     
@@ -373,7 +378,6 @@
         <version>3.3.0</version>
         <configuration>
           <configLocation>${basedir}/checkstyle.xml</configLocation>
-          <encoding>UTF-8</encoding>
           <consoleOutput>true</consoleOutput>
           <failsOnError>true</failsOnError>
           <linkXRef>false</linkXRef>

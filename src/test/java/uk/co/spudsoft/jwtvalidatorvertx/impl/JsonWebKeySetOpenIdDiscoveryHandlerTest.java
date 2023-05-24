@@ -148,8 +148,8 @@ public class JsonWebKeySetOpenIdDiscoveryHandlerTest {
     when(response2.bodyAsString()).thenReturn("{\"keys\":[{\"kty\":\"EC\",\"use\":\"sig\",\"crv\":\"P-256\",\"kid\":\"4cefa0d5-faa5-4a32-896e-aa3ff7effa7a\",\"x\":\"gYaeDr1C3-qbtzWrm8KKgAd6wLWLUlqti6fuqT2TXOM\",\"y\":\"zBhaNgmNDcjOU3XgaayWjpB2fURjiiw5SFK9UKjo3v8\"}]}");
     when(response2.headers()).thenReturn(MultiMap.caseInsensitiveMultiMap().add("cache-control", "bob=3,    max-age=100000, fred=1,max-age=900,max-age=-14, max-age=seven  "));
     
-    JWK jwk1 = impl.findJwk(dd1, "4cefa0d5-faa5-4a32-896e-aa3ff7effa7a").result();
-    JWK jwk2 = impl.findJwk(dd1, "4cefa0d5-faa5-4a32-896e-aa3ff7effa7a").result();
+    JWK<?> jwk1 = impl.findJwk(dd1, "4cefa0d5-faa5-4a32-896e-aa3ff7effa7a").result();
+    JWK<?> jwk2 = impl.findJwk(dd1, "4cefa0d5-faa5-4a32-896e-aa3ff7effa7a").result();
   }
   
 }

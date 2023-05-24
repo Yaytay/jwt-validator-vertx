@@ -46,7 +46,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.impl.RSAJwkBuilder;
  */
 public abstract class JWK&lt;T extends PublicKey&gt; {
   
-<span class="fc" id="L49">  private static final List&lt;JwkBuilder&gt; BUILDERS = Arrays.asList(</span>
+<span class="fc" id="L49">  private static final List&lt;JwkBuilder&lt;?&gt;&gt; BUILDERS = Arrays.asList(</span>
     new RSAJwkBuilder()
     , new ECJwkBuilder()
     , new EdECJwkBuilder()
@@ -104,7 +104,7 @@ public abstract class JWK&lt;T extends PublicKey&gt; {
 <span class="fc bfc" id="L104" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(kty)) {</span>
 <span class="fc" id="L105">      throw new IllegalArgumentException(&quot;Key type (kty) not specified in JWK&quot;);</span>
     } else {
-<span class="fc bfc" id="L107" title="All 2 branches covered.">      for (JwkBuilder builder : BUILDERS) {</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">      for (JwkBuilder&lt;?&gt; builder : BUILDERS) {</span>
 <span class="fc bfc" id="L108" title="All 2 branches covered.">        if (builder.canCreateFromKty(kty)) {</span>
 <span class="fc" id="L109">          return builder.create(expiryMs, jo);</span>
         }
@@ -127,7 +127,7 @@ public abstract class JWK&lt;T extends PublicKey&gt; {
    * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
    */
   public static JWK&lt;?&gt; create(long expiryMs, String kid, PublicKey key) throws InvalidParameterSpecException, NoSuchAlgorithmException {
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">    for (JwkBuilder builder : BUILDERS) {</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">    for (JwkBuilder&lt;?&gt; builder : BUILDERS) {</span>
 <span class="fc bfc" id="L131" title="All 2 branches covered.">      if (builder.canCreateFromKey(key)) {</span>
 <span class="fc" id="L132">        return builder.create(expiryMs, kid, key);</span>
       }

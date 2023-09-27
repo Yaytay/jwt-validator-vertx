@@ -107,7 +107,7 @@ public class AsyncLoadingCache&lt;K, V&gt; {
 <span class="fc" id="L107">    synchronized (lock) {</span>
 <span class="fc" id="L108">      data = backing.getIfPresent(key);</span>
 <span class="pc bpc" id="L109" title="1 of 4 branches missed.">      if (data != null &amp;&amp; (data.expiry &gt; System.currentTimeMillis())) {</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (data.completed) {</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (data.completed) {</span>
 <span class="fc bfc" id="L111" title="All 2 branches covered.">          if (data.succeeded) {</span>
 <span class="fc" id="L112">            return Future.succeededFuture(data.result);</span>
           } else {
@@ -116,8 +116,8 @@ public class AsyncLoadingCache&lt;K, V&gt; {
 <span class="fc" id="L116">            data.completed = false;</span>
           }
         } else {
-<span class="fc" id="L119">          promise = createAndAddInitialPromise(data.initialPromises);</span>
-<span class="fc" id="L120">          return promise.future();</span>
+<span class="nc" id="L119">          promise = createAndAddInitialPromise(data.initialPromises);</span>
+<span class="nc" id="L120">          return promise.future();</span>
         }
       } else {
 <span class="fc" id="L123">        data = new Data();</span>

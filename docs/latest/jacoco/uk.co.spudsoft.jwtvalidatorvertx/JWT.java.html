@@ -418,6 +418,14 @@ public class JWT {
   public JWK&lt;?&gt; getJwk() {
 <span class="fc" id="L419">    return jwk;</span>
   }
+
+  /**
+   * Get the payload as a JSON string.
+   * @return the payload as a JSON string.
+   */
+  public String getPayloadAsString() {
+<span class="fc" id="L427">    return payload.encode();</span>
+  }
   
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

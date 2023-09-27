@@ -418,5 +418,13 @@ public class JWT {
   public JWK<?> getJwk() {
     return jwk;
   }
+
+  /**
+   * Get the payload as a JSON string.
+   * @return the payload as a JSON string.
+   */
+  public String getPayloadAsString() {
+    return payload.encode();
+  }
   
 }

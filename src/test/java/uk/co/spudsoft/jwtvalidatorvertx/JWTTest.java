@@ -407,5 +407,10 @@ public class JWTTest {
     assertEquals("d480cda8-8461-44cb-80cc-9ae13f8dafa8", jwt.getJwk(new TestJwksHandler()).result().getKid());
     assertEquals("d480cda8-8461-44cb-80cc-9ae13f8dafa8", jwt.getJwk().getKid());
   }
-  
+
+  @Test
+  public void testGetPayloadAsString() {
+    JWT jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
+    assertEquals("{\"scope\":\"one αβγδεζηθικλμνξοπρςστυφχψω two\"}", jwt.getPayloadAsString());
+  }  
 }

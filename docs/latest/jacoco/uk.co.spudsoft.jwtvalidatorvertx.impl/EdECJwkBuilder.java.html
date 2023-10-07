@@ -109,7 +109,7 @@ public class EdECJwkBuilder extends JwkBuilder&lt;EdECPublicKey&gt; {
 <span class="fc" id="L109">    byte[] arr = y.toByteArray();</span>
 <span class="fc" id="L110">    Bytes.reverse(arr, 0, arr.length);</span>
 <span class="pc bpc" id="L111" title="1 of 2 branches missed.">    if (key.getPoint().isXOdd()) {</span>
-<span class="nc" id="L112">      arr[arr.length - 1] |= 0x8;</span>
+<span class="fc" id="L112">      arr[arr.length - 1] |= 0x8;</span>
     }
 <span class="fc" id="L114">    json.put(&quot;x&quot;, B64ENCODER.encodeToString(arr));</span>
 <span class="fc" id="L115">    return new EdECJwk(expiryMs, json, key);</span>

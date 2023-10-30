@@ -38,7 +38,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.IssuerAcceptabilityHandler;
  * Provides two approaches, which can be used in isolation or together:
  * <ol>
  * <li> A list of acceptable issuers can be provided in a file.
- * The file references can be changed whilst the system is up, but the path to the file is fixed.
+ * The file can be changed whilst the system is up, but the path to the file is fixed.
  * It is recommended that the file be updated atomically (e.g. by changing a soft link).
  * <li> A list of regular expressions can be provided.
  * Each regular expression will be checked, one at a time.

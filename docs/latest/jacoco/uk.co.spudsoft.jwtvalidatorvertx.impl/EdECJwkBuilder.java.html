@@ -69,7 +69,7 @@ public class EdECJwkBuilder extends JwkBuilder&lt;EdECPublicKey&gt; {
   
   private static EdECPoint byteArrayToEdPoint(byte[] arr) {
 <span class="fc" id="L71">    byte msb = arr[arr.length - 1];</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">    boolean xOdd = (msb &amp; 0x80) != 0;</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">    boolean xOdd = (msb &amp; 0x80) != 0;</span>
 <span class="fc" id="L73">    arr[arr.length - 1] &amp;= (byte) 0x7F;</span>
 <span class="fc" id="L74">    Bytes.reverse(arr, 0, arr.length);</span>
 <span class="fc" id="L75">    BigInteger y = new BigInteger(1, arr);</span>
@@ -109,7 +109,7 @@ public class EdECJwkBuilder extends JwkBuilder&lt;EdECPublicKey&gt; {
 <span class="fc" id="L109">    byte[] arr = y.toByteArray();</span>
 <span class="fc" id="L110">    Bytes.reverse(arr, 0, arr.length);</span>
 <span class="pc bpc" id="L111" title="1 of 2 branches missed.">    if (key.getPoint().isXOdd()) {</span>
-<span class="fc" id="L112">      arr[arr.length - 1] |= 0x8;</span>
+<span class="nc" id="L112">      arr[arr.length - 1] |= 0x8;</span>
     }
 <span class="fc" id="L114">    json.put(&quot;x&quot;, B64ENCODER.encodeToString(arr));</span>
 <span class="fc" id="L115">    return new EdECJwk(expiryMs, json, key);</span>
@@ -117,4 +117,4 @@ public class EdECJwkBuilder extends JwkBuilder&lt;EdECPublicKey&gt; {
   
   
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

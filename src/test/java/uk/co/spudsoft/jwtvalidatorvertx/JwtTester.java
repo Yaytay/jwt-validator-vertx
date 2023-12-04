@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author jtalbut
  */
-public class JwtTest {
+public class JwtTester {
   
-  private static final Logger logger = LoggerFactory.getLogger(JwtTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(JwtTester.class);
   
   private static final Base64.Encoder BASE64 = Base64.getUrlEncoder().withoutPadding();  
   

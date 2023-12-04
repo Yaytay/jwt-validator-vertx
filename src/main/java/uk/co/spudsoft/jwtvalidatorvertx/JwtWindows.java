@@ -35,7 +35,7 @@ import java.util.List;
  * 
  * @author jtalbut
  */
-public class Jwt {
+public class JwtWindows {
   
   private static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();
   private static final int SPACE = " ".codePointAt(0);
@@ -52,7 +52,7 @@ public class Jwt {
    * @param signatureBase The value used to calculate the signature - base64(header) + "." + base64(payload).
    * @param signature The signature from the JWT.
    */
-  public Jwt(JsonObject header, JsonObject payload, String signatureBase, String signature) {
+  public JwtWindows(JsonObject header, JsonObject payload, String signatureBase, String signature) {
     this.header = header == null ? new JsonObject() : header;
     this.payload = payload == null ? new JsonObject() : payload;
     this.signatureBase = signatureBase;
@@ -64,7 +64,7 @@ public class Jwt {
    * @param token The JWT in delimited string form.
    * @return A newly created JWT object.
    */
-  public static Jwt parseJws(final String token) {
+  public static JwtWindows parseJws(final String token) {
     String[] segments = token.split("\\.");
     if (segments.length < 2 || segments.length > 3) {
       throw new IllegalArgumentException("Not enough or too many segments [" + segments.length + "]");
@@ -79,7 +79,7 @@ public class Jwt {
     JsonObject header = new JsonObject(new String(B64DECODER.decode(headerSeg), StandardCharsets.UTF_8));
     JsonObject payload = new JsonObject(new String(B64DECODER.decode(payloadSeg), StandardCharsets.UTF_8));
 
-    return new Jwt(header, payload, headerSeg + "." + payloadSeg, signatureSeg);
+    return new JwtWindows(header, payload, headerSeg + "." + payloadSeg, signatureSeg);
   }
   
   /**

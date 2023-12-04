@@ -20,7 +20,7 @@ import java.util.HashSet;
 import static java.util.Objects.requireNonNull;
 import java.util.Set;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler;
-import uk.co.spudsoft.jwtvalidatorvertx.Jwt;
+import uk.co.spudsoft.jwtvalidatorvertx.JwtWindows;
 import uk.co.spudsoft.jwtvalidatorvertx.JwtValidator;
 
 /**
@@ -148,16 +148,16 @@ public class JwtValidatorVertxImpl implements JwtValidator {
    * @return The token's parts.
    */
   @Override
-  public Future<Jwt> validateToken(
+  public Future<JwtWindows> validateToken(
           String issuer
           , String token
           , List<String> requiredAudList
           , boolean ignoreRequiredAud
   ) {
     
-    Jwt jwt;
+    JwtWindows jwt;
     try {
-      jwt = Jwt.parseJws(token);
+      jwt = JwtWindows.parseJws(token);
     } catch (Throwable ex) {
       logger.error("Parse of JWT failed: ", ex);
       return Future.failedFuture(new IllegalArgumentException("Parse of signed JWT failed", ex));
@@ -196,7 +196,7 @@ public class JwtValidatorVertxImpl implements JwtValidator {
     }
   }
 
-  private void validateIssuer(Jwt jwt, String externalIssuer) {
+  private void validateIssuer(JwtWindows jwt, String externalIssuer) {
     String tokenIssuer = jwt.getIssuer();
 
     // empty issuer is never allowed
@@ -213,7 +213,7 @@ public class JwtValidatorVertxImpl implements JwtValidator {
     }
   }
   
-  private void verify(JWK jwk, Jwt jwt) throws IllegalArgumentException {
+  private void verify(JWK jwk, JwtWindows jwt) throws IllegalArgumentException {
 
     // empty signature is never allowed
     if (Strings.isNullOrEmpty(jwt.getSignature())) {
@@ -242,13 +242,13 @@ public class JwtValidatorVertxImpl implements JwtValidator {
     }
   }
 
-  private void validateSub(Jwt jwt) throws IllegalArgumentException {
+  private void validateSub(JwtWindows jwt) throws IllegalArgumentException {
     if (Strings.isNullOrEmpty(jwt.getSubject())) {
       throw new IllegalArgumentException("No subject specified in token");
     }
   }
 
-  private void validateAud(Jwt jwt, List<String> requiredAudList, boolean ignoreRequiredAud) throws IllegalArgumentException {
+  private void validateAud(JwtWindows jwt, List<String> requiredAudList, boolean ignoreRequiredAud) throws IllegalArgumentException {
     if ((requiredAudList == null) || (!ignoreRequiredAud && requiredAudList.isEmpty())) {
       throw new IllegalStateException("Required audience not set");
     }
@@ -272,7 +272,7 @@ public class JwtValidatorVertxImpl implements JwtValidator {
     }
   }
 
-  private void validateExp(Jwt jwt, long now) throws IllegalArgumentException {
+  private void validateExp(JwtWindows jwt, long now) throws IllegalArgumentException {
     if (jwt.getExpiration() != null) {
       long targetMs = now - timeLeewayMilliseconds;
       if (1000 * jwt.getExpiration() < targetMs) {
@@ -284,7 +284,7 @@ public class JwtValidatorVertxImpl implements JwtValidator {
     }
   }
 
-  private void validateNbf(Jwt jwt, long now) throws IllegalArgumentException {
+  private void validateNbf(JwtWindows jwt, long now) throws IllegalArgumentException {
     if (jwt.getNotBefore() != null) {
       long targetMs = now + timeLeewayMilliseconds;
       if (1000 * jwt.getNotBefore() > targetMs) {

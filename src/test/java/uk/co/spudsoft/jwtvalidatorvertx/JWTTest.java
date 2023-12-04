@@ -54,14 +54,14 @@ public class JwtTest {
             ;
   }
   
-  private static Jwt buildJwt(JsonObject header, JsonObject payload) {
-    return new Jwt(header, payload, null, null);
+  private static JwtWindows buildJwt(JsonObject header, JsonObject payload) {
+    return new JwtWindows(header, payload, null, null);
   }
   
   @Test
   public void testParseJws() {
-    assertThrows(IllegalArgumentException.class, () -> Jwt.parseJws("a"));
-    assertThrows(IllegalArgumentException.class, () -> Jwt.parseJws("a.b.c.d"));
+    assertThrows(IllegalArgumentException.class, () -> JwtWindows.parseJws("a"));
+    assertThrows(IllegalArgumentException.class, () -> JwtWindows.parseJws("a.b.c.d"));
   }
 
   @Test
@@ -71,7 +71,7 @@ public class JwtTest {
   
   @Test
   public void testEmptyJwt() {
-    Jwt jwt = new Jwt(null, null, null, null);
+    JwtWindows jwt = new JwtWindows(null, null, null, null);
     assertNull(jwt.getAlgorithm());
     assertThat(jwt.getAudience(), empty());
     assertNull(jwt.getClaim("bob"));
@@ -92,7 +92,7 @@ public class JwtTest {
   }
   @Test
   public void testGetClaim() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                     , 
@@ -112,7 +112,7 @@ public class JwtTest {
     JsonObject payload = new JsonObject()
             .put("key", "value")
             ;
-    Jwt jwt = Jwt.parseJws(buildJwtString(header, payload));
+    JwtWindows jwt = JwtWindows.parseJws(buildJwtString(header, payload));
     String requiredSignatureBase = 
             BASE64.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8))
             + "."
@@ -123,7 +123,7 @@ public class JwtTest {
 
   @Test
   public void testGetSignature() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                     , 
@@ -136,7 +136,7 @@ public class JwtTest {
 
   @Test
   public void testGetAlgorithm() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -150,7 +150,7 @@ public class JwtTest {
 
   @Test
   public void testGetJsonWebAlgorithm() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -164,7 +164,7 @@ public class JwtTest {
 
   @Test
   public void testGetAudience() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -197,7 +197,7 @@ public class JwtTest {
 
   @Test
   public void testHasGroup() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -233,7 +233,7 @@ public class JwtTest {
 
   @Test
   public void testHasRole() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -269,7 +269,7 @@ public class JwtTest {
 
   @Test
   public void testGetExpiration() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -279,7 +279,7 @@ public class JwtTest {
     );
     assertNull(jwt.getExpiration());
     assertNull(jwt.getExpirationLocalDateTime());
-    jwt = Jwt.parseJws(
+    jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -295,7 +295,7 @@ public class JwtTest {
 
   @Test
   public void testGetNotBefore() {
-    Jwt jwt = Jwt.parseJws(
+    JwtWindows jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -305,7 +305,7 @@ public class JwtTest {
     );
     assertNull(jwt.getNotBefore());
     assertNull(jwt.getNotBeforeLocalDateTime());
-    jwt = Jwt.parseJws(
+    jwt = JwtWindows.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -321,11 +321,11 @@ public class JwtTest {
   
   @Test
   public void testGetScopes() {
-    Jwt jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one")));
+    JwtWindows jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one")));
     assertEquals(Arrays.asList("one"), jwt.getScope());
-    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scopes", "one")));
+    jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scopes", "one")));
     assertEquals(Arrays.asList(), jwt.getScope());
-    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two")));
+    jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two")));
     assertEquals(Arrays.asList("one", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
@@ -334,37 +334,37 @@ public class JwtTest {
   
   @Test
   public void testHasScope() {
-    Jwt jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
+    JwtWindows jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
     assertEquals(Arrays.asList("one", "αβγδεζηθικλμνξοπρςστυφχψω", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertTrue(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "αβγδεζηθικλμνξοπρςστυφχψω one two")));
+    jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "αβγδεζηθικλμνξοπρςστυφχψω one two")));
     assertEquals(Arrays.asList("αβγδεζηθικλμνξοπρςστυφχψω", "one", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertTrue(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two αβγδεζηθικλμνξοπρςστυφχψω")));
+    jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two αβγδεζηθικλμνξοπρςστυφχψω")));
     assertEquals(Arrays.asList("one", "two", "αβγδεζηθικλμνξοπρςστυφχψω"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertTrue(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one Xαβγδεζηθικλμνξοπρςστυφχψω two")));
+    jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one Xαβγδεζηθικλμνξοπρςστυφχψω two")));
     assertEquals(Arrays.asList("one", "Xαβγδεζηθικλμνξοπρςστυφχψω", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertFalse(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψωX two")));
+    jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψωX two")));
     assertEquals(Arrays.asList("one", "αβγδεζηθικλμνξοπρςστυφχψωX", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertFalse(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject()));
+    jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject()));
     assertEquals(Arrays.asList(), jwt.getScope());
     assertFalse(jwt.hasScope("one"));
     assertFalse(jwt.hasScope("two"));
@@ -374,7 +374,7 @@ public class JwtTest {
 
   @Test
   public void testGetPayloadAsString() {
-    Jwt jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
+    JwtWindows jwt = JwtWindows.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
     assertEquals("{\"scope\":\"one αβγδεζηθικλμνξοπρςστυφχψω two\"}", jwt.getPayloadAsString());
   }  
 }

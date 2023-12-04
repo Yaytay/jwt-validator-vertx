@@ -37,9 +37,13 @@ jobs:
       with:
         java-version: '21'
         distribution: 'zulu'
-        maven-version: 3.9.2
         cache: maven
 
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@v4.5
+      with:
+        maven-version: 3.9.2
+        
     - name: Build with Maven
       env:
         MAVEN_OPTS: -Djava.security.manager=allow

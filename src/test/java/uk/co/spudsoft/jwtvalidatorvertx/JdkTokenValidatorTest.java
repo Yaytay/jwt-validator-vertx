@@ -1,8 +1,10 @@
 package uk.co.spudsoft.jwtvalidatorvertx;
 
+import com.google.common.cache.Cache;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkJwksHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkTokenBuilder;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
@@ -12,14 +14,11 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -37,7 +36,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Required tests: 
@@ -63,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * <LI>Token sub not present
  * </UL>
  *
- * @author njt
+ * @author jtalbut
  */
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -84,7 +82,7 @@ public class JdkTokenValidatorTest {
 
   @BeforeAll
   public void init() throws IOException {
-    jwks = new JdkJwksHandler();
+    jwks = JdkJwksHandler.create();
     logger.debug("Starting JWKS endpoint");
     jwks.start();
   }
@@ -95,22 +93,23 @@ public class JdkTokenValidatorTest {
     jwks.close();
   }
 
-  private final JwtValidatorVertx defaultValidator;
+  private final JwtValidator defaultValidator;
 
   public JdkTokenValidatorTest(Vertx vertx) {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    defaultValidator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
+    defaultValidator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
   }
 
   @Test
   @Order(1)
   public void testValid(VertxTestContext testContext) throws Throwable {
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
+    jwks.setKeyCache(keyCache);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(
+    defaultValidator.validateToken(jwks.getBaseUrl(),
             builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub", Arrays.asList("aud"),
                     nowSeconds, nowSeconds + 100, BORING_CLAIMS),
              Arrays.asList("aud"),
@@ -127,19 +126,19 @@ public class JdkTokenValidatorTest {
   @Order(2)
   public void testInvalidStructureNotThreeParts(VertxTestContext testContext) {
     Checkpoint checkpoint = testContext.checkpoint(4);
-    defaultValidator.validateToken("a.b", Arrays.asList("aud"), false)
+    defaultValidator.validateToken(null, "a.b", Arrays.asList("aud"), false)
             .onFailure(ex -> checkpoint.flag())
             .onSuccess(s -> testContext.failNow("Should have thrown"))
             ;
-    defaultValidator.validateToken("a.b.c.d", Arrays.asList("aud"), false)
+    defaultValidator.validateToken(null, "a.b.c.d", Arrays.asList("aud"), false)
             .onFailure(ex -> checkpoint.flag())
             .onSuccess(s -> testContext.failNow("Should have thrown"))
             ;
-    defaultValidator.validateToken("a.b.c.d.e", Arrays.asList("aud"), false)
+    defaultValidator.validateToken(null, "a.b.c.d.e", Arrays.asList("aud"), false)
             .onFailure(ex -> checkpoint.flag())
             .onSuccess(s -> testContext.failNow("Should have thrown"))
             ;
-    defaultValidator.validateToken("a.b.c.d.e.f", Arrays.asList("aud"), false)
+    defaultValidator.validateToken(null, "a.b.c.d.e.f", Arrays.asList("aud"), false)
             .onFailure(ex -> checkpoint.flag())
             .onSuccess(s -> testContext.failNow("Should have thrown"))
             ;
@@ -149,18 +148,20 @@ public class JdkTokenValidatorTest {
   @Order(3)
   public void testInvalidStructureFirstPartNotBase64(VertxTestContext testContext) throws Exception {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder() {
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache) {
       @Override
       protected String base64Header(JsonObject header) {
         String base64 = super.base64Header(header);
         return base64.substring(0, base64.length() - 1);
       }
     };
-    jwks.setTokenBuilder(builder);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -170,7 +171,10 @@ public class JdkTokenValidatorTest {
   @Order(4)
   public void testInvalidStructureSecondPartNotBase64(VertxTestContext testContext) throws Exception {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder() {
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache) {
       @Override
       protected String base64Claims(JsonObject claims) {
         String base64 = super.base64Claims(claims);
@@ -178,11 +182,10 @@ public class JdkTokenValidatorTest {
         return base64.substring(0, base64.length() - 1);
       }
     };
-    jwks.setTokenBuilder(builder);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -192,7 +195,9 @@ public class JdkTokenValidatorTest {
   @Order(5)
   public void testInvalidStructureThirdPartNotBase64(VertxTestContext testContext) throws Exception {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder() {
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache) {
       @Override
       protected String base64Signature(byte[] signature) {
         String base64 = super.base64Signature(signature);
@@ -200,11 +205,10 @@ public class JdkTokenValidatorTest {
         return base64.substring(0, base64.length() - 1);
       }
     };
-    jwks.setTokenBuilder(builder);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -214,17 +218,19 @@ public class JdkTokenValidatorTest {
   @Order(6)
   public void testInvalidStructureFirstPartNotJson(VertxTestContext testContext) throws Exception {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder() {
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache) {
       @Override
       protected String base64Header(JsonObject header) {
         return BASE64.encodeToString(header.toString().replaceAll("\"", "").getBytes(StandardCharsets.UTF_8));
       }
     };
-    jwks.setTokenBuilder(builder);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -234,17 +240,19 @@ public class JdkTokenValidatorTest {
   @Order(7)
   public void testInvalidStructureSecondPartNotJson(VertxTestContext testContext) throws Exception {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder() {
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache) {
       @Override
       protected String base64Claims(JsonObject claims) {
         return BASE64.encodeToString(claims.toString().replaceAll("\"", "").getBytes(StandardCharsets.UTF_8));
       }
     };
-    jwks.setTokenBuilder(builder);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -254,12 +262,14 @@ public class JdkTokenValidatorTest {
   @Order(8)
   public void testAlgorithmNone(VertxTestContext testContext) throws Exception {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.none, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.none, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -267,14 +277,20 @@ public class JdkTokenValidatorTest {
 
   @Test
   @Order(9)
-  public void testAlgorithmNotRSA(VertxTestContext testContext) throws Exception {
+  public void testAlgorithmNotPermitted(VertxTestContext testContext) throws Exception {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
 
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
+
+    IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
+    validator.setPermittedAlgorithms(ImmutableSet.<String>builder().add("RS512", "RS384", "RS256").build());
+    
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.ES512, kid, jwks.getBaseUrl(), "sub",
+    validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.ES512, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -284,12 +300,14 @@ public class JdkTokenValidatorTest {
   @Order(10)
   public void testInvalidSignature(VertxTestContext testContext) throws Exception {
 
-    TokenBuilder builder = new JdkTokenBuilder().setInvalidSignature(true);
-    jwks.setTokenBuilder((JdkTokenBuilder) builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+
+    TokenBuilder builder = new JdkTokenBuilder(keyCache).setSignatureNotValidHash(true);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -299,19 +317,14 @@ public class JdkTokenValidatorTest {
   @Order(11)
   public void testKeyNotInJwksOutput(VertxTestContext testContext) throws Exception {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder() {
-      @Override
-      public Map<String, KeyPair> getKeys() {
-
-        return super.getKeys().entrySet().stream()
-                .collect(Collectors.toMap((e) -> e.getKey() + "FAKE", Map.Entry::getValue));
-      }
-    };
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ZERO);
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -321,15 +334,17 @@ public class JdkTokenValidatorTest {
   @Order(13)
   public void testNoExpPermitted(VertxTestContext testContext) throws Exception {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
     validator.setRequireExp(false);
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    validator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.succeedingThenComplete())
             ;
@@ -339,15 +354,17 @@ public class JdkTokenValidatorTest {
   @Order(14)
   public void testNoExpRejected(VertxTestContext testContext) throws Exception {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
     validator.setRequireExp(true);
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    validator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds, null, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete())
             ;
@@ -357,18 +374,20 @@ public class JdkTokenValidatorTest {
   @Order(12)
   public void testExpInThePast() throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
-    validator.setTimeLeewaySeconds(6);
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
+    validator.setTimeLeeway(Duration.ofSeconds(6));
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
     int acceptable = -1;
     for (int i = 0; i < 20; i += 1) {
       logger.debug("Iteration {}", i);
       long nowSeconds = System.currentTimeMillis() / 1000;
-      Future<JWT> future = validator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+      Future<Jwt> future = validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
                 Arrays.asList("aud"), nowSeconds, nowSeconds - i, BORING_CLAIMS), Arrays.asList("aud"), false);
       await().atMost(2, TimeUnit.SECONDS).until(() -> future.isComplete());
 
@@ -385,15 +404,17 @@ public class JdkTokenValidatorTest {
   @Order(13)
   public void testNoNbfPermitted(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
     validator.setRequireNbf(false);
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    validator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
             Arrays.asList("aud"), null, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.succeedingThenComplete());
     
@@ -403,15 +424,17 @@ public class JdkTokenValidatorTest {
   @Order(14)
   public void testNoNbfRejected(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
     validator.setRequireNbf(true);
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    validator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
             Arrays.asList("aud"), null, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete());
   }
@@ -420,18 +443,20 @@ public class JdkTokenValidatorTest {
   @Order(13)
   public void testNbfInTheFuture() throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
-    validator.setTimeLeewaySeconds(6);
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
+    validator.setTimeLeeway(Duration.ofSeconds(6));
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
 
     int acceptable = 0;
     for (int i = 0; i < 20; i += 1) {
       long nowSeconds = System.currentTimeMillis() / 1000;
-      Future<JWT> future = validator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+      Future<Jwt> future = validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds + i, nowSeconds, BORING_CLAIMS), Arrays.asList("aud"), false);
       await().atMost(2, TimeUnit.SECONDS).until(() -> future.isComplete());
       
@@ -448,15 +473,17 @@ public class JdkTokenValidatorTest {
   @Order(14)
   public void testBadIssAccepted(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(jwks.getBaseUrl().replace("bob", "carol")), null, Duration.ofMillis(1000));
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
 
     long nowSeconds = System.currentTimeMillis() / 1000;
-    validator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
             Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete());
   }
@@ -464,13 +491,15 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(15)
   public void testBadAudAccepted(VertxTestContext testContext) throws Exception {
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
 
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
             Arrays.asList("bad"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete());
   }
@@ -478,8 +507,10 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(16)
   public void testAudAcceptedAsSingleElementArray(VertxTestContext testContext) throws Throwable {
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     JsonArray aud = new JsonArray();
     aud.add("aud");
@@ -491,7 +522,7 @@ public class JdkTokenValidatorTest {
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(
+    defaultValidator.validateToken(jwks.getBaseUrl(), 
             builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub", null, nowSeconds, nowSeconds + 100,
                     claimsWithAud), Arrays.asList("aud"), false)
             .onComplete(testContext.succeedingThenComplete());
@@ -500,8 +531,10 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(17)
   public void testAudAcceptedAsSingleValue(VertxTestContext testContext) throws Throwable {
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     Map<String, Object> claimsWithAud = ImmutableMap.<String, Object>builder()
             .put("aud", "aud")
@@ -511,7 +544,7 @@ public class JdkTokenValidatorTest {
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(
+    defaultValidator.validateToken(jwks.getBaseUrl(), 
             builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub", null, nowSeconds, nowSeconds + 100,
                     claimsWithAud), Arrays.asList("aud"), false)
             .onComplete(testContext.succeedingThenComplete());
@@ -520,8 +553,10 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(18)
   public void testAudAcceptedAsFirstElementOfArray(VertxTestContext testContext) throws Throwable {
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     JsonArray aud = new JsonArray();
     aud.add("aud");
@@ -537,7 +572,7 @@ public class JdkTokenValidatorTest {
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(
+    defaultValidator.validateToken(jwks.getBaseUrl(), 
             builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub", null, nowSeconds, nowSeconds + 100,
                     claimsWithAud), Arrays.asList("aud"), false)
             .onComplete(testContext.succeedingThenComplete());
@@ -546,8 +581,10 @@ public class JdkTokenValidatorTest {
   @Test
   @Order(19)
   public void testAudAcceptedAsLastElementOfArray(VertxTestContext testContext) throws Throwable {
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     JsonArray aud = new JsonArray();
     aud.add("bob");
@@ -563,7 +600,7 @@ public class JdkTokenValidatorTest {
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(
+    defaultValidator.validateToken(jwks.getBaseUrl(), 
             builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub", null, nowSeconds, nowSeconds + 100,
                     claimsWithAud), Arrays.asList("aud"), false)
             .onComplete(testContext.succeedingThenComplete());
@@ -573,12 +610,14 @@ public class JdkTokenValidatorTest {
   @Order(20)
   public void testNoSubAccepted(VertxTestContext testContext) throws Throwable {
 
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
-    defaultValidator.validateToken(builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), null,
+    defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), null,
               Arrays.asList("aud"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
             .onComplete(testContext.failingThenComplete());
   }

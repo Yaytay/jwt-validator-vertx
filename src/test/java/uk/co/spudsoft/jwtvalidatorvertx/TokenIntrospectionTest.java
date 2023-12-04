@@ -5,6 +5,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkTokenBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableMap;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -50,7 +51,7 @@ public class TokenIntrospectionTest {
 
   @BeforeAll
   public void init() throws IOException {
-    jwks = new JdkJwksHandler();
+    jwks = JdkJwksHandler.create();
     logger.debug("Starting JWKS endpoint");
     jwks.start();
   }
@@ -63,11 +64,12 @@ public class TokenIntrospectionTest {
 
   @Test
   public void testIntrospectToken(Vertx vertx, VertxTestContext testContext) throws Throwable {
-    JdkTokenBuilder builder = new JdkTokenBuilder();
-    jwks.setTokenBuilder(builder);
+    Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
+    jwks.setKeyCache(keyCache);
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidatorVertx validator = JwtValidatorVertx.create(vertx, iah, Duration.of(1, ChronoUnit.MINUTES));
+    JwtValidator validator = JwtValidator.create(vertx, iah, Duration.of(1, ChronoUnit.MINUTES));
     
     ArrayNode aud = objectMapper.createArrayNode();
     aud.add("bob");
@@ -98,7 +100,7 @@ public class TokenIntrospectionTest {
 
     String token = builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub", null, nowSeconds, nowSeconds + 100, claimsWithAud);
 
-    validator.validateToken(token, Arrays.asList("aud"), false)
+    validator.validateToken(null, token, Arrays.asList("aud"), false)
             .compose(jwt -> {
               testContext.verify(() -> {
                 assertNotNull(jwt);

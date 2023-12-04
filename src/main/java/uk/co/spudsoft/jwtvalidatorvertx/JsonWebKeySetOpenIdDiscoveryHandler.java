@@ -17,6 +17,7 @@
 package uk.co.spudsoft.jwtvalidatorvertx;
 
 import io.vertx.core.Future;
+import io.vertx.ext.auth.impl.jose.JWK;
 import io.vertx.ext.web.client.WebClient;
 import java.time.Duration;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.JWKSOpenIdDiscoveryHandlerImpl;
@@ -55,6 +56,6 @@ public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandle
    * @param kid The key ID being sought.
    * @return A Future that will be completed with the JWK.
    */
-  Future<JWK<?>> findJwk(DiscoveryData discoveryData, String kid);
+  Future<JWK> findJwk(DiscoveryData discoveryData, String kid);
   
 }

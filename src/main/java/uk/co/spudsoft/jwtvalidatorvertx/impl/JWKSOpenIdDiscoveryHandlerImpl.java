@@ -21,6 +21,7 @@ import io.vertx.core.Future;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.impl.jose.JWK;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import java.util.HashMap;
@@ -30,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.DiscoveryData;
 import uk.co.spudsoft.jwtvalidatorvertx.IssuerAcceptabilityHandler;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetOpenIdDiscoveryHandler;
 
 /**
@@ -51,7 +51,7 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
   /**
    * Map from jwks_uri to Map from kid to JWK.
    */
-  private final Map<String, AsyncLoadingCache<String, JWK<?>>> kidCache;
+  private final Map<String, AsyncLoadingCache<String, JWK>> kidCache;
 
   private final IssuerAcceptabilityHandler issuerAcceptabilityHandler;
   
@@ -70,7 +70,7 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
     this.defaultJwkCacheDurationS = defaultJwkCacheDurationS;
     this.issuerAcceptabilityHandler = issuerAcceptabilityHandler;
     issuerAcceptabilityHandler.validate();    
-    this.discoveryDataCache = new AsyncLoadingCache<>(dd -> dd.getExpiry());  
+    this.discoveryDataCache = new AsyncLoadingCache<>();  
     this.kidCache = new HashMap<>();
   }
 
@@ -98,43 +98,43 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
     String discoveryUrl = issuer + (issuer.endsWith("/") ? "" : "/") + ".well-known/openid-configuration";
     return discoveryDataCache.get(issuer
             , () -> get(discoveryUrl)
-                    .map(tjo -> new DiscoveryData(tjo.expiresMs, tjo.json))
+                    .map(tjo -> discoveryDataCache.entry(new DiscoveryData(tjo.json), tjo.expiresMs))
     );
   }
 
   @Override
-  public Future<JWK<?>> findJwk(DiscoveryData discoveryData, String kid) {
+  public Future<JWK> findJwk(DiscoveryData discoveryData, String kid) {
     
     String jwksUri = discoveryData.getJwksUri();
     if (Strings.isNullOrEmpty(jwksUri)) {
       return Future.failedFuture("Discovery data does not contain jwks_uri");
     }
     
-    AsyncLoadingCache<String, JWK<?>> finalJwkCache;
+    AsyncLoadingCache<String, JWK> finalJwkCache;
     synchronized (kidCache) {
-      AsyncLoadingCache<String, JWK<?>> jwkCache = kidCache.get(jwksUri);
+      AsyncLoadingCache<String, JWK> jwkCache = kidCache.get(jwksUri);
       if (jwkCache == null) {
-        jwkCache = new AsyncLoadingCache<>(jwk -> jwk == null ? null : jwk.getExpiryMs());
+        jwkCache = new AsyncLoadingCache<>();
         kidCache.put(jwksUri, jwkCache);
       }
       finalJwkCache = jwkCache;
     }
     
-    return finalJwkCache.get(kid, () -> {
-      return get(discoveryData.getJwksUri())
-              .compose(tjo -> processJwkSet(finalJwkCache, tjo, kid));
-    });
+    return finalJwkCache.get(kid
+            , () -> get(discoveryData.getJwksUri())
+                    .compose(tjo -> processJwkSet(finalJwkCache, tjo, kid))
+    );
   }
 
   @Override
-  public Future<JWK<?>> findJwk(String issuer, String kid) {
+  public Future<JWK> findJwk(String issuer, String kid) {
     return performOpenIdDiscovery(issuer)
             .compose(dd -> findJwk(dd, kid));
   }
   
-  static Future<JWK<?>> processJwkSet(AsyncLoadingCache<String, JWK<?>> jwkCache, TimedJsonObject data, String kid) {
+  static Future<AsyncLoadingCache<String, JWK>.TimedObject> processJwkSet(AsyncLoadingCache<String, JWK> jwkCache, TimedJsonObject data, String kid) {
     long expiry = data.expiresMs;
-    JWK<?> result = null;
+    JWK result = null;
     JsonObject foundKey = null;
     
     try {
@@ -148,11 +148,11 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
               JsonObject jo = (JsonObject) keyData;
               String keyId = jo.getString("kid");
               if (kid.equals(keyId)) {
-                result = JWK.create(expiry, jo);
+                result = new JWK(jo);
                 foundKey = jo;
               } else {
-                JWK<?> other = JWK.create(expiry, jo);
-                jwkCache.put(keyId, other);
+                JWK other = new JWK(jo);
+                jwkCache.put(keyId, jwkCache.entry(other, expiry));
               }
             }
           } catch (Throwable ex) {
@@ -184,11 +184,11 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
       );
     } else {
       if (logger.isDebugEnabled()) {
-        logger.debug("Got new {} public key with id {}: {}", result.getKey().getAlgorithm(), kid, foundKey);
+        logger.debug("Got new {} public key with id {}: {}", result.getAlgorithm(), kid, foundKey);
       } else {
         logger.info("Got new public key with id {}", kid);
       }
-      return Future.succeededFuture(result);
+      return Future.succeededFuture(jwkCache.entry(result, expiry));
     }
   }
  

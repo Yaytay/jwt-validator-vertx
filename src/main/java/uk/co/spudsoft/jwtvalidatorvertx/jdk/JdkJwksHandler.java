@@ -8,6 +8,7 @@ package uk.co.spudsoft.jwtvalidatorvertx.jdk;
 import uk.co.spudsoft.jwtvalidatorvertx.JwksHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.cache.Cache;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -19,20 +20,24 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.Base64;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
+import uk.co.spudsoft.jwtvalidatorvertx.AlgorithmAndKeyPair;
+import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 
 /**
- * @author njt
+ * An implementation of JwksHandler as a JDK HttpHandler.
+ * <p>
+ * This provides the simplest (and easiest to deploy) implementation of JwksHandler, but it is not very compatible with a Vertx application.
+ * 
+ * @author jtalbut
  */
-public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler<JdkTokenBuilder> {
+public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler {
 
   @SuppressWarnings("constantname")
   private static final Logger logger = LoggerFactory.getLogger(JdkJwksHandler.class);
@@ -43,33 +48,48 @@ public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler<JdkTo
   private final String context = "/bob";
   private final String configUrl = context + "/.well-known/openid-configuration";
   private final String jwksUrl = context + "/jwks";
-  private final String introspectUrl = context + "/protocol/openid-connect/token/introspect";
 
-  private JdkTokenBuilder tokenBuilder;
   private final int port;
 
   private final HttpServer server;
   private final Executor executor;
+  
+  private Cache<String, AlgorithmAndKeyPair> keyCache;
 
   @Override
-  public void setTokenBuilder(JdkTokenBuilder tokenBuilder) {
-    this.tokenBuilder = tokenBuilder;
+  public void setKeyCache(Cache<String, AlgorithmAndKeyPair> keyCache) {
+    this.keyCache = keyCache;
   }
 
   @Override
   public String getBaseUrl() {
     return "http://localhost:" + port + context;
   }
-
-  public JdkJwksHandler() throws IOException {
+  
+  /**
+   * Factory method to create a new JdkJwsHandler on a random port.
+   * The {@link #start() } method must still be called on the returned object.
+   * @return A newly created (but not yet active) JdkJwsHandler.
+   * @throws IOException If the server cannot be created or started.
+   */
+  public static JdkJwksHandler create() throws IOException {
+    int port;
     try (ServerSocket s = new ServerSocket(0)) {
-      this.port = s.getLocalPort();
+      port = s.getLocalPort();
     }
-    executor = Executors.newFixedThreadPool(2);
-    server = HttpServer.create(new InetSocketAddress(this.port), 2);
-    server.setExecutor(executor);
+    ExecutorService exeSvc = Executors.newFixedThreadPool(2);
+    HttpServer server = HttpServer.create(new InetSocketAddress(port), 2);
+    server.setExecutor(exeSvc);
+    return new JdkJwksHandler(port, server, exeSvc);
   }
-
+  
+  private JdkJwksHandler(int port, HttpServer server, Executor executor) {
+    this.port = port;
+    this.server = server;
+    this.executor = executor;
+  }
+  
+  @Override
   public void start() {
     server.createContext(context, this);
     server.start();
@@ -80,7 +100,7 @@ public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler<JdkTo
     server.stop(1);
   }
 
-  protected void sendResponse(HttpExchange exchange, int responseCode, String body) throws IOException {
+  private void sendResponse(HttpExchange exchange, int responseCode, String body) throws IOException {
     byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
     exchange.sendResponseHeaders(responseCode, bodyBytes.length);
     try (OutputStream os = exchange.getResponseBody()) {
@@ -92,51 +112,42 @@ public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler<JdkTo
   public void handle(HttpExchange exchange) throws IOException {
     logger.debug("handle {} {}", exchange.getRequestMethod(), exchange.getRequestURI());
 
-    if (null == exchange.getRequestURI().getPath()) {
-      sendResponse(exchange, 404, "Not found");
-    } else switch (exchange.getRequestURI().getPath()) {
+    switch (exchange.getRequestURI().getPath()) {
       case configUrl:
         handleConfigRequest(exchange);
         break;
       case jwksUrl:
         handleJwksRequest(exchange);
         break;
-      case introspectUrl:
-        handleIntrospectRequest(exchange);
-        break;
       default:
         sendResponse(exchange, 404, "Not found");
     }
   }
 
-  protected void handleConfigRequest(HttpExchange exchange) throws IOException {
+  private void handleConfigRequest(HttpExchange exchange) throws IOException {
     ObjectNode config = MAPPER.createObjectNode();
     config.put("jwks_uri", "http://localhost:" + port + jwksUrl);
     sendResponse(exchange, 200, config.toString());
   }
 
-  protected void handleJwksRequest(HttpExchange exchange) throws IOException {
-
-    Map<String, KeyPair> keyMap = tokenBuilder.getKeys();
+  private void handleJwksRequest(HttpExchange exchange) throws IOException {
 
     JsonObject jwkSet = new JsonObject();
     JsonArray jwks = new JsonArray();
     jwkSet.put("keys", jwks);
-    for (Entry<String, KeyPair> keyEntry : keyMap.entrySet()) {
-      try {
-        JWK<?> jwk = JWK.create(0, keyEntry.getKey(), keyEntry.getValue().getPublic());
-        jwks.add(jwk.getJson());
-      } catch(Throwable ex) {
-        logger.error("Failed to add key {} to JWK Set: ", keyEntry.getKey(), ex);
-      }
+    synchronized (keyCache) {
+      keyCache.asMap().forEach((kid, akp) -> {
+        PublicKey key = akp.getKeyPair().getPublic();
+        try {
+          JsonObject json = JwkBuilder.get(key).toJson(kid, akp.getAlgorithm().getName(), key);
+          jwks.add(json);
+        } catch (Exception ex) {
+          logger.warn("Failed to add key {} to JWKS: ", kid, ex);
+        }
+      });
     }
     exchange.getResponseHeaders().add("cache-control", "max-age=100");
     sendResponse(exchange, 200, jwkSet.encode());
   }
   
-  protected void handleIntrospectRequest(HttpExchange exchange) throws IOException {
-    ObjectNode config = MAPPER.createObjectNode();
-    config.put("bobby", "bobby value");
-    sendResponse(exchange, 200, config.toString());
-  }
 }

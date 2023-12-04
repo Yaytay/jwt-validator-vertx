@@ -17,6 +17,7 @@
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
 import io.vertx.core.Future;
+import io.vertx.ext.auth.impl.jose.JWK;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetStaticHandler;
 
 /**
@@ -39,7 +39,7 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
   private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);
   
   private final List<Pattern> acceptableIssuers;
-  private final Map<String, JWK<?>> keys = new HashMap<>();
+  private final Map<String, JWK> keys = new HashMap<>();
 
   /**
    * Constructor.
@@ -75,8 +75,8 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
   }
 
   @Override
-  public JsonWebKeySetStaticHandler addKey(String issuer, JWK<?> key) {
-    keys.put(issuer + '^' + key.getKid(), key);
+  public JsonWebKeySetStaticHandler addKey(String issuer, JWK key) {
+    keys.put(issuer + '^' + key.getId(), key);
     return this;
   }
 
@@ -98,8 +98,8 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
   }
 
   @Override
-  public Future<JWK<?>> findJwk(String issuer, String kid) {
-    JWK<?> jwk = keys.get(issuer + '^' + kid);
+  public Future<JWK> findJwk(String issuer, String kid) {
+    JWK jwk = keys.get(issuer + '^' + kid);
     if (null == jwk) {
       logger.error("Failed to find key {} from store from {}", kid, keys.keySet());
       return Future.failedFuture(

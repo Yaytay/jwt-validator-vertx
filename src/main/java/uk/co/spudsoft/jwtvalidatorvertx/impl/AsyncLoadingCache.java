@@ -15,14 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Class backed by a Guava Cache that returns a Future for all elements whilst
  * still ensuring that the loader is only called once at a time per element.
- * @author njt
+ * @author jtalbut
  * @param <K> The key type for the cache.
  * @param <V> The value type stored in the cache.
  */
@@ -31,6 +30,30 @@ public class AsyncLoadingCache<K, V> {
   @SuppressWarnings("constantname")
   private static final Logger logger = LoggerFactory.getLogger(AsyncLoadingCache.class);
  
+  /**
+   * Class for returned an expiry value along with the cache value.
+   */
+  public class TimedObject {
+    private final V value;
+    private final long expiry;
+
+    private TimedObject(V value, long expiry) {
+      this.value = value;
+      this.expiry = expiry;
+    }
+
+  }
+  
+  /**
+   * Factory method for cache entries.
+   * @param value The value to store in the cache.
+   * @param expiry The time (ms since epoch) at which this item becomes invalid.
+   * @return newly created TimedObject.
+   */
+  public TimedObject entry(V value, long expiry) {
+    return new TimedObject(value, expiry);
+  }
+  
   /**
    * Data class for items stored in the backing cache.
    */
@@ -46,28 +69,25 @@ public class AsyncLoadingCache<K, V> {
       this.expiry = Long.MAX_VALUE;
     }    
     
-    void update(boolean succeeded, V value) {
+    void update(boolean succeeded, TimedObject value) {
       this.initialPromises = new ArrayList<>();
       this.completed = true;
       this.succeeded = succeeded;
       if (succeeded) {
-        this.expiry = getExpiry.apply(value);
-        this.result = value;
+        this.expiry = value.expiry;
+        this.result = value.value;
       }
     }
   }
   
   private final Object lock = new Object();
   private final Cache<K, Data> backing = CacheBuilder.newBuilder().build();
-  private final Function<V, Long> getExpiry;
 
   /**
    * Constructor.
-   * @param getExpiry Function to extract the expiry time (in ms since epoch) from a V type.
    */
   @SuppressWarnings("unchecked")
-  public AsyncLoadingCache(Function<V, Long> getExpiry) {
-    this.getExpiry = getExpiry;
+  public AsyncLoadingCache() {
   }
 
   /**
@@ -89,10 +109,10 @@ public class AsyncLoadingCache<K, V> {
    * @param key the key to set.
    * @param value the value to set.
    */
-  public void put(K key, V value) {
+  public void put(K key, TimedObject value) {
     Data data = new Data();
     data.update(true, value);
-    backing.put(key, new Data());
+    backing.put(key, data);
   }
   
   /**
@@ -101,7 +121,7 @@ public class AsyncLoadingCache<K, V> {
    * @param loader Callable that actually gets the value.
    * @return The value returned either by this Callable or some previous instance of it.
    */
-  public Future<V> get(K key, Callable<Future<V>> loader) {
+  public Future<V> get(K key, Callable<Future<TimedObject>> loader) {
     Promise<V> promise;
     Data data;
     synchronized (lock) {
@@ -149,9 +169,9 @@ public class AsyncLoadingCache<K, V> {
     return promise;
   }
 
-  private void handleAfterLoaderCall(AsyncResult<V> asyncResult, Data data) {
+  private void handleAfterLoaderCall(AsyncResult<TimedObject> asyncResult, Data data) {
     boolean succeeded = asyncResult.succeeded();
-    V result = asyncResult.result();
+    TimedObject result = asyncResult.result();
     List<Promise<V>> initialPromises;
     synchronized (lock) {
       initialPromises = data.initialPromises;
@@ -159,7 +179,7 @@ public class AsyncLoadingCache<K, V> {
     }
     if (succeeded) {
       for (Promise<V> initialPromise : initialPromises) {
-        initialPromise.complete(result);
+        initialPromise.complete(result.value);
       }
     } else {
       for (Promise<V> initialPromise : initialPromises) {

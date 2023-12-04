@@ -29,26 +29,14 @@ import io.vertx.core.json.JsonObject;
  */
 public class DiscoveryData {
   
-  private final long expiryMs;
   private final JsonObject json;
 
   /**
    * Constructor.
-   * @param expiryMs The time in ms from the epoch (i.e. to be compared with System.currentTimeMillis) at which this data should be discarded.
-   *    Should be found by parsing cache-control headers.
    * @param json The JSON data in the body of the discovery response.
    */
-  public DiscoveryData(long expiryMs, JsonObject json) {
-    this.expiryMs = expiryMs;
+  public DiscoveryData(JsonObject json) {
     this.json = json;
-  }
-
-  /**
-   * Get the expiry time in ms from the epoch.
-   * @return the expiry time in ms from the epoch.
-   */
-  public long getExpiry() {
-    return expiryMs;
   }
 
   /**

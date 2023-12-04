@@ -5,12 +5,12 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx;
 
+import com.google.common.cache.Cache;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkJwksHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkTokenBuilder;
 import io.vertx.core.Vertx;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author njt
+ * @author jtalbut
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestJwtValidatorVertx extends AbstractTokenValidationTester {
@@ -32,15 +32,17 @@ public class TestJwtValidatorVertx extends AbstractTokenValidationTester {
   private static final Logger logger = LoggerFactory.getLogger(TestJwtValidatorVertx.class);
 
   private final Vertx vertx = Vertx.vertx();
-  private JwtValidatorVertx tokenValidator;
+  private JwtValidator tokenValidator;
 
   private JdkJwksHandler jwks;
 
   @Override
-  protected TokenBuilder createTokenBuilder() {
-    return new JdkTokenBuilder();
+  protected TokenBuilder createTokenBuilder(Cache<String, AlgorithmAndKeyPair> keyCache) {
+    JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
+    jwks.setKeyCache(keyCache);
+    return builder;
   }
-
+  
   @Test
   public void test() {
     performTests();
@@ -53,14 +55,14 @@ public class TestJwtValidatorVertx extends AbstractTokenValidationTester {
 
   @BeforeAll
   public void init() throws IOException {
-    jwks = new JdkJwksHandler();
+    jwks = JdkJwksHandler.create();
     logger.debug("Starting JWKS endpoint");
     jwks.start();
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(jwks.getBaseUrl()), null, Duration.ofMillis(1000));
-    tokenValidator = JwtValidatorVertx.create(vertx, iah, Duration.ofMinutes(1));
+    tokenValidator = JwtValidator.create(vertx, iah, Duration.ofMinutes(1));
     tokenValidator.setRequireExp(true);
     tokenValidator.setRequireNbf(true);
-    tokenValidator.setTimeLeewaySeconds(3);
+    tokenValidator.setTimeLeeway(Duration.ofSeconds(3));
   }
 
   @AfterAll
@@ -71,12 +73,7 @@ public class TestJwtValidatorVertx extends AbstractTokenValidationTester {
 
   @Override
   protected void useToken(String token) {
-    tokenValidator.validateToken(token, null, false);
-  }
-
-  @Override
-  protected void prepTest(TokenBuilder builder) {
-    jwks.setTokenBuilder((JdkTokenBuilder) builder);
+    tokenValidator.validateToken(null, token, null, false);
   }
 
   @Override

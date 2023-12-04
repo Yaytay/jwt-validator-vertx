@@ -19,22 +19,46 @@ package uk.co.spudsoft.jwtvalidatorvertx;
 import io.vertx.core.json.JsonObject;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.ECJwkBuilder;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.EdECJwkBuilder;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.RSAJwkBuilder;
 
 /**
  * The JwkBuilder class is an SPI for containing the algorithm-specific conversions from Token to JWK or from JSON to JWK.
  * 
  * @author jtalbut
- * @param <T> The specific class on PublicKey that is created.
  */
-public abstract class JwkBuilder<T extends PublicKey> {
+public abstract class JwkBuilder {
   
   private static final Logger logger = LoggerFactory.getLogger(JwkBuilder.class);
+  
+  private static final List<JwkBuilder> BUILDERS = Arrays.<JwkBuilder>asList(
+          new RSAJwkBuilder()
+          , new EdECJwkBuilder()
+          , new ECJwkBuilder()
+  );
 
+  /**
+   * Get the appropriate builder for the given public key.
+   * @param publicKey The public key whose builder is being sought.
+   * @return A JwkBuilder able to work with the given public key.
+   * @throws IllegalArgumentException if now builder can be found for the provided key.
+   */
+  public static JwkBuilder get(PublicKey publicKey) {
+    for (JwkBuilder builder : BUILDERS) {
+      if (builder.canHandleKey(publicKey)) {
+        return builder;
+      }
+    }
+    throw new IllegalArgumentException("Key cannot be handled");
+  }
+  
   /**
    * Protected constructor used by subclasses.
    */
@@ -43,82 +67,26 @@ public abstract class JwkBuilder<T extends PublicKey> {
   
   /**
    * Instance of a {@link java.util.Base64.Encoder} for encoding values used in JWK JSON.
-   * Used when creating JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#create(long, java.lang.String, java.security.PublicKey)}.
+   * Used when creating JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#toJson(java.lang.String, java.lang.String, java.security.PublicKey)}.
    */
   protected static final Base64.Encoder B64ENCODER = Base64.getUrlEncoder().withoutPadding();
 
-  /**
-   * Instance of a {@link java.util.Base64.Decoder} for decoding values found in JWK JSON.
-   * Used when reading JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#create(long, io.vertx.core.json.JsonObject) }.
-   */
-  protected static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();
-  
-  /**
-   * Return true if the builder can create a JWK by parsing the correctly structured JSON with the given kty.
-   * @param kty The kty that the JSON has that this builder is being asked about.
-   * @return true if the builder can create a JWK by parsing the correctly structured JSON with the given kty.
-   */
-  public abstract boolean canCreateFromKty(String kty);
-  
   /**
    * Return true if the builder can create a JWK by generating JSON for the given PublicKey.
    * @param key The key that that this builder is being asked about.
    * @return true if the builder can create a JWK by generating JSON for the given PublicKey.
    */
-  public abstract boolean canCreateFromKey(PublicKey key);
+  public abstract boolean canHandleKey(PublicKey key);
   
   /**
-   * Confirm that any alg field specified in the JsonObject matches the family passed in.
-   * 
-   * There is no requirement for JWKs to specify an algorithm (most don't, in my experience), but if one is specified then it must be correct.
-   * 
-   * @param jo The JWK as a JsonObject that may, or may not, contain an alg field.
-   * @param requiredFamily The family name (taken from {@link JsonWebAlgorithm#familyName}) that must match that for the algorithm
-   * @throws IllegalArgumentException is the required family is not the family for the algorithm passed in.
+   * Convert the given public key into a valid JWK JSON representation.
+   * @param kid The ID for the key.
+   * @param algorithm The algorithm to be used with the key.
+   * @param publicKey The public key.
+   * @return The JWK representation of the key,
+   * @throws InvalidParameterSpecException if the security subsystem does so.
+   * @throws NoSuchAlgorithmException if the security subsystem does so.
    */
-  protected void validateAlg(JsonObject jo, String requiredFamily) {
-    // From RFC 7515 alg is optional and I haven't ever seen it in the wild.
-    // If it is provided we just validate that it is compatible with the kty.
-    String algString = jo.getString("alg");
-    if (algString != null) {
-      JsonWebAlgorithm alg = JsonWebAlgorithm.valueOf(algString);
-      if (!requiredFamily.equals(alg.getFamilyName())) {
-        String kty = jo.getString("kty");
-        logger.warn("Algorithm ({}) does not match key type ({})", algString, kty);
-        throw new IllegalArgumentException("Algorithm (" + algString + ") does not match key type (" + kty + ")");
-      }
-    }
-  }
-  
-  /**
-   * Create a JWK from a JSON.
-   * 
-   * This is expected to result in a call to the JWK constructor that takes in both the JSON and the PublicKey.
-   * 
-   * @param expiryMs The expiry time for the JWK.
-   * This value is only relevant if the JWK is cached, it is not part of the JWK itself.
-   * @param json The JSON representation of the JWK, as specified by RFC7517 (or one of its successors).
-   * @return a newly created JWK object containing both JSON and JDK PublicKey.
-   * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
-   * @throws InvalidKeySpecException if the data in the JSON does not represent a valid key.
-   * @throws InvalidParameterSpecException if the data in the JSON does not represent a valid key.
-   * @throws IllegalArgumentException if the JSON is not in a valid form for this algorithm family.
-   */
-  public abstract JWK<T> create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidParameterSpecException, IllegalArgumentException;
-  
-  /**
-   * Create a JWK from a PublicKey.
-   * 
-   * This is expected to result in a call to the JWK constructor that takes in both the JSON and the PublicKey.
-   * 
-   * @param expiryMs The expiry time for the JWK.
-   * This value is only relevant if the JWK is cached, it is not part of the JWK itself.
-   * @param kid The ID to use in the JWK.
-   * @param key The key to convert to JSON.
-   * @return a newly created JWK object containing both JSON and JDK PublicKey.
-   * @throws InvalidParameterSpecException if the data in the key does not represent a valid key (this should indicate a bug in this library).
-   * @throws NoSuchAlgorithmException if the underlying JDK crypto subsystem cannot process this algorithm family.
-   */
-  public abstract JWK<T> create(long expiryMs, String kid, PublicKey key) throws InvalidParameterSpecException, NoSuchAlgorithmException;
+  public abstract JsonObject toJson(String kid, String algorithm, PublicKey publicKey) throws InvalidParameterSpecException, NoSuchAlgorithmException;
   
 }

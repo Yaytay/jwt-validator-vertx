@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 jtalbut
+ * Copyright (C) 2023 jtalbut
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,17 +14,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package uk.co.spudsoft.jwtvalidatorvertx;
+package uk.co.spudsoft.jwtvalidatorvertx.impl;
+
+import java.security.NoSuchAlgorithmException;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
+
 
 /**
  *
- * @author jtalbut
- * @param <TB> The specific type of TokenBuilder that this JwksHandler works with.
+ * @author njt
  */
-public interface JwksHandler<TB extends TokenBuilder> {
-
-  String getBaseUrl();
-
-  void setTokenBuilder(TB tokenBuilder);
+public class ECJwkBuilderTest {
+  
+  @Test
+  public void testToJson() throws Exception {
+    ECJwkBuilder builder = new ECJwkBuilder();
+    assertThrows(NoSuchAlgorithmException.class, () -> {
+      builder.toJson("kid", "bob", null);
+    });
+  }
   
 }

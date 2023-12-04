@@ -53,120 +53,114 @@ public class DiscoveryDataTest {
                 "";
 
   @Test
-  public void testGetExpiry() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
-    assertEquals(0, dd.getExpiry());
-  }
-
-  @Test
   public void testGet() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.get("wibble"));
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertEquals(new JsonArray("[\"client_secret_basic\"]"), dd.get("token_endpoint_auth_methods_supported"));
   }
 
   @Test
   public void testGetIssuer() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getIssuer());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertEquals("http://users.test/api", dd.getIssuer());
   }
 
   @Test
   public void testGetAuthorizationEndpoint() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getAuthorizationEndpoint());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertEquals("http://users.test/oauth/authorize", dd.getAuthorizationEndpoint());
   }
 
   @Test
   public void testGetTokenEndpoint() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getTokenEndpoint());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertEquals("http://users.test/api/token", dd.getTokenEndpoint());
   }
 
   @Test
   public void testGetUserinfoEndpoint() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getUserinfoEndpoint());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertNull(dd.getUserinfoEndpoint());
   }
 
   @Test
   public void testGetJwksUri() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getJwksUri());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertEquals("http://users.test/api/certificates", dd.getJwksUri());
   }
 
   @Test
   public void testGetRegistrationEndpoint() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getRegistrationEndpoint());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertNull(dd.getRegistrationEndpoint());
   }
 
   @Test
   public void testGetScopesSupported() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getScopesSupported());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertNull(dd.getScopesSupported());
   }
 
   @Test
   public void testGetResponseTypesSupported() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getResponseTypesSupported());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertEquals(new JsonArray("[\"code\",\"id_token\",\"token id_token\"]"), dd.getResponseTypesSupported());
   }
 
   @Test
   public void testGetResponseModesSupported() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getResponseModesSupported());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertNull(dd.getResponseModesSupported());
   }
 
   @Test
   public void testGetGrantTypesSupported() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getGrantTypesSupported());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertNull(dd.getGrantTypesSupported());
   }
 
   @Test
   public void testGetAcrValuesSupported() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getAcrValuesSupported());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertNull(dd.getAcrValuesSupported());
   }
 
   @Test
   public void testGetSubjectTypesSupported() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getSubjectTypesSupported());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertEquals(new JsonArray("[\"public\"]"), dd.getSubjectTypesSupported());
   }
 
   @Test
   public void testGetIdTokenSigningAlgValuesSupported() {
-    DiscoveryData dd = new DiscoveryData(0, new JsonObject("{}"));
+    DiscoveryData dd = new DiscoveryData(new JsonObject("{}"));
     assertNull(dd.getIdTokenSigningAlgValuesSupported());
-    dd = new DiscoveryData(0, new JsonObject(JSON));
+    dd = new DiscoveryData(new JsonObject(JSON));
     assertEquals(new JsonArray("[\"RS256\",\"RS512\"]"), dd.getIdTokenSigningAlgValuesSupported());
   }
   

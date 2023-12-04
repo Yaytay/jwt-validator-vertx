@@ -16,16 +16,14 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import io.vertx.core.json.JsonObject;
-import java.math.BigInteger;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 
 /**
@@ -33,67 +31,49 @@ import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
  *
  * @author jtalbut
  */
-public class RSAJwkBuilder extends JwkBuilder<RSAPublicKey> {
+public class RSAJwkBuilder extends JwkBuilder {
 
-  private static final String KTY = "RSA";
+  private static final Logger logger = LoggerFactory.getLogger(RSAJwkBuilder.class);
   
-  private static class RSAJwk extends JWK<RSAPublicKey> {
+  private static final String KTY = "RSA";
 
-    RSAJwk(long expiryMs, JsonObject json, RSAPublicKey key) {
-      super(expiryMs, json, key);
-    }
-    
-  }
-
+  private static final Set<String> VALID_ALGS = ImmutableSet.<String>builder()
+          .add("RS256")
+          .add("RS384")
+          .add("RS512")
+          .build();
+  
   /**
    * Constructor.
    * 
-   * Typically it is not necessary to construct an explicit instance of this class, the ones in the {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} class should suffice.
+   * Typically it is not necessary to construct an explicit instance of this class, the methods in the {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder} class should suffice.
    * 
    */
   public RSAJwkBuilder() {
   }
   
   @Override
-  public boolean canCreateFromKty(String kty) {
-    return KTY.equals(kty) || "RSASSA".equals(kty);
-  }
-
-  @Override
-  public boolean canCreateFromKey(PublicKey key) {
+  public boolean canHandleKey(PublicKey key) {
     return key instanceof RSAPublicKey;
   }
   
   @Override
-  public JWK<RSAPublicKey> create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException {
-    
-    validateAlg(json, "RSA");
-    String nStr = json.getString("n");
-    String eStr = json.getString("e");
-    if (Strings.isNullOrEmpty(nStr)) {
-      throw new IllegalArgumentException("modulus has no value");
-    } else if (Strings.isNullOrEmpty(eStr)) {
-      throw new IllegalArgumentException("exponent has no value");      
-    } else {
-      final BigInteger n = new BigInteger(1, B64DECODER.decode(nStr));
-      final BigInteger e = new BigInteger(1, B64DECODER.decode(eStr));
-      RSAPublicKey key = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(n, e));
-      return new RSAJwk(expiryMs, json, key);
-    }
-  }
-
-  @Override
-  public JWK<RSAPublicKey> create(long expiryMs, String kid, PublicKey publicKey) {
+  public JsonObject toJson(String kid, String algorithm, PublicKey publicKey) throws NoSuchAlgorithmException {
     RSAPublicKey key = (RSAPublicKey) publicKey;
     
     JsonObject json = new JsonObject();
+    if (VALID_ALGS.contains(algorithm)) {
+      json.put("alg", algorithm);
+    } else {
+      logger.warn("The algorithm {} is not in {}", algorithm, VALID_ALGS);
+      throw new NoSuchAlgorithmException(algorithm);
+    }
     json.put("kid", kid);
-    json.put("kty", "RSA");
-    // This is just to test the alg handling in JWK constructor, we don't know (or care) whether it's RSA256, 384 or 512.
-    json.put("alg", "RS256");
+    json.put("kty", KTY);
     json.put("e", B64ENCODER.encodeToString(key.getPublicExponent().toByteArray()));
     json.put("n", B64ENCODER.encodeToString(key.getModulus().toByteArray()));
-    return new RSAJwk(expiryMs, json, key);
+    return json;
   }
+
   
 }

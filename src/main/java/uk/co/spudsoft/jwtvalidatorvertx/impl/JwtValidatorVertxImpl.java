@@ -1,43 +1,64 @@
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import io.vertx.core.Future;
+import io.vertx.ext.auth.impl.jose.JWK;
+import io.vertx.ext.auth.impl.jose.JWS;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
-import uk.co.spudsoft.jwtvalidatorvertx.JWT;
-import uk.co.spudsoft.jwtvalidatorvertx.JsonWebAlgorithm;
 
-import java.util.EnumSet;
+import java.util.HashSet;
+import static java.util.Objects.requireNonNull;
+import java.util.Set;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler;
-import uk.co.spudsoft.jwtvalidatorvertx.JwtValidatorVertx;
+import uk.co.spudsoft.jwtvalidatorvertx.Jwt;
+import uk.co.spudsoft.jwtvalidatorvertx.JwtValidator;
 
 /**
- * Token validation for vertx - implementation of {@link uk.co.spudsoft.jwtvalidatorvertx.JwtValidatorVertx}.
+ * Token validation for vertx - implementation of {@link uk.co.spudsoft.jwtvalidatorvertx.JwtValidator}.
  * @author Jim Talbut
  */
-public class JwtValidatorVertxImpl implements JwtValidatorVertx {
+public class JwtValidatorVertxImpl implements JwtValidator {
 
   @SuppressWarnings("constantname")
   private static final Logger logger = LoggerFactory.getLogger(JwtValidatorVertxImpl.class);
 
   private static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();
   
-  private static final EnumSet<JsonWebAlgorithm> DEFAULT_PERMITTED_ALGS = EnumSet.of(
-          JsonWebAlgorithm.RS256, JsonWebAlgorithm.RS384, JsonWebAlgorithm.RS512
+  private static final Set<String> DEFAULT_PERMITTED_ALGS = ImmutableSet.of(
+          JWS.EdDSA
+
+          , JWS.ES256
+          , JWS.ES384
+          , JWS.ES512
+
+          , JWS.PS256
+          , JWS.PS384
+          , JWS.PS512
+
+          , JWS.ES256K
+
+          , JWS.RS256
+          , JWS.RS384
+          , JWS.RS512
   );
   
-  private EnumSet<JsonWebAlgorithm> permittedAlgs;
+  private Set<String> permittedAlgs;
   
   private boolean requireExp = true;
   private boolean requireNbf = true;
   
-  private long timeLeewaySeconds = 0;
+  private long timeLeewayMilliseconds = 0;
+  private long minimumKeyCacheLifetime = 0;
   
   private final JsonWebKeySetHandler openIdDiscoveryHandler;
   
@@ -47,33 +68,55 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
    */
   public JwtValidatorVertxImpl(JsonWebKeySetHandler openIdDiscoveryHandler) {
     this.openIdDiscoveryHandler = openIdDiscoveryHandler;
-    this.permittedAlgs = EnumSet.copyOf(DEFAULT_PERMITTED_ALGS);
+    this.permittedAlgs = new HashSet<>(DEFAULT_PERMITTED_ALGS);
   }
 
   @Override
-  public EnumSet<JsonWebAlgorithm> getPermittedAlgorithms() {
-    return EnumSet.copyOf(permittedAlgs);
+  public Set<String> getPermittedAlgorithms() {
+    return ImmutableSet.copyOf(permittedAlgs);
   }
 
   @Override
-  public JwtValidatorVertx setPermittedAlgorithms(EnumSet<JsonWebAlgorithm> algorithms) {
-    this.permittedAlgs = EnumSet.copyOf(algorithms);
+  public JwtValidator setPermittedAlgorithms(Set<String> algorithms) throws NoSuchAlgorithmException {
+    Set<String> copy = new HashSet<>();
+    for (String alg : algorithms) {
+      if (!DEFAULT_PERMITTED_ALGS.contains(alg)) {
+        throw new NoSuchAlgorithmException();
+      } else {
+        copy.add(alg);
+      }
+    }
+    this.permittedAlgs = copy;
     return this;
   }
 
   @Override
-  public JwtValidatorVertx addPermittedAlgorithm(JsonWebAlgorithm algorithm) {
-    this.permittedAlgs.add(algorithm);
+  public JwtValidator addPermittedAlgorithm(String algorithm) throws NoSuchAlgorithmException {
+    if (!DEFAULT_PERMITTED_ALGS.contains(algorithm)) {
+      throw new NoSuchAlgorithmException();
+    } else {
+      permittedAlgs.add(algorithm);
+    }
     return this;
   }
   
   /**
    * Set the maximum amount of time that can pass between the exp and now.
-   * @param timeLeewaySeconds the maximum amount of time that can pass between the exp and now.
+   * @param timeLeeway the maximum amount of time that can pass between the exp and now.
    */
   @Override
-  public JwtValidatorVertx setTimeLeewaySeconds(long timeLeewaySeconds) {
-    this.timeLeewaySeconds = timeLeewaySeconds;
+  public JwtValidator setTimeLeeway(Duration timeLeeway) {
+    this.timeLeewayMilliseconds = timeLeeway.toMillis();
+    return this;
+  }
+
+  /**
+   * Set the minimum amount of time that JWKs (and OpenID Discovery data) will be cached for.
+   * @param minKeyCacheLifetime the minimum amount of time that JWKs (and OpenID Discovery data) will be cached for.
+   */
+  @Override
+  public JwtValidator setMinimumKeyCacheLifetime(Duration minKeyCacheLifetime) {
+    this.minimumKeyCacheLifetime = minKeyCacheLifetime.toMillis();
     return this;
   }
 
@@ -82,7 +125,7 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
    * @param requireExp true if the token is required to have an exp claim.
    */
   @Override
-  public JwtValidatorVertx setRequireExp(boolean requireExp) {
+  public JwtValidator setRequireExp(boolean requireExp) {
     this.requireExp = requireExp;
     return this;
   }
@@ -92,7 +135,7 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
    * @param requireNbf true if the token is required to have an nbf claim.
    */
   @Override
-  public JwtValidatorVertx setRequireNbf(boolean requireNbf) {
+  public JwtValidator setRequireNbf(boolean requireNbf) {
     this.requireNbf = requireNbf;
     return this;
   }
@@ -105,40 +148,39 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
    * @return The token's parts.
    */
   @Override
-  public Future<JWT> validateToken(
-          String token
+  public Future<Jwt> validateToken(
+          String issuer
+          , String token
           , List<String> requiredAudList
           , boolean ignoreRequiredAud
   ) {
     
-    JWT jwt;
+    Jwt jwt;
     try {
-      jwt = JWT.parseJws(token);
+      jwt = Jwt.parseJws(token);
     } catch (Throwable ex) {
       logger.error("Parse of JWT failed: ", ex);
       return Future.failedFuture(new IllegalArgumentException("Parse of signed JWT failed", ex));
     }
 
     try {
-      JsonWebAlgorithm jwa = validateAlgorithm(jwt.getAlgorithm());
-      jwt.getKid();
+      validateAlgorithm(jwt.getAlgorithm());
+      String kid = jwt.getKid();
 
       if (jwt.getPayloadSize() == 0) {
         logger.error("No payload claims found in JWT");
         return Future.failedFuture(new IllegalArgumentException("Parse of signed JWT failed"));
       }
-      String issuer = jwt.getIssuer();
 
-      openIdDiscoveryHandler.validateIssuer(issuer);
-
-      return jwt.getJwk(openIdDiscoveryHandler)
+      return openIdDiscoveryHandler.findJwk(issuer, kid)
               .compose(jwk -> {
                 try {
-                  verify(jwa, jwk, jwt);
+                  verify(jwk, jwt);
 
-                  long nowSeconds = System.currentTimeMillis() / 1000;
-                  validateNbf(jwt, nowSeconds);
-                  validateExp(jwt, nowSeconds);
+                  long now = System.currentTimeMillis();
+                  validateIssuer(jwt, issuer);
+                  validateNbf(jwt, now);
+                  validateExp(jwt, now);
                   validateAud(jwt, requiredAudList, ignoreRequiredAud);
                   validateSub(jwt);
 
@@ -154,15 +196,34 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
     }
   }
 
-  private void verify(JsonWebAlgorithm jwa, JWK<?> jwk, JWT jwt) throws IllegalArgumentException {
+  private void validateIssuer(Jwt jwt, String externalIssuer) {
+    String tokenIssuer = jwt.getIssuer();
+
+    // empty issuer is never allowed
+    if (Strings.isNullOrEmpty(tokenIssuer)) {
+      throw new IllegalStateException("No issuer in token.");
+    }
+    
+    openIdDiscoveryHandler.validateIssuer(tokenIssuer);
+    
+    if (externalIssuer != null) {
+      if (!externalIssuer.equals(tokenIssuer)) {
+        throw new IllegalStateException("Issuer from token (" + tokenIssuer + ") does not match expected issuer (" + externalIssuer + ").");
+      }
+    }
+  }
+  
+  private void verify(JWK jwk, Jwt jwt) throws IllegalArgumentException {
 
     // empty signature is never allowed
     if (Strings.isNullOrEmpty(jwt.getSignature())) {
       throw new IllegalStateException("No signature in token.");
     }
 
+    requireNonNull(jwk, "JWK not set");
+    
     // if we only allow secure alg, then none is not a valid option
-    if (JsonWebAlgorithm.none == jwa) {
+    if ("none".equals(jwk.getAlgorithm())) {
       throw new IllegalStateException("Algorithm \"none\" not allowed");
     }
 
@@ -171,7 +232,8 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
     byte[] signingInput = jwt.getSignatureBase().getBytes(StandardCharsets.UTF_8);
 
     try {
-      if (!jwk.verify(jwa, payloadInput, signingInput)) {
+      JWS jws = new JWS(jwk);
+      if (!jws.verify(payloadInput, signingInput)) {
         throw new IllegalArgumentException("Signature verification failed");
       }
     } catch (Throwable ex) {
@@ -180,13 +242,13 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
     }
   }
 
-  private void validateSub(JWT jwt) throws IllegalArgumentException {
+  private void validateSub(Jwt jwt) throws IllegalArgumentException {
     if (Strings.isNullOrEmpty(jwt.getSubject())) {
       throw new IllegalArgumentException("No subject specified in token");
     }
   }
 
-  private void validateAud(JWT jwt, List<String> requiredAudList, boolean ignoreRequiredAud) throws IllegalArgumentException {
+  private void validateAud(Jwt jwt, List<String> requiredAudList, boolean ignoreRequiredAud) throws IllegalArgumentException {
     if ((requiredAudList == null) || (!ignoreRequiredAud && requiredAudList.isEmpty())) {
       throw new IllegalStateException("Required audience not set");
     }
@@ -210,11 +272,11 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
     }
   }
 
-  private void validateExp(JWT jwt, long nowSeconds) throws IllegalArgumentException {
+  private void validateExp(Jwt jwt, long now) throws IllegalArgumentException {
     if (jwt.getExpiration() != null) {
-      long target = nowSeconds - timeLeewaySeconds;
-      if (jwt.getExpiration() < target) {
-        logger.warn("Token exp = {} ({}), now = {} ({}), target = {} ({})", jwt.getExpiration(), jwt.getExpirationLocalDateTime(), nowSeconds, LocalDateTime.ofEpochSecond(nowSeconds, 0, ZoneOffset.UTC), target, LocalDateTime.ofEpochSecond(target, 0, ZoneOffset.UTC));
+      long targetMs = now - timeLeewayMilliseconds;
+      if (1000 * jwt.getExpiration() < targetMs) {
+        logger.warn("Token exp = {} ({}), now = {} ({}), target = {} ({})", jwt.getExpiration(), jwt.getExpirationLocalDateTime(), now, LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneOffset.UTC), targetMs, LocalDateTime.ofInstant(Instant.ofEpochMilli(targetMs), ZoneOffset.UTC));
         throw new IllegalArgumentException("Token is not valid after " + jwt.getExpirationLocalDateTime());
       }
     } else if (requireExp) {
@@ -222,10 +284,11 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
     }
   }
 
-  private void validateNbf(JWT jwt, long nowSeconds) throws IllegalArgumentException {
+  private void validateNbf(Jwt jwt, long now) throws IllegalArgumentException {
     if (jwt.getNotBefore() != null) {
-      long target = nowSeconds + timeLeewaySeconds;
-      if (jwt.getNotBefore() > target) {
+      long targetMs = now + timeLeewayMilliseconds;
+      if (1000 * jwt.getNotBefore() > targetMs) {
+        logger.warn("Token nbf = {} ({}), now = {} ({}), target = {} ({})", jwt.getNotBefore(), jwt.getNotBeforeLocalDateTime(), now, LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneOffset.UTC), targetMs, LocalDateTime.ofInstant(Instant.ofEpochMilli(targetMs), ZoneOffset.UTC));
         throw new IllegalArgumentException("Token is not valid until " + jwt.getNotBeforeLocalDateTime());
       }
     } else if (requireNbf) {
@@ -233,23 +296,15 @@ public class JwtValidatorVertxImpl implements JwtValidatorVertx {
     }
   }
 
-  private JsonWebAlgorithm validateAlgorithm(String algorithm) {
+  private void validateAlgorithm(String algorithm) throws IllegalArgumentException {
     if (algorithm == null) {
       logger.warn("No signature algorithm in token.");
       throw new IllegalArgumentException("Parse of signed JWT failed");
     }
-    JsonWebAlgorithm jwa;
-    try {
-      jwa = JsonWebAlgorithm.valueOf(algorithm);
-    } catch (Throwable ex) {
-      logger.warn("Failed to parse algorithm \"{}\"", algorithm);
-      throw new IllegalArgumentException("Parse of signed JWT failed");
-    }
-    if (!permittedAlgs.contains(jwa)) {
+    if (!permittedAlgs.contains(algorithm)) {
       logger.warn("Failed to find algorithm \"{}\" in {}", algorithm, permittedAlgs);
       throw new IllegalArgumentException("Parse of signed JWT failed");
     }
-    return jwa;
   }
 
 }

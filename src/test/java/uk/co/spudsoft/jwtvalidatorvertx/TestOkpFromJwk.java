@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TestOkpFromJwk {
   
-  private static final Logger logger = LoggerFactory.getLogger(JWK.class);
+  private static final Logger logger = LoggerFactory.getLogger(TestOkpFromJwk.class);
 
   private static byte[] getJdkEdCurve(String curve) {
     switch (curve) {

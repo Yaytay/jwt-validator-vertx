@@ -16,23 +16,18 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import io.vertx.core.json.JsonObject;
 import java.math.BigInteger;
 import java.security.AlgorithmParameters;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
-import java.security.spec.ECParameterSpec;
-import java.security.spec.ECPoint;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidParameterSpecException;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 
 /**
@@ -40,87 +35,42 @@ import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
  * 
  * @author jtalbut
  */
-public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
+public class ECJwkBuilder extends JwkBuilder {
   
   private static final Logger logger = LoggerFactory.getLogger(ECJwkBuilder.class);
   private static final String KTY = "EC";
 
-  private static class ECJwk extends JWK<ECPublicKey> {
-
-    ECJwk(long expiryMs, JsonObject json, ECPublicKey key) {
-      super(expiryMs, json, key);
-    }
-    
-  }
-
+  private static final Set<String> VALID_ALGS = ImmutableSet.<String>builder()
+          .add("ES256")
+          .add("ES384")
+          .add("ES512")
+          .build();
+  
   /**
    * Constructor.
    * 
-   * Typically it is not necessary to construct an explicit instance of this class, the ones in the {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} class should suffice.
+   * Typically it is not necessary to construct an explicit instance of this class, the methods in the {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder} class should suffice.
    * 
    */
   public ECJwkBuilder() {
   }
   
   @Override
-  public boolean canCreateFromKty(String kty) {
-    return KTY.equals(kty);
-  }
-
-  @Override
-  public boolean canCreateFromKey(PublicKey key) {
+  public boolean canHandleKey(PublicKey key) {
     return key instanceof ECPublicKey;
   }
-  
-  private static String getJdkEcCurveName(String curve) {
-    if (Strings.isNullOrEmpty(curve)) {
-      throw new IllegalArgumentException("JWK does not contain valid EC public key (curve not specified)");
-    }
-    switch (curve) {
-      case "P-256":
-        return "secp256r1";
-      case "P-384":
-        return "secp384r1";
-      case "P-521":
-        return "secp521r1";
-      default:
-        return curve;
-    }
-  }  
-  
-  @Override
-  public JWK<ECPublicKey> create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidParameterSpecException, InvalidKeySpecException {
-        
-    validateAlg(json, KTY);
-    AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
-
-    String curve = getJdkEcCurveName(json.getString("crv"));
-    parameters.init(new ECGenParameterSpec(curve));
-
-    String xStr = json.getString("x");
-    String yStr = json.getString("y");
-    if (Strings.isNullOrEmpty(xStr)) {
-      throw new IllegalArgumentException("x has no value");
-    } else if (Strings.isNullOrEmpty(yStr)) {
-      throw new IllegalArgumentException("y has no value");      
-    } else {
-      final BigInteger x = new BigInteger(1, B64DECODER.decode(xStr));
-      final BigInteger y = new BigInteger(1, B64DECODER.decode(yStr));
-
-      ECPublicKey key = (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(new ECPublicKeySpec(new ECPoint(x, y), parameters.getParameterSpec(ECParameterSpec.class)));
-      return new ECJwk(expiryMs, json, key);
-    }
-  }
-
   
   private static String oidToCurve(String oid) {
     switch (oid) {
       case "1.2.840.10045.3.1.7":
-        return "secp256r1";
+        // return "secp256r1";
+        return "P-256";
       case "1.3.132.0.34":
-        return "secp384r1";
+        // return "secp384r1";
+        return "P-384";
       case "1.3.132.0.35":
-        return "secp521r1";
+        // return "secp521r1";
+        return "P-521";
       default:
         logger.warn("Unrecognised OID passed in: {}", oid);
         throw new IllegalArgumentException("Unknown OID");
@@ -147,10 +97,16 @@ public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
   }
   
   @Override
-  public JWK<ECPublicKey> create(long expiryMs, String kid, PublicKey publicKey) throws InvalidParameterSpecException, NoSuchAlgorithmException {
+  public JsonObject toJson(String kid, String algorithm, PublicKey publicKey) throws InvalidParameterSpecException, NoSuchAlgorithmException {
     ECPublicKey key = (ECPublicKey) publicKey;
-    
+
     JsonObject json = new JsonObject();
+    if (VALID_ALGS.contains(algorithm)) {
+      json.put("alg", algorithm);
+    } else {
+      logger.warn("The algorithm {} is not in {}", algorithm, VALID_ALGS);
+      throw new NoSuchAlgorithmException(algorithm);
+    }
     json.put("kid", kid);
     json.put("kty", KTY);
     
@@ -163,8 +119,9 @@ public class ECJwkBuilder extends JwkBuilder<ECPublicKey> {
     int fieldSize = key.getParams().getCurve().getField().getFieldSize();
     json.put("x", B64ENCODER.encodeToString(coordinateToByteArray(fieldSize, key.getW().getAffineX())));
     json.put("y", B64ENCODER.encodeToString(coordinateToByteArray(fieldSize, key.getW().getAffineY())));
-
-    return new ECJwk(expiryMs, json, key);
+    
+    return json;
   }
+  
   
 }

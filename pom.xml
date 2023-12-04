@@ -51,7 +51,6 @@
     <logback.version>[1.2,)</logback.version>
     <junit-jupiter.version>5.10.1</junit-jupiter.version>
     <junit-platform.version>1.10.1</junit-platform.version>
-    <nimbus.version>[9.22,)</nimbus.version>
   </properties>
   
   <dependencies>
@@ -70,7 +69,11 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web</artifactId>
       <version>${vertx.version}</version>
-      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-auth-common</artifactId>
+      <version>${vertx.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -133,20 +136,12 @@
       <version>5.3.2</version>
       <exclusions>
         <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-        <exclusion>
           <groupId>com.sun.xml.bind</groupId>
           <artifactId>jaxb-osgi</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.apache.sling</groupId>
           <artifactId>org.apache.sling.javax.activation</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.httpcomponents</groupId>
-          <artifactId>httpclient</artifactId>
         </exclusion>
       </exclusions>
       <scope>test</scope>
@@ -196,7 +191,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.7.0</version>
+      <version>5.8.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -217,26 +212,6 @@
       <version>4.2.0</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.2</version>
-      <scope>test</scope>
-    </dependency>
-    <!-- For testing compatibility of tokens -->
-    <dependency>
-      <groupId>com.google.crypto.tink</groupId>
-      <artifactId>tink</artifactId>
-      <version>1.11.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.nimbusds</groupId>
-      <artifactId>nimbus-jose-jwt</artifactId>
-      <version>${nimbus.version}</version>
-      <scope>test</scope>
-    </dependency>    
-    <!-- End of nimbus dependencies -->
   </dependencies>
     
   <build>
@@ -295,7 +270,7 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>3.6.2</version>
+                  <version>3.9.0</version>
                 </requireMavenVersion>
                 <requireJavaVersion>
                   <version>${jdk.version}</version>
@@ -309,7 +284,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.4.0</version>
+        <version>3.5.0</version>
         <executions>
           <execution>
             <phase>initialize</phase>
@@ -356,7 +331,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.8.1.0</version>        
+        <version>4.8.2.0</version>        
         <configuration>
           <fork>true</fork>
           <effort>Max</effort>
@@ -521,7 +496,7 @@
       <plugin>
         <groupId>org.owasp</groupId>
         <artifactId>dependency-check-maven</artifactId>
-        <version>9.0.0</version>
+        <version>9.0.2</version>
         <configuration>
           <failBuildOnCVSS>8</failBuildOnCVSS>
           <failOnError>false</failOnError>
@@ -529,6 +504,7 @@
           <suppressionFiles>
             dependency-check-supressions.xml
           </suppressionFiles>
+          <nvdApiKey>${NVD_API_KEY}</nvdApiKey>
         </configuration>
         <executions>
           <execution>
@@ -575,7 +551,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.6.2</version>
+        <version>3.6.3</version>
         <executions>
           <execution>
             <id>attach-javadocs</id>

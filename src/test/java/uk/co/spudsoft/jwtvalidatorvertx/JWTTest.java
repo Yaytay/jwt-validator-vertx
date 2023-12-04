@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author jtalbut
  */
-public class JWTTest {
+public class JwtTest {
   
-  private static final Logger logger = LoggerFactory.getLogger(JWTTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(JwtTest.class);
   
   private static final Base64.Encoder BASE64 = Base64.getUrlEncoder().withoutPadding();  
   
@@ -54,14 +54,14 @@ public class JWTTest {
             ;
   }
   
-  private static JWT buildJwt(JsonObject header, JsonObject payload) {
-    return new JWT(header, payload, null, null);
+  private static Jwt buildJwt(JsonObject header, JsonObject payload) {
+    return new Jwt(header, payload, null, null);
   }
   
   @Test
   public void testParseJws() {
-    assertThrows(IllegalArgumentException.class, () -> JWT.parseJws("a"));
-    assertThrows(IllegalArgumentException.class, () -> JWT.parseJws("a.b.c.d"));
+    assertThrows(IllegalArgumentException.class, () -> Jwt.parseJws("a"));
+    assertThrows(IllegalArgumentException.class, () -> Jwt.parseJws("a.b.c.d"));
   }
 
   @Test
@@ -71,7 +71,7 @@ public class JWTTest {
   
   @Test
   public void testEmptyJwt() {
-    JWT jwt = new JWT(null, null, null, null);
+    Jwt jwt = new Jwt(null, null, null, null);
     assertNull(jwt.getAlgorithm());
     assertThat(jwt.getAudience(), empty());
     assertNull(jwt.getClaim("bob"));
@@ -80,7 +80,6 @@ public class JWTTest {
     assertThat(jwt.getGroups(), empty());
     assertNull(jwt.getIssuer());
     assertNull(jwt.getJsonWebAlgorithm());
-    assertNull(jwt.getJwk());
     assertNull(jwt.getKid());
     assertNull(jwt.getNotBefore());
     assertNull(jwt.getNotBeforeLocalDateTime());
@@ -93,7 +92,7 @@ public class JWTTest {
   }
   @Test
   public void testGetClaim() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                     , 
@@ -113,7 +112,7 @@ public class JWTTest {
     JsonObject payload = new JsonObject()
             .put("key", "value")
             ;
-    JWT jwt = JWT.parseJws(buildJwtString(header, payload));
+    Jwt jwt = Jwt.parseJws(buildJwtString(header, payload));
     String requiredSignatureBase = 
             BASE64.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8))
             + "."
@@ -124,7 +123,7 @@ public class JWTTest {
 
   @Test
   public void testGetSignature() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                     , 
@@ -137,7 +136,7 @@ public class JWTTest {
 
   @Test
   public void testGetAlgorithm() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -151,7 +150,7 @@ public class JWTTest {
 
   @Test
   public void testGetJsonWebAlgorithm() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -165,7 +164,7 @@ public class JWTTest {
 
   @Test
   public void testGetAudience() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -198,7 +197,7 @@ public class JWTTest {
 
   @Test
   public void testHasGroup() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -234,7 +233,7 @@ public class JWTTest {
 
   @Test
   public void testHasRole() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -270,7 +269,7 @@ public class JWTTest {
 
   @Test
   public void testGetExpiration() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -280,7 +279,7 @@ public class JWTTest {
     );
     assertNull(jwt.getExpiration());
     assertNull(jwt.getExpirationLocalDateTime());
-    jwt = JWT.parseJws(
+    jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -296,7 +295,7 @@ public class JWTTest {
 
   @Test
   public void testGetNotBefore() {
-    JWT jwt = JWT.parseJws(
+    Jwt jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -306,7 +305,7 @@ public class JWTTest {
     );
     assertNull(jwt.getNotBefore());
     assertNull(jwt.getNotBeforeLocalDateTime());
-    jwt = JWT.parseJws(
+    jwt = Jwt.parseJws(
             buildJwtString(
                     new JsonObject()
                             .put("alg", "none")
@@ -322,11 +321,11 @@ public class JWTTest {
   
   @Test
   public void testGetScopes() {
-    JWT jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one")));
+    Jwt jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one")));
     assertEquals(Arrays.asList("one"), jwt.getScope());
-    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scopes", "one")));
+    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scopes", "one")));
     assertEquals(Arrays.asList(), jwt.getScope());
-    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two")));
+    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two")));
     assertEquals(Arrays.asList("one", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
@@ -335,37 +334,37 @@ public class JWTTest {
   
   @Test
   public void testHasScope() {
-    JWT jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
+    Jwt jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
     assertEquals(Arrays.asList("one", "αβγδεζηθικλμνξοπρςστυφχψω", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertTrue(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "αβγδεζηθικλμνξοπρςστυφχψω one two")));
+    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "αβγδεζηθικλμνξοπρςστυφχψω one two")));
     assertEquals(Arrays.asList("αβγδεζηθικλμνξοπρςστυφχψω", "one", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertTrue(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two αβγδεζηθικλμνξοπρςστυφχψω")));
+    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one two αβγδεζηθικλμνξοπρςστυφχψω")));
     assertEquals(Arrays.asList("one", "two", "αβγδεζηθικλμνξοπρςστυφχψω"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertTrue(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one Xαβγδεζηθικλμνξοπρςστυφχψω two")));
+    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one Xαβγδεζηθικλμνξοπρςστυφχψω two")));
     assertEquals(Arrays.asList("one", "Xαβγδεζηθικλμνξοπρςστυφχψω", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertFalse(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψωX two")));
+    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψωX two")));
     assertEquals(Arrays.asList("one", "αβγδεζηθικλμνξοπρςστυφχψωX", "two"), jwt.getScope());
     assertTrue(jwt.hasScope("one"));
     assertTrue(jwt.hasScope("two"));
     assertFalse(jwt.hasScope("αβγδεζηθικλμνξοπρςστυφχψω"));
     assertFalse(jwt.hasScope("three"));
-    jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject()));
+    jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject()));
     assertEquals(Arrays.asList(), jwt.getScope());
     assertFalse(jwt.hasScope("one"));
     assertFalse(jwt.hasScope("two"));
@@ -373,44 +372,9 @@ public class JWTTest {
     assertFalse(jwt.hasScope("three"));
   }
 
-  private final static class TestJwksHandler implements JsonWebKeySetHandler {
-
-    @Override
-    public void validateIssuer(String issuer) throws IllegalArgumentException {
-    }
-
-    @Override
-    public Future<JWK<?>> findJwk(String issuer, String kid) {
-      try {
-        return Future.succeededFuture(
-                JWK.create(0, new JsonObject("{\"kty\":\"EC\",\"use\":\"sig\",\"crv\":\"P-256\",\"kid\":\"d480cda8-8461-44cb-80cc-9ae13f8dafa8\",\"x\":\"IhfvcFBxDBU1jXMlNQmf77IbzIfuj2jMcx8Vd3dUZeA\",\"y\":\"ZfAvxJn56o8IJoHAysSKZ5LQt9mKMb2_nIB0ohmpCsY\"}"))
-        );
-      } catch(Throwable ex) {
-        logger.error("Failed: ", ex);
-        return null;
-      }
-    }
-  }
-  
-  @Test
-  public void testGetJwk() {
-    JWT jwt = JWT.parseJws(
-            buildJwtString(
-                    new JsonObject()
-                            .put("alg", "none")
-                    , 
-                    new JsonObject()
-            )
-    );
-    assertNull(jwt.getJwk());
-    assertEquals("d480cda8-8461-44cb-80cc-9ae13f8dafa8", jwt.getJwk(new TestJwksHandler()).result().getKid());
-    assertEquals("d480cda8-8461-44cb-80cc-9ae13f8dafa8", jwt.getJwk(new TestJwksHandler()).result().getKid());
-    assertEquals("d480cda8-8461-44cb-80cc-9ae13f8dafa8", jwt.getJwk().getKid());
-  }
-
   @Test
   public void testGetPayloadAsString() {
-    JWT jwt = JWT.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
+    Jwt jwt = Jwt.parseJws(buildJwtString(new JsonObject().put("alg", "none"), new JsonObject().put("scope", "one αβγδεζηθικλμνξοπρςστυφχψω two")));
     assertEquals("{\"scope\":\"one αβγδεζηθικλμνξοπρςστυφχψω two\"}", jwt.getPayloadAsString());
   }  
 }

@@ -17,7 +17,6 @@
 package uk.co.spudsoft.jwtvalidatorvertx;
 
 import com.google.common.base.Strings;
-import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -36,7 +35,7 @@ import java.util.List;
  * 
  * @author jtalbut
  */
-public class JWT {
+public class Jwt {
   
   private static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();
   private static final int SPACE = " ".codePointAt(0);
@@ -46,8 +45,6 @@ public class JWT {
   private final String signatureBase;
   private final String signature;
   
-  private JWK<?> jwk;
-
   /**
    * Constructor.
    * @param header The header from the JWT.
@@ -55,7 +52,7 @@ public class JWT {
    * @param signatureBase The value used to calculate the signature - base64(header) + "." + base64(payload).
    * @param signature The signature from the JWT.
    */
-  public JWT(JsonObject header, JsonObject payload, String signatureBase, String signature) {
+  public Jwt(JsonObject header, JsonObject payload, String signatureBase, String signature) {
     this.header = header == null ? new JsonObject() : header;
     this.payload = payload == null ? new JsonObject() : payload;
     this.signatureBase = signatureBase;
@@ -67,7 +64,7 @@ public class JWT {
    * @param token The JWT in delimited string form.
    * @return A newly created JWT object.
    */
-  public static JWT parseJws(final String token) {
+  public static Jwt parseJws(final String token) {
     String[] segments = token.split("\\.");
     if (segments.length < 2 || segments.length > 3) {
       throw new IllegalArgumentException("Not enough or too many segments [" + segments.length + "]");
@@ -82,7 +79,7 @@ public class JWT {
     JsonObject header = new JsonObject(new String(B64DECODER.decode(headerSeg), StandardCharsets.UTF_8));
     JsonObject payload = new JsonObject(new String(B64DECODER.decode(payloadSeg), StandardCharsets.UTF_8));
 
-    return new JWT(header, payload, headerSeg + "." + payloadSeg, signatureSeg);
+    return new Jwt(header, payload, headerSeg + "." + payloadSeg, signatureSeg);
   }
   
   /**
@@ -204,7 +201,6 @@ public class JWT {
   public String getAlgorithm() {
     return header.getString("alg");
   }
-  
   
   /**
    * Get the algorithm specified in the JWT header as a {@link uk.co.spudsoft.jwtvalidatorvertx.JsonWebAlgorithm}.
@@ -390,33 +386,6 @@ public class JWT {
     } else {
       return null;
     }
-  }
-
-  /**
-   * Use the provided OpenIdDiscoveryHandler to call the jwks_uri from the discovery data to obtain the correct JWK for this JWT.
-   *
-   * The JWK will be cached in this JWT after it has been retrieved (and this method will return immediately if called again).
-   * 
-   * @param handler the OpenIdDiscoveryHandler that will perform the request for the JWK Set.
-   * @return A Future that will be completed with a {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} object when the discovery completes.
-   */
-  public Future<JWK<?>> getJwk(JsonWebKeySetHandler handler) {
-    if (this.jwk == null) {
-      return handler.findJwk(getIssuer(), getKid())
-              .onSuccess(j -> this.jwk = j);
-    } else {
-      return Future.succeededFuture(jwk);
-    }
-  }
-  
-  /**
-   * Get the jwk cached by a successful call to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler)}.
-   * This method should only be called in a handler chain following a successful called to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler)}.
-   * 
-   * @return the jwk cached by a successful called to {@link #getJwk(uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler)}.
-   */
-  public JWK<?> getJwk() {
-    return jwk;
   }
 
   /**

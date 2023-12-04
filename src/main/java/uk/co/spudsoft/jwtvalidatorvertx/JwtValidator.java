@@ -19,16 +19,18 @@ package uk.co.spudsoft.jwtvalidatorvertx;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+import javax.annotation.Nullable;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.JwtValidatorVertxImpl;
 
 /**
  * Validate JWTs, obtaining keys via OpenID Discovery is necessary.
  * @author jtalbut
  */
-public interface JwtValidatorVertx {
+public interface JwtValidator {
   
   /**
    * Create a JwtValidatorVertx.
@@ -38,7 +40,7 @@ public interface JwtValidatorVertx {
    * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
    * @return A newly created JwtValidatorVertx.
    */
-  static JwtValidatorVertx create(Vertx vertx, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
+  static JwtValidator create(Vertx vertx, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
     JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(WebClient.create(vertx), issuerAcceptabilityHandler, defaultJwkCacheDuration);
     return create(openIdDiscoveryHandler);
   }
@@ -49,7 +51,7 @@ public interface JwtValidatorVertx {
    * @param jsonWebKeySetHandler The JsonWebKeySet handler used for OpenID discovery and JWK Set discovery.
    * @return A newly created JwtValidatorVertx.
    */
-  static JwtValidatorVertx create(JsonWebKeySetHandler jsonWebKeySetHandler) {
+  static JwtValidator create(JsonWebKeySetHandler jsonWebKeySetHandler) {
     return new JwtValidatorVertxImpl(jsonWebKeySetHandler);
   }
 
@@ -57,50 +59,71 @@ public interface JwtValidatorVertx {
    * Get a copy of the current set of permitted algorithms.
    * @return a copy of the current set of permitted algorithms.
    */
-  EnumSet<JsonWebAlgorithm> getPermittedAlgorithms();
+  Set<String> getPermittedAlgorithms();
   
   /**
    * Replace the current set of permitted algorithms with a new set.
    * @param algorithms The new set of permitted algorithms.
    * @return this for fluent configuration.
+   * @throws NoSuchAlgorithmException if any of the algorithms passed in are not recognised.
    */
-  JwtValidatorVertx setPermittedAlgorithms(EnumSet<JsonWebAlgorithm> algorithms);
+  JwtValidator setPermittedAlgorithms(Set<String> algorithms) throws NoSuchAlgorithmException;
   
   /**
    * Add a single algorithm to the current set of permitted algorithms.
    * @param algorithm The algorithm to add to the current set of permitted algorithms.
    * @return this for fluent configuration.
+   * @throws NoSuchAlgorithmException if the algorithm passed is not recognised.
    */
-  JwtValidatorVertx addPermittedAlgorithm(JsonWebAlgorithm algorithm);
+  JwtValidator addPermittedAlgorithm(String algorithm) throws NoSuchAlgorithmException;
+  
+  
   
   /**
    * Set to true if the token is required to have an exp claim.
    * @param requireExp true if the token is required to have an exp claim.
    * @return this for fluent configuration.
    */
-  JwtValidatorVertx setRequireExp(boolean requireExp);
+  JwtValidator setRequireExp(boolean requireExp);
 
   /**
    * Set to true if the token is required to have an nbf claim.
    * @param requireNbf true if the token is required to have an nbf claim.
    * @return this for fluent configuration.
    */
-  JwtValidatorVertx setRequireNbf(boolean requireNbf);
+  JwtValidator setRequireNbf(boolean requireNbf);
 
   /**
    * Set the maximum amount of time that can pass between the exp and now.
-   * @param timeLeewaySeconds the maximum amount of time that can pass between the exp and now.
+   * @param timeLeeway the maximum amount of time that can pass between the exp and now.
    * @return this for fluent configuration.
    */
-  JwtValidatorVertx setTimeLeewaySeconds(long timeLeewaySeconds);
+  JwtValidator setTimeLeeway(Duration timeLeeway);
 
   /**
-   * Validate the token and either throw an exception or return it's constituent parts.
+   * Set the maximum amount of time that can pass between the exp and now.
+   * @param minKeyCacheLifetime the minimum amount of time for which keys will be cached.
+   * @return this for fluent configuration.
+   */
+  JwtValidator setMinimumKeyCacheLifetime(Duration minKeyCacheLifetime);
+
+  /**
+   * Validate the token and either return a failed Future or return a Future containing the JWT's constituent parts.
+   * 
+   * There are two ways in which keys can be located for token verification:
+   * <ul>
+   * <li>If the issuer is not null it will be used to perform OpenID Discovery to locate the JWKS and thus to download the key.
+   * <li>If the issuer is null all of the configured JWKS endpoints will be queried to search for the key.
+   * </ul>
+   * In both cases the key will be cached according to the Cache-Control max-age parameter, or for at least the configured minKeyCacheLifetime.
+   * In the case of a cache miss the JWKS endpoints (either configured or discovered) will always be requeried, so there isn't much harm in using a long key cache lifetime.
+   * 
+   * @param issuer            The token issuer.
    * @param token             The token.
    * @param requiredAudList   List of audiences, all of which must be claimed by the token. 
    * @param ignoreRequiredAud Do not check for required audiences.
    * @return The token's parts.
    */
-  Future<JWT> validateToken(String token, List<String> requiredAudList, boolean ignoreRequiredAud);
+  Future<Jwt> validateToken(@Nullable String issuer, String token, List<String> requiredAudList, boolean ignoreRequiredAud);
 
 }

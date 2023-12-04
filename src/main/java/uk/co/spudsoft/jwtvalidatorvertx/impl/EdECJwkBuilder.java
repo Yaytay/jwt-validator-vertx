@@ -16,19 +16,16 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Bytes;
 import io.vertx.core.json.JsonObject;
 import java.math.BigInteger;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.EdECPublicKey;
-import java.security.spec.EdECPoint;
-import java.security.spec.EdECPublicKeySpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.NamedParameterSpec;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 
 /**
@@ -36,71 +33,42 @@ import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
  * 
  * @author jtalbut
  */
-public class EdECJwkBuilder extends JwkBuilder<EdECPublicKey> {
+public class EdECJwkBuilder extends JwkBuilder {
+  
+  private static final Logger logger = LoggerFactory.getLogger(EdECJwkBuilder.class);
+  
+  private static final Set<String> VALID_ALGS = ImmutableSet.<String>builder()
+          .add("EdDSA")
+          .build();
   
   private static final String KTY = "OKP";
-
-  private static class EdECJwk extends JWK<EdECPublicKey> {
-
-    EdECJwk(long expiryMs, JsonObject json, EdECPublicKey key) {
-      super(expiryMs, json, key);
-    }
-    
-  }  
 
   /**
    * Constructor.
    * 
-   * Typically it is not necessary to construct an explicit instance of this class, the ones in the {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} class should suffice.
+   * Typically it is not necessary to construct an explicit instance of this class, the methods in the {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder} class should suffice.
    * 
    */
   public EdECJwkBuilder() {
   }
   
   @Override
-  public boolean canCreateFromKty(String kty) {
-    return KTY.equals(kty);
-  }
-
-  @Override
-  public boolean canCreateFromKey(PublicKey key) {
+  public boolean canHandleKey(PublicKey key) {
     return key instanceof EdECPublicKey;
   }  
   
-  private static EdECPoint byteArrayToEdPoint(byte[] arr) {
-    byte msb = arr[arr.length - 1];
-    boolean xOdd = (msb & 0x80) != 0;
-    arr[arr.length - 1] &= (byte) 0x7F;
-    Bytes.reverse(arr, 0, arr.length);
-    BigInteger y = new BigInteger(1, arr);
-    return new EdECPoint(xOdd, y);
-  }
-  
   @Override
-  public JWK<EdECPublicKey> create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException {
-    
-    validateAlg(json, "EdDSA");
-    String xStr = json.getString("x");
-    String curve = json.getString("crv");
-
-    if (Strings.isNullOrEmpty(xStr)) {
-      throw new IllegalArgumentException("key has no value");
-    } else if (Strings.isNullOrEmpty(curve)) {
-      throw new IllegalArgumentException("curve has no value");      
-    } else {
-      KeyFactory kf = KeyFactory.getInstance("EdDSA");
-      NamedParameterSpec paramSpec = new NamedParameterSpec(curve);
-      EdECPublicKeySpec pubSpec = new EdECPublicKeySpec(paramSpec, byteArrayToEdPoint(B64DECODER.decode(xStr)));
-      EdECPublicKey key = (EdECPublicKey) kf.generatePublic(pubSpec);
-      return new EdECJwk(expiryMs, json, key);
-    }
-  }
-
-  @Override
-  public JWK<EdECPublicKey> create(long expiryMs, String kid, PublicKey publicKey) {
+  public JsonObject toJson(String kid, String algorithm, PublicKey publicKey) throws NoSuchAlgorithmException {
     EdECPublicKey key = (EdECPublicKey) publicKey;
             
     JsonObject json = new JsonObject();
+    if (VALID_ALGS.contains(algorithm)) {
+      json.put("alg", algorithm);
+    } else {
+      logger.warn("The algorithm {} is not in {}", algorithm, VALID_ALGS);
+      throw new NoSuchAlgorithmException(algorithm);
+    }
+    
     json.put("kid", kid);
     json.put("kty", KTY);
     json.put("crv", key.getParams().getName());
@@ -108,12 +76,11 @@ public class EdECJwkBuilder extends JwkBuilder<EdECPublicKey> {
     BigInteger y = key.getPoint().getY();
     byte[] arr = y.toByteArray();
     Bytes.reverse(arr, 0, arr.length);
-    if (key.getPoint().isXOdd()) {
-      arr[arr.length - 1] |= 0x8;
-    }
+//    if (key.getPoint().isXOdd()) {
+//      arr[arr.length - 1] |= 0x8;
+//    }
     json.put("x", B64ENCODER.encodeToString(arr));
-    return new EdECJwk(expiryMs, json, key);
+    return json;
   }
-  
   
 }

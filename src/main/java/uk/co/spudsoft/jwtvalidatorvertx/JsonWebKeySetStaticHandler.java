@@ -16,6 +16,7 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx;
 
+import io.vertx.ext.auth.impl.jose.JWK;
 import java.util.Arrays;
 import java.util.Collection;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.JWKSStaticSetHandlerImpl;
@@ -59,7 +60,7 @@ public interface JsonWebKeySetStaticHandler extends JsonWebKeySetHandler {
    * @param key The key being added.
    * @return this for fluent configuration.
    */
-  JsonWebKeySetStaticHandler addKey(String issuer, JWK<?> key);
+  JsonWebKeySetStaticHandler addKey(String issuer, JWK key);
   
   /**
    * Remove a JWK from the known set.

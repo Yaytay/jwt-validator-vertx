@@ -17,12 +17,12 @@
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.impl.jose.JWK;
 import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetStaticHandler;
 
 /**
@@ -50,11 +50,11 @@ public class JsonWebKeySetStaticHandlerTest {
     
     JsonWebKeySetStaticHandler impl = JsonWebKeySetStaticHandler.create();
     
-    assertTrue(impl.findJwk("issuer", "kid").failed());
-    JWK<?> jwk = JWK.create(0, new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}"));
+    assertTrue(impl.findJwk("issuer", "kid").failed());    
+    JWK jwk = new JWK(new JsonObject("{\"kty\":\"OKP\",\"use\":\"sig\",\"crv\":\"Ed25519\",\"kid\":\"518a90bb-7cc7-4e5c-ab27-152fc8043bdd\",\"x\":\"uH_4yaa1mSj6NzIAOrrkMkfDRpNklKKgHBc8a-7Hslk\"}"));
     impl.addKey("issuer", jwk);
-    assertEquals("sig", impl.findJwk("issuer", "518a90bb-7cc7-4e5c-ab27-152fc8043bdd").result().getUse());
-    impl.removeKey("issuer", jwk.getKid());
+    assertEquals("sig", impl.findJwk("issuer", "518a90bb-7cc7-4e5c-ab27-152fc8043bdd").result().use());
+    impl.removeKey("issuer", jwk.getId());
     assertTrue(impl.findJwk("issuer", "518a90bb-7cc7-4e5c-ab27-152fc8043bdd").failed());
   }
 

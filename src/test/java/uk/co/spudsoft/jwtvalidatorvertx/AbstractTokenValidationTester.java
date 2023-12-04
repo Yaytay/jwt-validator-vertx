@@ -1,7 +1,9 @@
 package uk.co.spudsoft.jwtvalidatorvertx;
 
+import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableMap;
 import io.vertx.core.json.JsonArray;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -9,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.AbstractTokenBuilder;
 
 /**
  * Required tests: 
@@ -33,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * <LI>Token aud not accepted when last element of array despite being the aud for the service 
  * <LI>Token sub not present
  * </UL>
- * @author njt
+ * @author jtalbut
  */
 public abstract class AbstractTokenValidationTester {
 
@@ -45,11 +48,9 @@ public abstract class AbstractTokenValidationTester {
           .put("given_name", "tester")
           .build();
   
-  protected abstract TokenBuilder createTokenBuilder();
+  protected abstract TokenBuilder createTokenBuilder(Cache<String, AlgorithmAndKeyPair> keyCache);
 
   protected abstract void useToken(String token);
-
-  protected abstract void prepTest(TokenBuilder builder);
 
   protected abstract String getAud();
 
@@ -138,8 +139,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testValidRs256() throws Exception {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     useToken(builder.buildToken(JsonWebAlgorithm.RS256, getKeyId(), getIssuer(), "sub", Arrays.asList(getAud()), nowSeconds,
@@ -148,8 +148,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testValidRs384() throws Exception {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     useToken(builder.buildToken(JsonWebAlgorithm.RS384, getKeyId(), getIssuer(), "sub", Arrays.asList(getAud()), nowSeconds,
@@ -158,8 +157,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testValidRs512() throws Exception {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     useToken(builder.buildToken(JsonWebAlgorithm.RS512, getKeyId(), getIssuer(), "sub", Arrays.asList(getAud()), nowSeconds,
@@ -193,8 +191,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testInvalidStructureFirstPartNotBase64() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder().setBreakHeader(true);
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1))).setHeaderNotValidBase64(true);
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     try {
@@ -208,8 +205,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testInvalidStructureSecondPartNotBase64() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder().setBreakPayload(true);
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1))).setPayloadNotValidBase64(true);
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     try {
@@ -223,8 +219,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testInvalidStructureThirdPartNotBase64() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder().setBreakSignature(true);
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1))).setSignatureNotValidBase64(true);
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     try {
@@ -238,8 +233,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testInvalidStructureFirstPartNotJson() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder().setHeaderNotJson(true);
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1))).setHeaderNotJson(true);
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     try {
@@ -253,8 +247,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testInvalidStructureSecondPartNotJson() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder().setPayloadNotJson(true);
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1))).setPayloadNotJson(true);
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     try {
@@ -268,8 +261,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testAlgorithmNone() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     try {
@@ -283,8 +275,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testAlgorithmES512() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
@@ -299,8 +290,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testAlgorithmHS512() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
@@ -315,8 +305,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testInvalidSignature() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder().setInvalidSignature(true);
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1))).setSignatureNotValidHash(true);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
@@ -331,8 +320,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testKeyNotInJwksOutput() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder().setInvalidKid(true);
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1))).setKidInvalid(true);
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;
@@ -357,8 +345,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testNoExpPermitted() throws Exception, TestFailure {
     if (requiresExp()) {
-      TokenBuilder builder = createTokenBuilder();
-      prepTest(builder);
+      TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
       String kid = UUID.randomUUID().toString();
       long nowSeconds = System.currentTimeMillis() / 1000;
@@ -375,8 +362,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testExpInThePast() throws Exception, TestFailure {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     String kid = UUID.randomUUID().toString();
 
@@ -403,8 +389,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testNoNbfPermitted() throws Exception, TestFailure {
     if (requiresNbf()) {
-      TokenBuilder builder = createTokenBuilder();
-      prepTest(builder);
+      TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
       String kid = UUID.randomUUID().toString();
       long nowSeconds = System.currentTimeMillis() / 1000;
@@ -421,8 +406,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testNbfInTheFuture() throws Exception, TestFailure {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     String kid = UUID.randomUUID().toString();
 
@@ -449,8 +433,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testBadIssAccepted() throws Exception, TestFailure {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     String kid = UUID.randomUUID().toString();
 
@@ -465,8 +448,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testBadAudAccepted() throws Exception, TestFailure {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     String kid = UUID.randomUUID().toString();
 
@@ -481,8 +463,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testAudNotAcceptedAsSingleElementArray() throws Exception, TestFailure {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     JsonArray aud = new JsonArray();
     aud.add(getAud());
@@ -504,8 +485,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testAudNotAcceptedAsSingleValue() throws Exception, TestFailure {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     Map<String, Object> claimsWithAud = ImmutableMap.<String, Object>builder()
             .put("aud", getAud())
@@ -525,8 +505,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testAudNotAcceptedAsFirstElementOfArray() throws Exception, TestFailure {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     JsonArray aud = new JsonArray();
     aud.add(getAud());
@@ -552,8 +531,7 @@ public abstract class AbstractTokenValidationTester {
   }
 
   public String testAudNotAcceptedAsLastElementOfArray() throws Exception, TestFailure {
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     JsonArray aud = new JsonArray();
     aud.add("bob");
@@ -581,8 +559,7 @@ public abstract class AbstractTokenValidationTester {
 
   public String testNoSubAccepted() throws Exception, TestFailure {
 
-    TokenBuilder builder = createTokenBuilder();
-    prepTest(builder);
+    TokenBuilder builder = createTokenBuilder(AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1)));
 
     String kid = UUID.randomUUID().toString();
     long nowSeconds = System.currentTimeMillis() / 1000;

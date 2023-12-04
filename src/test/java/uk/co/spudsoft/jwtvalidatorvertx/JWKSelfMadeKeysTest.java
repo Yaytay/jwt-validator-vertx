@@ -16,6 +16,9 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx;
 
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.impl.jose.JWK;
+import io.vertx.ext.auth.impl.jose.JWS;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -27,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkJwksHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkTokenBuilder;
 
 /**
@@ -47,13 +49,16 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     ECPublicKey key = (ECPublicKey) pair.getPublic();
     
-    JWK<?> jwk = JWK.create(1000, kid, key);
-    assertEquals(kid, jwk.getKid());
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "ES256", key);    
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES256, signingInput);
-    jwk.verify(JsonWebAlgorithm.ES256, signature, signingInput.getBytes(StandardCharsets.UTF_8));
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.ES256, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
   @Test  
@@ -65,13 +70,18 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     ECPublicKey key = (ECPublicKey) pair.getPublic();
     
-    JWK<?> jwk = JWK.create(1000, kid, key);
-    assertEquals(kid, jwk.getKid());
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "ES384", key);    
+    // Can't determine hash size from key alone
+    jo.put("alg", "ES384");
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES384, signingInput);
-    jwk.verify(JsonWebAlgorithm.ES384, signature, signingInput.getBytes(StandardCharsets.UTF_8));
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.ES384, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
   @Test  
@@ -83,13 +93,16 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     ECPublicKey key = (ECPublicKey) pair.getPublic();
     
-    JWK<?> jwk = JWK.create(1000, kid, key);
-    assertEquals(kid, jwk.getKid());
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "ES512", key);
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES512, signingInput);
-    jwk.verify(JsonWebAlgorithm.ES512, signature, signingInput.getBytes(StandardCharsets.UTF_8));
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.ES512, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
   @Test  
@@ -100,13 +113,16 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     RSAPublicKey key = (RSAPublicKey) pair.getPublic();
     
-    JWK<?> jwk = JWK.create(1000, kid, key);
-    assertEquals(kid, jwk.getKid());
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "RS256", key);    
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.RS256, signingInput);
-    jwk.verify(JsonWebAlgorithm.RS256, signature, signingInput.getBytes(StandardCharsets.UTF_8));
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.RS256, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
   @Test  
@@ -117,13 +133,16 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     RSAPublicKey key = (RSAPublicKey) pair.getPublic();
     
-    JWK<?> jwk = JWK.create(1000, kid, key);
-    assertEquals(kid, jwk.getKid());
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "RS384", key);
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.RS384, signingInput);
-    jwk.verify(JsonWebAlgorithm.RS384, signature, signingInput.getBytes(StandardCharsets.UTF_8));
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.RS384, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
   @Test  
@@ -134,13 +153,16 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.genKeyPair();
     RSAPublicKey key = (RSAPublicKey) pair.getPublic();
     
-    JWK<?> jwk = JWK.create(1000, kid, key);
-    assertEquals(kid, jwk.getKid());
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "RS512", key);
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.RS512, signingInput);
-    jwk.verify(JsonWebAlgorithm.RS512, signature, signingInput.getBytes(StandardCharsets.UTF_8));
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.RS512, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
   @Test  
@@ -151,14 +173,16 @@ public class JWKSelfMadeKeysTest {
     KeyPair pair = keyGen.generateKeyPair();
     EdECPublicKey key = (EdECPublicKey) pair.getPublic();
     
-    JWK<?> jwk = JWK.create(1000, kid, key);
-    assertEquals(kid, jwk.getKid());
-    logger.debug("JWK: {}", jwk.getJson());
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "EdDSA", key);    
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
     
     // We can't compare the key because the representation may differ, so can we validate something signed.
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.EdDSA, signingInput);
-    jwk.verify(JsonWebAlgorithm.EdDSA, signature, signingInput.getBytes(StandardCharsets.UTF_8));
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.EdDSA, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
   

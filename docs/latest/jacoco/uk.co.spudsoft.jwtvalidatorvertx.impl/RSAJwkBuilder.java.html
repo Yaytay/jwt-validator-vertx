@@ -16,16 +16,14 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import io.vertx.core.json.JsonObject;
-import java.math.BigInteger;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 
 /**
@@ -33,68 +31,50 @@ import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
  *
  * @author jtalbut
  */
-public class RSAJwkBuilder extends JwkBuilder&lt;RSAPublicKey&gt; {
+public class RSAJwkBuilder extends JwkBuilder {
 
-  private static final String KTY = &quot;RSA&quot;;
+<span class="fc" id="L36">  private static final Logger logger = LoggerFactory.getLogger(RSAJwkBuilder.class);</span>
   
-  private static class RSAJwk extends JWK&lt;RSAPublicKey&gt; {
+  private static final String KTY = &quot;RSA&quot;;
 
-    RSAJwk(long expiryMs, JsonObject json, RSAPublicKey key) {
-<span class="fc" id="L43">      super(expiryMs, json, key);</span>
-<span class="fc" id="L44">    }</span>
-    
-  }
-
+<span class="fc" id="L40">  private static final Set&lt;String&gt; VALID_ALGS = ImmutableSet.&lt;String&gt;builder()</span>
+<span class="fc" id="L41">          .add(&quot;RS256&quot;)</span>
+<span class="fc" id="L42">          .add(&quot;RS384&quot;)</span>
+<span class="fc" id="L43">          .add(&quot;RS512&quot;)</span>
+<span class="fc" id="L44">          .build();</span>
+  
   /**
    * Constructor.
    * 
-   * Typically it is not necessary to construct an explicit instance of this class, the ones in the {@link uk.co.spudsoft.jwtvalidatorvertx.JWK} class should suffice.
+   * Typically it is not necessary to construct an explicit instance of this class, the methods in the {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder} class should suffice.
    * 
    */
-<span class="fc" id="L54">  public RSAJwkBuilder() {</span>
-<span class="fc" id="L55">  }</span>
+<span class="fc" id="L52">  public RSAJwkBuilder() {</span>
+<span class="fc" id="L53">  }</span>
   
   @Override
-  public boolean canCreateFromKty(String kty) {
-<span class="pc bpc" id="L59" title="1 of 4 branches missed.">    return KTY.equals(kty) || &quot;RSASSA&quot;.equals(kty);</span>
-  }
-
-  @Override
-  public boolean canCreateFromKey(PublicKey key) {
-<span class="fc" id="L64">    return key instanceof RSAPublicKey;</span>
+  public boolean canHandleKey(PublicKey key) {
+<span class="fc" id="L57">    return key instanceof RSAPublicKey;</span>
   }
   
   @Override
-  public JWK&lt;RSAPublicKey&gt; create(long expiryMs, JsonObject json) throws NoSuchAlgorithmException, InvalidKeySpecException {
+  public JsonObject toJson(String kid, String algorithm, PublicKey publicKey) throws NoSuchAlgorithmException {
+<span class="fc" id="L62">    RSAPublicKey key = (RSAPublicKey) publicKey;</span>
     
-<span class="fc" id="L70">    validateAlg(json, &quot;RSA&quot;);</span>
-<span class="fc" id="L71">    String nStr = json.getString(&quot;n&quot;);</span>
-<span class="fc" id="L72">    String eStr = json.getString(&quot;e&quot;);</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(nStr)) {</span>
-<span class="fc" id="L74">      throw new IllegalArgumentException(&quot;modulus has no value&quot;);</span>
-<span class="fc bfc" id="L75" title="All 2 branches covered.">    } else if (Strings.isNullOrEmpty(eStr)) {</span>
-<span class="fc" id="L76">      throw new IllegalArgumentException(&quot;exponent has no value&quot;);      </span>
+<span class="fc" id="L64">    JsonObject json = new JsonObject();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">    if (VALID_ALGS.contains(algorithm)) {</span>
+<span class="fc" id="L66">      json.put(&quot;alg&quot;, algorithm);</span>
     } else {
-<span class="fc" id="L78">      final BigInteger n = new BigInteger(1, B64DECODER.decode(nStr));</span>
-<span class="fc" id="L79">      final BigInteger e = new BigInteger(1, B64DECODER.decode(eStr));</span>
-<span class="fc" id="L80">      RSAPublicKey key = (RSAPublicKey) KeyFactory.getInstance(&quot;RSA&quot;).generatePublic(new RSAPublicKeySpec(n, e));</span>
-<span class="fc" id="L81">      return new RSAJwk(expiryMs, json, key);</span>
+<span class="fc" id="L68">      logger.warn(&quot;The algorithm {} is not in {}&quot;, algorithm, VALID_ALGS);</span>
+<span class="fc" id="L69">      throw new NoSuchAlgorithmException(algorithm);</span>
     }
+<span class="fc" id="L71">    json.put(&quot;kid&quot;, kid);</span>
+<span class="fc" id="L72">    json.put(&quot;kty&quot;, KTY);</span>
+<span class="fc" id="L73">    json.put(&quot;e&quot;, B64ENCODER.encodeToString(key.getPublicExponent().toByteArray()));</span>
+<span class="fc" id="L74">    json.put(&quot;n&quot;, B64ENCODER.encodeToString(key.getModulus().toByteArray()));</span>
+<span class="fc" id="L75">    return json;</span>
   }
 
-  @Override
-  public JWK&lt;RSAPublicKey&gt; create(long expiryMs, String kid, PublicKey publicKey) {
-<span class="fc" id="L87">    RSAPublicKey key = (RSAPublicKey) publicKey;</span>
-    
-<span class="fc" id="L89">    JsonObject json = new JsonObject();</span>
-<span class="fc" id="L90">    json.put(&quot;kid&quot;, kid);</span>
-<span class="fc" id="L91">    json.put(&quot;kty&quot;, &quot;RSA&quot;);</span>
-    // This is just to test the alg handling in JWK constructor, we don't know (or care) whether it's RSA256, 384 or 512.
-<span class="fc" id="L93">    json.put(&quot;alg&quot;, &quot;RS256&quot;);</span>
-<span class="fc" id="L94">    json.put(&quot;e&quot;, B64ENCODER.encodeToString(key.getPublicExponent().toByteArray()));</span>
-<span class="fc" id="L95">    json.put(&quot;n&quot;, B64ENCODER.encodeToString(key.getModulus().toByteArray()));</span>
-<span class="fc" id="L96">    return new RSAJwk(expiryMs, json, key);</span>
-  }
   
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

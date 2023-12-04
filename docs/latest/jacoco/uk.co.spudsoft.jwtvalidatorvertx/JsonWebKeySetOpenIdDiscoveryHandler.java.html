@@ -17,6 +17,7 @@
 package uk.co.spudsoft.jwtvalidatorvertx;
 
 import io.vertx.core.Future;
+import io.vertx.ext.auth.impl.jose.JWK;
 import io.vertx.ext.web.client.WebClient;
 import java.time.Duration;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.JWKSOpenIdDiscoveryHandlerImpl;
@@ -43,7 +44,7 @@ public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandle
    * @return a newly created instance of the implementation class.
    */
   static JsonWebKeySetOpenIdDiscoveryHandler create(WebClient webClient, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
-<span class="fc" id="L46">    return new JWKSOpenIdDiscoveryHandlerImpl(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration.toSeconds());</span>
+<span class="fc" id="L47">    return new JWKSOpenIdDiscoveryHandlerImpl(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration.toSeconds());</span>
   }
   
   /**
@@ -55,7 +56,7 @@ public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandle
    * @param kid The key ID being sought.
    * @return A Future that will be completed with the JWK.
    */
-  Future&lt;JWK&lt;?&gt;&gt; findJwk(DiscoveryData discoveryData, String kid);
+  Future&lt;JWK&gt; findJwk(DiscoveryData discoveryData, String kid);
   
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -29,27 +29,15 @@ import io.vertx.core.json.JsonObject;
  */
 public class DiscoveryData {
   
-  private final long expiryMs;
   private final JsonObject json;
 
   /**
    * Constructor.
-   * @param expiryMs The time in ms from the epoch (i.e. to be compared with System.currentTimeMillis) at which this data should be discarded.
-   *    Should be found by parsing cache-control headers.
    * @param json The JSON data in the body of the discovery response.
    */
-<span class="fc" id="L41">  public DiscoveryData(long expiryMs, JsonObject json) {</span>
-<span class="fc" id="L42">    this.expiryMs = expiryMs;</span>
-<span class="fc" id="L43">    this.json = json;</span>
-<span class="fc" id="L44">  }</span>
-
-  /**
-   * Get the expiry time in ms from the epoch.
-   * @return the expiry time in ms from the epoch.
-   */
-  public long getExpiry() {
-<span class="fc" id="L51">    return expiryMs;</span>
-  }
+<span class="fc" id="L38">  public DiscoveryData(JsonObject json) {</span>
+<span class="fc" id="L39">    this.json = json;</span>
+<span class="fc" id="L40">  }</span>
 
   /**
    * Get a value from the response.
@@ -57,7 +45,7 @@ public class DiscoveryData {
    * @return the value from the response with the given key.
    */
   public Object get(String key) {
-<span class="fc" id="L60">    return json.getValue(key);</span>
+<span class="fc" id="L48">    return json.getValue(key);</span>
   }
 
   
@@ -72,7 +60,7 @@ public class DiscoveryData {
    * @return the issuer.
    */
   public String getIssuer() {
-<span class="fc" id="L75">    return json.getString(&quot;issuer&quot;);</span>
+<span class="fc" id="L63">    return json.getString(&quot;issuer&quot;);</span>
   }
   
   /**
@@ -84,7 +72,7 @@ public class DiscoveryData {
    * @return the authorization endpoint.
    */
   public String getAuthorizationEndpoint() {
-<span class="fc" id="L87">    return json.getString(&quot;authorization_endpoint&quot;);</span>
+<span class="fc" id="L75">    return json.getString(&quot;authorization_endpoint&quot;);</span>
   }
 
   /**
@@ -95,7 +83,7 @@ public class DiscoveryData {
    * @return the token endpoint.
    */
   public String getTokenEndpoint() {
-<span class="fc" id="L98">    return json.getString(&quot;token_endpoint&quot;);</span>
+<span class="fc" id="L86">    return json.getString(&quot;token_endpoint&quot;);</span>
   }
 
   /**
@@ -108,7 +96,7 @@ public class DiscoveryData {
    * @return the user-info endpoint.
    */
   public String getUserinfoEndpoint() {
-<span class="fc" id="L111">    return json.getString(&quot;userinfo_endpoint&quot;);</span>
+<span class="fc" id="L99">    return json.getString(&quot;userinfo_endpoint&quot;);</span>
   }
 
   /**
@@ -126,7 +114,7 @@ public class DiscoveryData {
    * @return the JWKS URI.
    */
   public String getJwksUri() {
-<span class="fc" id="L129">    return json.getString(&quot;jwks_uri&quot;);</span>
+<span class="fc" id="L117">    return json.getString(&quot;jwks_uri&quot;);</span>
   }
   
   /**
@@ -138,7 +126,7 @@ public class DiscoveryData {
    * @return the registration endpoint.
    */
   public String getRegistrationEndpoint() {
-<span class="fc" id="L141">    return json.getString(&quot;registration_endpoint&quot;);</span>
+<span class="fc" id="L129">    return json.getString(&quot;registration_endpoint&quot;);</span>
   }
   
   /**
@@ -152,7 +140,7 @@ public class DiscoveryData {
    * @return the scopes supported.
    */
   public JsonArray getScopesSupported() {
-<span class="fc" id="L155">    return json.getJsonArray(&quot;scopes_supported&quot;);</span>
+<span class="fc" id="L143">    return json.getJsonArray(&quot;scopes_supported&quot;);</span>
   }
   
   /**
@@ -165,7 +153,7 @@ public class DiscoveryData {
    * @return the response types supported.
    */
   public JsonArray getResponseTypesSupported() {
-<span class="fc" id="L168">    return json.getJsonArray(&quot;response_types_supported&quot;);</span>
+<span class="fc" id="L156">    return json.getJsonArray(&quot;response_types_supported&quot;);</span>
   }
 
   /**
@@ -178,7 +166,7 @@ public class DiscoveryData {
    * @return the response modes supported.
    */
   public JsonArray getResponseModesSupported() {
-<span class="fc" id="L181">    return json.getJsonArray(&quot;response_modes_supported&quot;);</span>
+<span class="fc" id="L169">    return json.getJsonArray(&quot;response_modes_supported&quot;);</span>
   }
 
   /**
@@ -192,7 +180,7 @@ public class DiscoveryData {
    * @return the grant types supported.
    */
   public JsonArray getGrantTypesSupported() {
-<span class="fc" id="L195">    return json.getJsonArray(&quot;grant_types_supported&quot;);</span>
+<span class="fc" id="L183">    return json.getJsonArray(&quot;grant_types_supported&quot;);</span>
   }
 
   /**
@@ -204,7 +192,7 @@ public class DiscoveryData {
    * @return the authentication context class references supposed.
    */
   public JsonArray getAcrValuesSupported() {
-<span class="fc" id="L207">    return json.getJsonArray(&quot;acr_values_supported&quot;);</span>
+<span class="fc" id="L195">    return json.getJsonArray(&quot;acr_values_supported&quot;);</span>
   }
   
   /**
@@ -217,7 +205,7 @@ public class DiscoveryData {
    * @return the subject types supported.
    */
   public JsonArray getSubjectTypesSupported() {
-<span class="fc" id="L220">    return json.getJsonArray(&quot;subject_types_supported&quot;);</span>
+<span class="fc" id="L208">    return json.getJsonArray(&quot;subject_types_supported&quot;);</span>
   }
 
   /**
@@ -231,7 +219,7 @@ public class DiscoveryData {
    * @return the token signing algorithms supported.
    */
   public JsonArray getIdTokenSigningAlgValuesSupported() {
-<span class="fc" id="L234">    return json.getJsonArray(&quot;id_token_signing_alg_values_supported&quot;);</span>
+<span class="fc" id="L222">    return json.getJsonArray(&quot;id_token_signing_alg_values_supported&quot;);</span>
   }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

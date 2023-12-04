@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JdkTokenBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.jdk</a> &gt; <span class="el_source">JdkTokenBuilder.java</span></div><h1>JdkTokenBuilder.java</h1><pre class="source lang-java linenums">/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.jdk;
+
+import com.google.common.cache.Cache;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.security.spec.ECGenParameterSpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.AlgorithmAndKeyPair;
+import uk.co.spudsoft.jwtvalidatorvertx.JsonWebAlgorithm;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.AbstractTokenBuilder;
+
+/**
+ * Implementation of TokenBuilder that uses the JDK {@link java.security.KeyPairGenerator} to generate key pairs.
+ * @author jtalbut
+ */
+public class JdkTokenBuilder extends AbstractTokenBuilder {
+
+  @SuppressWarnings(&quot;constantname&quot;)
+<span class="fc" id="L28">  private static final Logger logger = LoggerFactory.getLogger(JdkTokenBuilder.class);</span>
+
+  /**
+   * Constructor.
+   * @param keyCache The key cache to be filled with keys created by the token builder.
+   */
+  public JdkTokenBuilder(Cache&lt;String, AlgorithmAndKeyPair&gt; keyCache) {
+<span class="fc" id="L35">    super(keyCache);</span>
+<span class="fc" id="L36">  }</span>
+
+  private KeyPair generateKey(String kid, JsonWebAlgorithm algorithm) throws Exception {
+
+<span class="fc bfc" id="L40" title="All 2 branches covered.">    if (&quot;RSA&quot;.equals(algorithm.getFamilyName())) {</span>
+<span class="fc" id="L41">      KeyPairGenerator keyGen = KeyPairGenerator.getInstance(&quot;RSA&quot;);</span>
+<span class="fc" id="L42">      keyGen.initialize(algorithm.getMinKeyLength());</span>
+<span class="fc" id="L43">      return keyGen.genKeyPair();</span>
+    }
+
+<span class="fc bfc" id="L46" title="All 2 branches covered.">    if (&quot;ECDSA&quot;.equals(algorithm.getFamilyName())) {</span>
+<span class="fc" id="L47">      KeyPairGenerator keyGen = KeyPairGenerator.getInstance(&quot;EC&quot;);</span>
+<span class="fc" id="L48">      ECGenParameterSpec spec = new ECGenParameterSpec(algorithm.getSubName());</span>
+<span class="fc" id="L49">      keyGen.initialize(spec);</span>
+<span class="fc" id="L50">      return keyGen.genKeyPair();</span>
+    }
+    
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">    if (&quot;EdDSA&quot;.equals(algorithm.getFamilyName())) {</span>
+<span class="nc" id="L54">      KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algorithm.getJdkAlgName());</span>
+<span class="nc" id="L55">      return keyGen.genKeyPair();</span>
+    }
+
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">    if (algorithm == JsonWebAlgorithm.none) {</span>
+<span class="nc" id="L59">      return null;</span>
+    }
+
+<span class="fc" id="L62">    throw new IllegalArgumentException(&quot;Test harness does not support keys for &quot; + algorithm.toString());</span>
+  }
+
+  @Override
+  protected byte[] generateSignature(String kid, JsonWebAlgorithm algorithm, String headerBase64, String claimsBase64) throws Exception {
+    AlgorithmAndKeyPair akp;
+<span class="fc" id="L68">    synchronized (keyCache) {</span>
+<span class="fc" id="L69">      akp = keyCache.get(kid, () -&gt; {</span>
+<span class="fc" id="L70">        KeyPair kp = generateKey(kid, algorithm);</span>
+<span class="fc" id="L71">        return new AlgorithmAndKeyPair(algorithm, kp);</span>
+      });
+<span class="fc" id="L73">    }</span>
+<span class="fc" id="L74">    return generateSignature(akp.getKeyPair().getPrivate(), algorithm, headerBase64 + &quot;.&quot; + claimsBase64);</span>
+  }
+
+  /**
+   * Generate a signature using the JDK security classes.
+   * @param privateKey The private key to sign the input with.
+   * @param algorithm The algorithm to use for the signing.
+   * @param signingInput The content to be signed.
+   * @return A byte array containing the signature.
+   * @throws Exception If thrown by the JDK security subsystem.
+   */
+  public static byte[] generateSignature(PrivateKey privateKey, JsonWebAlgorithm algorithm, String signingInput) throws Exception {
+<span class="fc" id="L86">    Signature signer = Signature.getInstance(algorithm.getJdkAlgName());</span>
+<span class="fc" id="L87">    signer.initSign(privateKey);</span>
+<span class="fc" id="L88">    signer.update(signingInput.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L89">    return signer.sign();</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

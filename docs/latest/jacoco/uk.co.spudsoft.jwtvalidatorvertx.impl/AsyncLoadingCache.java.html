@@ -15,22 +15,45 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Class backed by a Guava Cache that returns a Future for all elements whilst
  * still ensuring that the loader is only called once at a time per element.
- * @author njt
+ * @author jtalbut
  * @param &lt;K&gt; The key type for the cache.
  * @param &lt;V&gt; The value type stored in the cache.
  */
 public class AsyncLoadingCache&lt;K, V&gt; {
   
   @SuppressWarnings(&quot;constantname&quot;)
-<span class="fc" id="L32">  private static final Logger logger = LoggerFactory.getLogger(AsyncLoadingCache.class);</span>
+<span class="fc" id="L31">  private static final Logger logger = LoggerFactory.getLogger(AsyncLoadingCache.class);</span>
  
+  /**
+   * Class for returned an expiry value along with the cache value.
+   */
+  public class TimedObject {
+    private final V value;
+    private final long expiry;
+
+<span class="fc" id="L40">    private TimedObject(V value, long expiry) {</span>
+<span class="fc" id="L41">      this.value = value;</span>
+<span class="fc" id="L42">      this.expiry = expiry;</span>
+<span class="fc" id="L43">    }</span>
+
+  }
+  
+  /**
+   * Factory method for cache entries.
+   * @param value The value to store in the cache.
+   * @param expiry The time (ms since epoch) at which this item becomes invalid.
+   * @return newly created TimedObject.
+   */
+  public TimedObject entry(V value, long expiry) {
+<span class="fc" id="L54">    return new TimedObject(value, expiry);</span>
+  }
+  
   /**
    * Data class for items stored in the backing cache.
    */
@@ -41,34 +64,31 @@ public class AsyncLoadingCache&lt;K, V&gt; {
     private long expiry;
     private V result;
 
-<span class="fc" id="L44">    Data() {</span>
-<span class="fc" id="L45">      this.initialPromises = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L46">      this.expiry = Long.MAX_VALUE;</span>
-<span class="fc" id="L47">    }    </span>
+<span class="fc" id="L67">    Data() {</span>
+<span class="fc" id="L68">      this.initialPromises = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L69">      this.expiry = Long.MAX_VALUE;</span>
+<span class="fc" id="L70">    }    </span>
     
-    void update(boolean succeeded, V value) {
-<span class="fc" id="L50">      this.initialPromises = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L51">      this.completed = true;</span>
-<span class="fc" id="L52">      this.succeeded = succeeded;</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">      if (succeeded) {</span>
-<span class="fc" id="L54">        this.expiry = getExpiry.apply(value);</span>
-<span class="fc" id="L55">        this.result = value;</span>
+    void update(boolean succeeded, TimedObject value) {
+<span class="fc" id="L73">      this.initialPromises = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L74">      this.completed = true;</span>
+<span class="fc" id="L75">      this.succeeded = succeeded;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">      if (succeeded) {</span>
+<span class="fc" id="L77">        this.expiry = value.expiry;</span>
+<span class="fc" id="L78">        this.result = value.value;</span>
       }
-<span class="fc" id="L57">    }</span>
+<span class="fc" id="L80">    }</span>
   }
   
-<span class="fc" id="L60">  private final Object lock = new Object();</span>
-<span class="fc" id="L61">  private final Cache&lt;K, Data&gt; backing = CacheBuilder.newBuilder().build();</span>
-  private final Function&lt;V, Long&gt; getExpiry;
+<span class="fc" id="L83">  private final Object lock = new Object();</span>
+<span class="fc" id="L84">  private final Cache&lt;K, Data&gt; backing = CacheBuilder.newBuilder().build();</span>
 
   /**
    * Constructor.
-   * @param getExpiry Function to extract the expiry time (in ms since epoch) from a V type.
    */
   @SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L69">  public AsyncLoadingCache(Function&lt;V, Long&gt; getExpiry) {</span>
-<span class="fc" id="L70">    this.getExpiry = getExpiry;</span>
-<span class="fc" id="L71">  }</span>
+<span class="fc" id="L90">  public AsyncLoadingCache() {</span>
+<span class="fc" id="L91">  }</span>
 
   /**
    * Return true if the cache already contains a value for the provided key.
@@ -76,7 +96,7 @@ public class AsyncLoadingCache&lt;K, V&gt; {
    * @return true if the cache already contains a value for the provided key.
    */
   public boolean containsKey(K key) {
-<span class="fc" id="L79">    return backing.asMap().containsKey(key);</span>
+<span class="fc" id="L99">    return backing.asMap().containsKey(key);</span>
   }
 
   /**
@@ -89,11 +109,11 @@ public class AsyncLoadingCache&lt;K, V&gt; {
    * @param key the key to set.
    * @param value the value to set.
    */
-  public void put(K key, V value) {
-<span class="fc" id="L93">    Data data = new Data();</span>
-<span class="fc" id="L94">    data.update(true, value);</span>
-<span class="fc" id="L95">    backing.put(key, new Data());</span>
-<span class="fc" id="L96">  }</span>
+  public void put(K key, TimedObject value) {
+<span class="nc" id="L113">    Data data = new Data();</span>
+<span class="nc" id="L114">    data.update(true, value);</span>
+<span class="nc" id="L115">    backing.put(key, data);</span>
+<span class="nc" id="L116">  }</span>
   
   /**
    * Get an item from the cache, returning a Future in case the item is not already there.
@@ -101,38 +121,38 @@ public class AsyncLoadingCache&lt;K, V&gt; {
    * @param loader Callable that actually gets the value.
    * @return The value returned either by this Callable or some previous instance of it.
    */
-  public Future&lt;V&gt; get(K key, Callable&lt;Future&lt;V&gt;&gt; loader) {
+  public Future&lt;V&gt; get(K key, Callable&lt;Future&lt;TimedObject&gt;&gt; loader) {
     Promise&lt;V&gt; promise;
     Data data;
-<span class="fc" id="L107">    synchronized (lock) {</span>
-<span class="fc" id="L108">      data = backing.getIfPresent(key);</span>
-<span class="pc bpc" id="L109" title="1 of 4 branches missed.">      if (data != null &amp;&amp; (data.expiry &gt; System.currentTimeMillis())) {</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (data.completed) {</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">          if (data.succeeded) {</span>
-<span class="fc" id="L112">            return Future.succeededFuture(data.result);</span>
+<span class="fc" id="L127">    synchronized (lock) {</span>
+<span class="fc" id="L128">      data = backing.getIfPresent(key);</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">      if (data != null &amp;&amp; (data.expiry &gt; System.currentTimeMillis())) {</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (data.completed) {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">          if (data.succeeded) {</span>
+<span class="fc" id="L132">            return Future.succeededFuture(data.result);</span>
           } else {
             // Previous request failed, so try again (don't cache failures)
-<span class="fc" id="L115">            promise = createAndAddInitialPromise(data.initialPromises);</span>
-<span class="fc" id="L116">            data.completed = false;</span>
+<span class="fc" id="L135">            promise = createAndAddInitialPromise(data.initialPromises);</span>
+<span class="fc" id="L136">            data.completed = false;</span>
           }
         } else {
-<span class="fc" id="L119">          promise = createAndAddInitialPromise(data.initialPromises);</span>
-<span class="fc" id="L120">          return promise.future();</span>
+<span class="nc" id="L139">          promise = createAndAddInitialPromise(data.initialPromises);</span>
+<span class="nc" id="L140">          return promise.future();</span>
         }
       } else {
-<span class="fc" id="L123">        data = new Data();</span>
-<span class="fc" id="L124">        promise = createAndAddInitialPromise(data.initialPromises);</span>
-<span class="fc" id="L125">        backing.put(key, data);</span>
+<span class="fc" id="L143">        data = new Data();</span>
+<span class="fc" id="L144">        promise = createAndAddInitialPromise(data.initialPromises);</span>
+<span class="fc" id="L145">        backing.put(key, data);</span>
       }
-<span class="fc" id="L127">    }</span>
-<span class="fc" id="L128">    Data finalData = data;</span>
+<span class="fc" id="L147">    }</span>
+<span class="fc" id="L148">    Data finalData = data;</span>
     try {
-<span class="fc" id="L130">      loader.call().onComplete(ar -&gt; handleAfterLoaderCall(ar, finalData));</span>
-<span class="nc" id="L131">    } catch (Throwable ex) {</span>
-<span class="nc" id="L132">      logger.error(&quot;Failed to call loader: &quot;, ex);</span>
-<span class="nc" id="L133">      return Future.failedFuture(ex);</span>
-<span class="fc" id="L134">    }</span>
-<span class="fc" id="L135">    return promise.future();</span>
+<span class="fc" id="L150">      loader.call().onComplete(ar -&gt; handleAfterLoaderCall(ar, finalData));</span>
+<span class="nc" id="L151">    } catch (Throwable ex) {</span>
+<span class="nc" id="L152">      logger.error(&quot;Failed to call loader: &quot;, ex);</span>
+<span class="nc" id="L153">      return Future.failedFuture(ex);</span>
+<span class="fc" id="L154">    }</span>
+<span class="fc" id="L155">    return promise.future();</span>
   }
 
   /**
@@ -140,32 +160,32 @@ public class AsyncLoadingCache&lt;K, V&gt; {
    * @return an immutable view of the keys currently in the backing map.
    */
   public Set&lt;K&gt; keySet() {
-<span class="nc" id="L143">    return ImmutableSet.copyOf(backing.asMap().keySet());</span>
+<span class="nc" id="L163">    return ImmutableSet.copyOf(backing.asMap().keySet());</span>
   }
   
   private Promise&lt;V&gt; createAndAddInitialPromise(List&lt;Promise&lt;V&gt;&gt; initialPromises) {
-<span class="fc" id="L147">    Promise&lt;V&gt; promise = Promise.promise();</span>
-<span class="fc" id="L148">    initialPromises.add(promise);</span>
-<span class="fc" id="L149">    return promise;</span>
+<span class="fc" id="L167">    Promise&lt;V&gt; promise = Promise.promise();</span>
+<span class="fc" id="L168">    initialPromises.add(promise);</span>
+<span class="fc" id="L169">    return promise;</span>
   }
 
-  private void handleAfterLoaderCall(AsyncResult&lt;V&gt; asyncResult, Data data) {
-<span class="fc" id="L153">    boolean succeeded = asyncResult.succeeded();</span>
-<span class="fc" id="L154">    V result = asyncResult.result();</span>
+  private void handleAfterLoaderCall(AsyncResult&lt;TimedObject&gt; asyncResult, Data data) {
+<span class="fc" id="L173">    boolean succeeded = asyncResult.succeeded();</span>
+<span class="fc" id="L174">    TimedObject result = asyncResult.result();</span>
     List&lt;Promise&lt;V&gt;&gt; initialPromises;
-<span class="fc" id="L156">    synchronized (lock) {</span>
-<span class="fc" id="L157">      initialPromises = data.initialPromises;</span>
-<span class="fc" id="L158">      data.update(succeeded, result);</span>
-<span class="fc" id="L159">    }</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">    if (succeeded) {</span>
-<span class="fc bfc" id="L161" title="All 2 branches covered.">      for (Promise&lt;V&gt; initialPromise : initialPromises) {</span>
-<span class="fc" id="L162">        initialPromise.complete(result);</span>
-<span class="fc" id="L163">      }</span>
+<span class="fc" id="L176">    synchronized (lock) {</span>
+<span class="fc" id="L177">      initialPromises = data.initialPromises;</span>
+<span class="fc" id="L178">      data.update(succeeded, result);</span>
+<span class="fc" id="L179">    }</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">    if (succeeded) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">      for (Promise&lt;V&gt; initialPromise : initialPromises) {</span>
+<span class="fc" id="L182">        initialPromise.complete(result.value);</span>
+<span class="fc" id="L183">      }</span>
     } else {
-<span class="fc bfc" id="L165" title="All 2 branches covered.">      for (Promise&lt;V&gt; initialPromise : initialPromises) {</span>
-<span class="fc" id="L166">        initialPromise.fail(asyncResult.cause());</span>
-<span class="fc" id="L167">      }</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">      for (Promise&lt;V&gt; initialPromise : initialPromises) {</span>
+<span class="fc" id="L186">        initialPromise.fail(asyncResult.cause());</span>
+<span class="fc" id="L187">      }</span>
     }
-<span class="fc" id="L169">  }</span>
+<span class="fc" id="L189">  }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

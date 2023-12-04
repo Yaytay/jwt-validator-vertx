@@ -17,6 +17,7 @@
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
 import io.vertx.core.Future;
+import io.vertx.ext.auth.impl.jose.JWK;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.spudsoft.jwtvalidatorvertx.JWK;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetStaticHandler;
 
 /**
@@ -39,7 +39,7 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
 <span class="fc" id="L39">  private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);</span>
   
   private final List&lt;Pattern&gt; acceptableIssuers;
-<span class="fc" id="L42">  private final Map&lt;String, JWK&lt;?&gt;&gt; keys = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L42">  private final Map&lt;String, JWK&gt; keys = new HashMap&lt;&gt;();</span>
 
   /**
    * Constructor.
@@ -75,8 +75,8 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
 <span class="fc" id="L75">  }</span>
 
   @Override
-  public JsonWebKeySetStaticHandler addKey(String issuer, JWK&lt;?&gt; key) {
-<span class="fc" id="L79">    keys.put(issuer + '^' + key.getKid(), key);</span>
+  public JsonWebKeySetStaticHandler addKey(String issuer, JWK key) {
+<span class="fc" id="L79">    keys.put(issuer + '^' + key.getId(), key);</span>
 <span class="fc" id="L80">    return this;</span>
   }
 
@@ -98,8 +98,8 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
   }
 
   @Override
-  public Future&lt;JWK&lt;?&gt;&gt; findJwk(String issuer, String kid) {
-<span class="fc" id="L102">    JWK&lt;?&gt; jwk = keys.get(issuer + '^' + kid);</span>
+  public Future&lt;JWK&gt; findJwk(String issuer, String kid) {
+<span class="fc" id="L102">    JWK jwk = keys.get(issuer + '^' + kid);</span>
 <span class="fc bfc" id="L103" title="All 2 branches covered.">    if (null == jwk) {</span>
 <span class="fc" id="L104">      logger.error(&quot;Failed to find key {} from store from {}&quot;, kid, keys.keySet());</span>
 <span class="fc" id="L105">      return Future.failedFuture(</span>

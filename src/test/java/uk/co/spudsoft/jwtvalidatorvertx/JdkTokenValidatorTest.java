@@ -387,7 +387,7 @@ public class JdkTokenValidatorTest {
     for (int i = 0; i < 20; i += 1) {
       logger.debug("Iteration {}", i);
       long nowSeconds = System.currentTimeMillis() / 1000;
-      Future<JwtWindows> future = validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+      Future<Jwt> future = validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
                 Arrays.asList("aud"), nowSeconds, nowSeconds - i, BORING_CLAIMS), Arrays.asList("aud"), false);
       await().atMost(2, TimeUnit.SECONDS).until(() -> future.isComplete());
 
@@ -456,7 +456,7 @@ public class JdkTokenValidatorTest {
     int acceptable = 0;
     for (int i = 0; i < 20; i += 1) {
       long nowSeconds = System.currentTimeMillis() / 1000;
-      Future<JwtWindows> future = validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
+      Future<Jwt> future = validator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
               Arrays.asList("aud"), nowSeconds + i, nowSeconds, BORING_CLAIMS), Arrays.asList("aud"), false);
       await().atMost(2, TimeUnit.SECONDS).until(() -> future.isComplete());
       

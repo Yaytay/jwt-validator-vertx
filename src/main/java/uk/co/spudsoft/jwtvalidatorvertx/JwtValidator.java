@@ -124,6 +124,6 @@ public interface JwtValidator {
    * @param ignoreRequiredAud Do not check for required audiences.
    * @return The token's parts.
    */
-  Future<JwtWindows> validateToken(@Nullable String issuer, String token, List<String> requiredAudList, boolean ignoreRequiredAud);
+  Future<Jwt> validateToken(@Nullable String issuer, String token, List<String> requiredAudList, boolean ignoreRequiredAud);
 
 }

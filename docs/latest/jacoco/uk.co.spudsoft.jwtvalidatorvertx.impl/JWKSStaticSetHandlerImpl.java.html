@@ -16,104 +16,162 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
+import com.google.common.collect.ImmutableList;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.impl.jose.JWK;
+import io.vertx.ext.web.client.WebClient;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetStaticHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetKnownJwksHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.AsyncLoadingCache.TimedObject;
 
 /**
- * Implementation of {@link JsonWebKeySetStaticHandler} that stores JWKs in a HashMap.
+ * Implementation of {@link JsonWebKeySetKnownJwksHandler} that stores JWKs in a HashMap.
  * 
  * @author jtalbut
  */
-public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
+public class JWKSStaticSetHandlerImpl implements JsonWebKeySetKnownJwksHandler {
   
-<span class="fc" id="L39">  private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);</span>
+<span class="fc" id="L46">  private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);</span>
   
-  private final List&lt;Pattern&gt; acceptableIssuers;
-<span class="fc" id="L42">  private final Map&lt;String, JWK&gt; keys = new HashMap&lt;&gt;();</span>
+  private final List&lt;String&gt; jwksUrls;
+<span class="fc" id="L49">  private final Map&lt;String, TimedObject&lt;JWK&gt;&gt; keys = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L50">  private final AtomicReference&lt;Future&lt;Void&gt;&gt; refreshFuture = new AtomicReference&lt;&gt;(null);</span>
+  
+  private final OpenIdHelper openIdHelper;
 
   /**
    * Constructor.
-   * @param acceptableIssuerRegexes Collection of regular expressions (as Strings) that any passed in issuer must match.
    * 
-   * This JsonWebKeySet handler is entirely static, so the specification of acceptable issuers is not a vital security feature.
+   * With a static map of JWKs the security of the system is not compromised by allowing any issuer, though you should question why this is necessary.
+   * 
+   * Each JWKs endpoint must use KIDs that are globally unique.
+   * 
+   * When a KID is requested and cannot be found ALL the configured JWKS URLs will be queried and the single cache will be updated.
+   * Entries in the cache will be retained for a duration based on either the Cache-Control max-age header of the response or, 
+   * if that is not present, the defaultJwkCacheDuration.
+   * Given that only positive responses are cached it is reasonable for the defaultJwkCacheDuration to be 24 hours (or more).
+   * 
+   * @param webClient Vertx WebClient instance, that will be used for querying the JWKS URLs.
+   * @param jwksUrls Static set of URLs that will be used for obtaining JWKs.
+   * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
+   * 
+   * The JWKS URLs must be accessed via https for the environment to offer any security.
+   * This is not enforced at the code level.
    * 
    */
-<span class="fc" id="L51">  public JWKSStaticSetHandlerImpl(Collection&lt;String&gt; acceptableIssuerRegexes) {</span>
-<span class="pc bpc" id="L52" title="1 of 4 branches missed.">    if (acceptableIssuerRegexes == null || acceptableIssuerRegexes.isEmpty()) {</span>
-<span class="fc" id="L53">      throw new IllegalArgumentException(&quot;Acceptable issuer regular expressions must be passed in&quot;);</span>
-    }
-<span class="fc" id="L55">    this.acceptableIssuers = acceptableIssuerRegexes.stream()</span>
-<span class="fc" id="L56">                    .map(re -&gt; {</span>
-<span class="pc bpc" id="L57" title="1 of 4 branches missed.">                      if (re == null || re.isBlank()) {</span>
-<span class="fc" id="L58">                        logger.warn(&quot;Null or empty pattern cannot be used: &quot;, re);</span>
-<span class="fc" id="L59">                        return null;</span>
-                      }
-                      try {
-<span class="fc" id="L62">                        Pattern pattern = Pattern.compile(re);</span>
-<span class="fc" id="L63">                        logger.trace(&quot;Compiled acceptable issuer regex as {}&quot;, pattern.pattern());</span>
-<span class="fc" id="L64">                        return pattern;</span>
-<span class="fc" id="L65">                      } catch (Throwable ex) {</span>
-<span class="fc" id="L66">                        logger.warn(&quot;The pattern \&quot;{}\&quot; cannot be compiled: &quot;, re, ex);</span>
-<span class="fc" id="L67">                        return null;</span>
-                      }
-                    })
-<span class="fc" id="L70">                    .filter(Objects::nonNull)</span>
-<span class="fc" id="L71">                    .collect(Collectors.toList());</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">    if (acceptableIssuers.isEmpty()) {</span>
-<span class="fc" id="L73">      throw new IllegalArgumentException(&quot;Acceptable issuer regular expressions must be passed in&quot;);</span>
-    }
-<span class="fc" id="L75">  }</span>
-
-  @Override
-  public JsonWebKeySetStaticHandler addKey(String issuer, JWK key) {
-<span class="fc" id="L79">    keys.put(issuer + '^' + key.getId(), key);</span>
-<span class="fc" id="L80">    return this;</span>
-  }
-
-  @Override
-  public JsonWebKeySetStaticHandler removeKey(String issuer, String kid) {
-<span class="fc" id="L85">    keys.remove(issuer + '^' + kid);</span>
-<span class="fc" id="L86">    return this;</span>
-  }
-
-  @Override
-  public void validateIssuer(String issuer) throws IllegalArgumentException {
-<span class="fc bfc" id="L91" title="All 2 branches covered.">    for (Pattern acceptableIssuer : acceptableIssuers) {</span>
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">      if (acceptableIssuer.matcher(issuer).matches()) {</span>
-<span class="nc" id="L93">        return;</span>
+<span class="fc" id="L74">  public JWKSStaticSetHandlerImpl(WebClient webClient, Collection&lt;String&gt; jwksUrls, Duration defaultJwkCacheDuration) {</span>
+<span class="fc" id="L75">    this.jwksUrls = ImmutableList.copyOf(jwksUrls);</span>
+<span class="fc" id="L76">    this.openIdHelper = new OpenIdHelper(webClient, defaultJwkCacheDuration.toSeconds());</span>
+<span class="fc" id="L77">  }</span>
+  
+  private JWK findJwk(String kid) {
+<span class="fc" id="L80">    TimedObject&lt;JWK&gt; jwk = keys.get(kid);</span>
+<span class="fc" id="L81">    long now = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">    if (null != jwk) {</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">      if (jwk.expiredBefore(now)) {</span>
+<span class="nc" id="L84">        keys.remove(kid);</span>
+      } else {
+<span class="fc" id="L86">        return jwk.getValue();</span>
       }
-<span class="fc" id="L95">    }</span>
-<span class="fc" id="L96">    logger.warn(&quot;Failed to find issuer \&quot;{}\&quot; in {}&quot;, issuer, acceptableIssuers);</span>
-<span class="fc" id="L97">    throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
+    }
+<span class="fc" id="L89">    return null;</span>
   }
 
   @Override
   public Future&lt;JWK&gt; findJwk(String issuer, String kid) {
-<span class="fc" id="L102">    JWK jwk = keys.get(issuer + '^' + kid);</span>
-<span class="fc bfc" id="L103" title="All 2 branches covered.">    if (null == jwk) {</span>
-<span class="fc" id="L104">      logger.error(&quot;Failed to find key {} from store from {}&quot;, kid, keys.keySet());</span>
-<span class="fc" id="L105">      return Future.failedFuture(</span>
-              new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;,
-                       new IllegalArgumentException(&quot;Failed to find key &quot; + kid)
-              )
-      );
-    } else {
-<span class="fc" id="L111">      return Future.succeededFuture(jwk);</span>
+<span class="fc" id="L94">    synchronized (keys) {</span>
+<span class="fc" id="L95">      JWK jwk = findJwk(kid);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">      if (jwk != null) {</span>
+<span class="fc" id="L97">        return Future.succeededFuture(jwk);</span>
+      }
+    
+<span class="fc" id="L100">      Promise&lt;Void&gt; refreshPromise = Promise.promise();</span>
+<span class="fc" id="L101">      Future&lt;Void&gt; newRefreshFuture = refreshPromise.future();</span>
+<span class="fc" id="L102">      Future&lt;Void&gt; result = refreshFuture.compareAndExchange(null, newRefreshFuture);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">      if (result == null) {</span>
+<span class="fc" id="L104">        result = updateCache()</span>
+<span class="fc" id="L105">                .compose(newkeys -&gt; {</span>
+<span class="fc" id="L106">                  synchronized (keys) {</span>
+<span class="fc" id="L107">                    keys.putAll(newkeys);</span>
+<span class="fc" id="L108">                  }</span>
+<span class="fc" id="L109">                  refreshPromise.complete();</span>
+<span class="fc" id="L110">                  refreshFuture.set(null);</span>
+<span class="fc" id="L111">                  return Future.succeededFuture();</span>
+                });
+      } 
+<span class="fc" id="L114">      return result.compose(v -&gt; {</span>
+<span class="fc" id="L115">        synchronized (keys) {</span>
+<span class="fc" id="L116">          JWK newjwk = findJwk(kid);</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">          if (newjwk != null) {</span>
+<span class="fc" id="L118">            return Future.succeededFuture(newjwk);</span>
+          }
+<span class="fc" id="L120">          return Future.failedFuture(new IllegalArgumentException(&quot;The key \&quot;&quot; + kid + &quot;\&quot; cannot be found.&quot;));</span>
+        }
+      });
     }
   }
-
   
+  private Future&lt;Map&lt;String, TimedObject&lt;JWK&gt;&gt;&gt; updateCache() {
+<span class="fc" id="L127">    Map&lt;String, TimedObject&lt;JWK&gt;&gt; result = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L128">    List&lt;Future&lt;Void&gt;&gt; futures = new ArrayList&lt;&gt;();</span>
+    
+<span class="fc bfc" id="L130" title="All 2 branches covered.">    for (String jwksUrl : jwksUrls) {</span>
+<span class="fc" id="L131">      futures.add(</span>
+<span class="fc" id="L132">              openIdHelper.get(jwksUrl)</span>
+<span class="fc" id="L133">                      .compose(tjo -&gt; {</span>
+<span class="fc" id="L134">                        return addKeysToCache(jwksUrl, tjo, result);</span>
+                      })
+      );
+<span class="fc" id="L137">    }</span>
+    
+<span class="fc" id="L139">    return Future.all(futures)</span>
+<span class="fc" id="L140">            .compose(cf -&gt; {</span>
+<span class="fc" id="L141">              return Future.succeededFuture(result);</span>
+            });
+  }
   
+  private Future&lt;Void&gt; addKeysToCache(String url, TimedObject&lt;JsonObject&gt; data, Map&lt;String, TimedObject&lt;JWK&gt;&gt; result) {
+    try {
+<span class="fc" id="L147">      Object keysObject = data.getValue().getValue(&quot;keys&quot;);</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">      if (keysObject instanceof JsonArray) {</span>
+<span class="fc" id="L149">        JsonArray ja = (JsonArray) keysObject;</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        for (Iterator&lt;Object&gt; iter = ja.iterator(); iter.hasNext();) {</span>
+<span class="fc" id="L151">          Object keyData = iter.next();</span>
+          try {
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">            if (keyData instanceof JsonObject) {</span>
+<span class="fc" id="L154">              JsonObject jo = (JsonObject) keyData;</span>
+<span class="fc" id="L155">              String keyId = jo.getString(&quot;kid&quot;);</span>
+<span class="fc" id="L156">              JWK jwk = new JWK(jo);</span>
+<span class="fc" id="L157">              synchronized (result) {</span>
+<span class="fc" id="L158">                result.put(keyId, new TimedObject&lt;&gt;(jwk, data.getExpiryMs()));</span>
+<span class="fc" id="L159">              }</span>
+            }
+<span class="nc" id="L161">          } catch (Throwable ex) {</span>
+<span class="nc" id="L162">            logger.warn(&quot;Failed to parse {} as a JWK: &quot;, keyData, ex);</span>
+<span class="fc" id="L163">          }</span>
+<span class="fc" id="L164">        }</span>
+<span class="fc" id="L165">      } else {</span>
+<span class="nc" id="L166">        logger.error(&quot;Failed to get JWKS from {} (returned value does not contain a keys array: {}))&quot;, url, data.getValue());</span>
+<span class="nc" id="L167">        return Future.failedFuture(new IllegalArgumentException(&quot;Failed to parse JWKS from &quot; + url));</span>
+      }
+<span class="nc" id="L169">    } catch (Throwable ex) {</span>
+<span class="nc" id="L170">      logger.error(&quot;Failed to get process JWKS from {} ({}): &quot;, url, data.getValue(), ex);</span>
+<span class="nc" id="L171">      return Future.failedFuture(new IllegalArgumentException(&quot;Failed to process JWKS from &quot; + url));</span>
+<span class="fc" id="L172">    }</span>
+<span class="fc" id="L173">    return Future.succeededFuture();</span>
+  }
   
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

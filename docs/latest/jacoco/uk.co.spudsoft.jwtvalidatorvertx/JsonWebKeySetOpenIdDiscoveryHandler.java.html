@@ -44,7 +44,7 @@ public interface JsonWebKeySetOpenIdDiscoveryHandler extends JsonWebKeySetHandle
    * @return a newly created instance of the implementation class.
    */
   static JsonWebKeySetOpenIdDiscoveryHandler create(WebClient webClient, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
-<span class="fc" id="L47">    return new JWKSOpenIdDiscoveryHandlerImpl(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration.toSeconds());</span>
+<span class="fc" id="L47">    return new JWKSOpenIdDiscoveryHandlerImpl(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration);</span>
   }
   
   /**

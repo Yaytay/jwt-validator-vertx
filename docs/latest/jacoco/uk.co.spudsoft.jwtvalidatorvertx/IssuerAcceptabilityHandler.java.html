@@ -58,8 +58,8 @@ public interface IssuerAcceptabilityHandler {
   void validate() throws IllegalArgumentException;
   
   /**
-   * Return true if the issuer is acceptable.
-   * @param issuer The issuer of a JWT.
+   * Confirm that the issuer matches at least one of the configured acceptable issuer regular expressions or is found in the acceptableIssuersFile.
+   * @param issuer the issuer to confirm.
    * @return true if the issuer is acceptable.
    */
   boolean isAcceptable(String issuer);

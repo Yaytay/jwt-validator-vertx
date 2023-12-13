@@ -48,6 +48,7 @@ jobs:
       env:
         MAVEN_OPTS: -Djava.security.manager=allow
         MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
       run: mvn -P ci-cd -B clean install site --file pom.xml
       
     - uses: codecov/codecov-action@v3

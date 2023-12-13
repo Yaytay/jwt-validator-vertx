@@ -535,7 +535,7 @@ public class JdkTokenValidatorStaticTest {
 
     long nowSeconds = System.currentTimeMillis() / 1000;
     defaultValidator.validateToken(jwks.getBaseUrl(), builder.buildToken(JsonWebAlgorithm.RS256, kid, jwks.getBaseUrl(), "sub",
-            Arrays.asList("bad"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud"), false)
+            Arrays.asList("bad"), nowSeconds, nowSeconds + 100, BORING_CLAIMS), Arrays.asList("aud", "otheraud"), false)
             .onComplete(testContext.failingThenComplete());
   }
 

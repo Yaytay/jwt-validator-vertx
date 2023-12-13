@@ -133,7 +133,7 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
-      <version>5.3.2</version>
+      <version>5.4.0</version>
       <exclusions>
         <exclusion>
           <groupId>com.sun.xml.bind</groupId>
@@ -380,7 +380,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>10.12.5</version>
+            <version>10.12.6</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -496,7 +496,7 @@
       <plugin>
         <groupId>org.owasp</groupId>
         <artifactId>dependency-check-maven</artifactId>
-        <version>9.0.2</version>
+        <version>9.0.4</version>
         <configuration>
           <failBuildOnCVSS>8</failBuildOnCVSS>
           <failOnError>false</failOnError>
@@ -628,6 +628,7 @@
           <suppressionFiles>
             dependency-check-supressions.xml
           </suppressionFiles>
+          <nvdApiKey>${NVD_API_KEY}</nvdApiKey>
         </configuration>
       </plugin>
       

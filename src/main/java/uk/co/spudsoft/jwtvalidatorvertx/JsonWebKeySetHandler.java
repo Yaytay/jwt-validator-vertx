@@ -27,13 +27,6 @@ import javax.annotation.Nullable;
 public interface JsonWebKeySetHandler {
  
   /**
-   * Confirm that the issuer matches at least one of the configured acceptable issuer regular expressions.
-   * @param issuer the issuer to confirm.
-   * @throws IllegalArgumentException if the issuer is not in the list of acceptable issuers.
-   */
-  void validateIssuer(String issuer) throws IllegalArgumentException;
-  
-  /**
    * Find a JWK for the given issuer and kid.
    * 
    * A specific implementation of JsonWebKeySetHandler will either require the issuer to be null, or not null.

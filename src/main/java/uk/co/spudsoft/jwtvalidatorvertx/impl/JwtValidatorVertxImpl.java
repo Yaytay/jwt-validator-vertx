@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import static java.util.Objects.requireNonNull;
 import java.util.Set;
+import uk.co.spudsoft.jwtvalidatorvertx.IssuerAcceptabilityHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.Jwt;
 import uk.co.spudsoft.jwtvalidatorvertx.JwtValidator;
@@ -60,14 +61,17 @@ public class JwtValidatorVertxImpl implements JwtValidator {
   private long timeLeewayMilliseconds = 0;
   private long minimumKeyCacheLifetime = 0;
   
-  private final JsonWebKeySetHandler openIdDiscoveryHandler;
+  private final JsonWebKeySetHandler jsonWebKeySetHandler;
+  private final IssuerAcceptabilityHandler issuerAcceptabilityHandler;
   
   /**
    * Constructor.
-   * @param openIdDiscoveryHandler         Handler for obtaining OpenIdDiscovery data and JWKs
+   * @param jsonWebKeySetHandler         Handler for obtaining JWKs
+   * @param issuerAcceptabilityHandler   Handler for validating issuers found in the JWT.
    */
-  public JwtValidatorVertxImpl(JsonWebKeySetHandler openIdDiscoveryHandler) {
-    this.openIdDiscoveryHandler = openIdDiscoveryHandler;
+  public JwtValidatorVertxImpl(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
+    this.jsonWebKeySetHandler = jsonWebKeySetHandler;
+    this.issuerAcceptabilityHandler = issuerAcceptabilityHandler;
     this.permittedAlgs = new HashSet<>(DEFAULT_PERMITTED_ALGS);
   }
 
@@ -159,7 +163,11 @@ public class JwtValidatorVertxImpl implements JwtValidator {
     try {
       jwt = Jwt.parseJws(token);
     } catch (Throwable ex) {
-      logger.error("Parse of JWT failed: ", ex);
+      if (logger.isTraceEnabled()) {
+        logger.error("Parse of JWT ({}) failed: ", token, ex);
+      } else {
+        logger.error("Parse of JWT failed: ", ex);
+      }
       return Future.failedFuture(new IllegalArgumentException("Parse of signed JWT failed", ex));
     }
 
@@ -172,7 +180,7 @@ public class JwtValidatorVertxImpl implements JwtValidator {
         return Future.failedFuture(new IllegalArgumentException("Parse of signed JWT failed"));
       }
 
-      return openIdDiscoveryHandler.findJwk(issuer, kid)
+      return jsonWebKeySetHandler.findJwk(issuer, kid)
               .compose(jwk -> {
                 try {
                   verify(jwk, jwt);
@@ -204,7 +212,9 @@ public class JwtValidatorVertxImpl implements JwtValidator {
       throw new IllegalStateException("No issuer in token.");
     }
     
-    openIdDiscoveryHandler.validateIssuer(tokenIssuer);
+    if (!issuerAcceptabilityHandler.isAcceptable(tokenIssuer)) {
+      throw new IllegalStateException("Issuer from token (" + tokenIssuer + ") is not acceptable.");
+    }
     
     if (externalIssuer != null) {
       if (!externalIssuer.equals(tokenIssuer)) {

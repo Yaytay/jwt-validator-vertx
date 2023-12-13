@@ -32,16 +32,46 @@ public class AsyncLoadingCache<K, V> {
  
   /**
    * Class for returned an expiry value along with the cache value.
+   * @param <U> The type of object being stored.
    */
-  public class TimedObject {
-    private final V value;
-    private final long expiry;
+  public static class TimedObject<U> {
+    private final U value;
+    private final long expiryMs;
 
-    private TimedObject(V value, long expiry) {
+    /**
+     * Constructor.
+     * @param value The value being held.
+     * @param expiryMS The time that the value should be held.
+     */
+    public TimedObject(U value, long expiryMS) {
       this.value = value;
-      this.expiry = expiry;
+      this.expiryMs = expiryMS;
     }
 
+    /**
+     * Get the value.
+     * @return the value. 
+     */
+    public U getValue() {
+      return value;
+    }
+
+    /**
+     * Get the expiry time, in ms since epoch.
+     * @return the xpiry time, in ms since epoch.
+     */
+    public long getExpiryMs() {
+      return expiryMs;
+    }
+    
+    /**
+     * Return true if the value has expired.
+     * @param nowMs The time now, in ms since epoch.
+     * @return true if the value has expired.
+     */
+    public boolean expiredBefore(long nowMs) {
+      return expiryMs < nowMs;
+    }
   }
   
   /**
@@ -50,8 +80,8 @@ public class AsyncLoadingCache<K, V> {
    * @param expiry The time (ms since epoch) at which this item becomes invalid.
    * @return newly created TimedObject.
    */
-  public TimedObject entry(V value, long expiry) {
-    return new TimedObject(value, expiry);
+  public TimedObject<V> entry(V value, long expiry) {
+    return new TimedObject<>(value, expiry);
   }
   
   /**
@@ -69,12 +99,12 @@ public class AsyncLoadingCache<K, V> {
       this.expiry = Long.MAX_VALUE;
     }    
     
-    void update(boolean succeeded, TimedObject value) {
+    void update(boolean succeeded, TimedObject<V> value) {
       this.initialPromises = new ArrayList<>();
       this.completed = true;
       this.succeeded = succeeded;
       if (succeeded) {
-        this.expiry = value.expiry;
+        this.expiry = value.expiryMs;
         this.result = value.value;
       }
     }
@@ -109,7 +139,7 @@ public class AsyncLoadingCache<K, V> {
    * @param key the key to set.
    * @param value the value to set.
    */
-  public void put(K key, TimedObject value) {
+  public void put(K key, TimedObject<V> value) {
     Data data = new Data();
     data.update(true, value);
     backing.put(key, data);
@@ -121,7 +151,7 @@ public class AsyncLoadingCache<K, V> {
    * @param loader Callable that actually gets the value.
    * @return The value returned either by this Callable or some previous instance of it.
    */
-  public Future<V> get(K key, Callable<Future<TimedObject>> loader) {
+  public Future<V> get(K key, Callable<Future<TimedObject<V>>> loader) {
     Promise<V> promise;
     Data data;
     synchronized (lock) {
@@ -169,9 +199,9 @@ public class AsyncLoadingCache<K, V> {
     return promise;
   }
 
-  private void handleAfterLoaderCall(AsyncResult<TimedObject> asyncResult, Data data) {
+  private void handleAfterLoaderCall(AsyncResult<TimedObject<V>> asyncResult, Data data) {
     boolean succeeded = asyncResult.succeeded();
-    TimedObject result = asyncResult.result();
+    TimedObject<V> result = asyncResult.result();
     List<Promise<V>> initialPromises;
     synchronized (lock) {
       initialPromises = data.initialPromises;

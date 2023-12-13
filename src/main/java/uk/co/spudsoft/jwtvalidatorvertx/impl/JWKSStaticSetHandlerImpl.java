@@ -16,103 +16,161 @@
  */
 package uk.co.spudsoft.jwtvalidatorvertx.impl;
 
+import com.google.common.collect.ImmutableList;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.impl.jose.JWK;
+import io.vertx.ext.web.client.WebClient;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetStaticHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetKnownJwksHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.AsyncLoadingCache.TimedObject;
 
 /**
- * Implementation of {@link JsonWebKeySetStaticHandler} that stores JWKs in a HashMap.
+ * Implementation of {@link JsonWebKeySetKnownJwksHandler} that stores JWKs in a HashMap.
  * 
  * @author jtalbut
  */
-public class JWKSStaticSetHandlerImpl implements JsonWebKeySetStaticHandler {
+public class JWKSStaticSetHandlerImpl implements JsonWebKeySetKnownJwksHandler {
   
   private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);
   
-  private final List<Pattern> acceptableIssuers;
-  private final Map<String, JWK> keys = new HashMap<>();
+  private final List<String> jwksUrls;
+  private final Map<String, TimedObject<JWK>> keys = new HashMap<>();
+  private final AtomicReference<Future<Void>> refreshFuture = new AtomicReference<>(null);
+  
+  private final OpenIdHelper openIdHelper;
 
   /**
    * Constructor.
-   * @param acceptableIssuerRegexes Collection of regular expressions (as Strings) that any passed in issuer must match.
    * 
-   * This JsonWebKeySet handler is entirely static, so the specification of acceptable issuers is not a vital security feature.
+   * With a static map of JWKs the security of the system is not compromised by allowing any issuer, though you should question why this is necessary.
+   * 
+   * Each JWKs endpoint must use KIDs that are globally unique.
+   * 
+   * When a KID is requested and cannot be found ALL the configured JWKS URLs will be queried and the single cache will be updated.
+   * Entries in the cache will be retained for a duration based on either the Cache-Control max-age header of the response or, 
+   * if that is not present, the defaultJwkCacheDuration.
+   * Given that only positive responses are cached it is reasonable for the defaultJwkCacheDuration to be 24 hours (or more).
+   * 
+   * @param webClient Vertx WebClient instance, that will be used for querying the JWKS URLs.
+   * @param jwksUrls Static set of URLs that will be used for obtaining JWKs.
+   * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
+   * 
+   * The JWKS URLs must be accessed via https for the environment to offer any security.
+   * This is not enforced at the code level.
    * 
    */
-  public JWKSStaticSetHandlerImpl(Collection<String> acceptableIssuerRegexes) {
-    if (acceptableIssuerRegexes == null || acceptableIssuerRegexes.isEmpty()) {
-      throw new IllegalArgumentException("Acceptable issuer regular expressions must be passed in");
-    }
-    this.acceptableIssuers = acceptableIssuerRegexes.stream()
-                    .map(re -> {
-                      if (re == null || re.isBlank()) {
-                        logger.warn("Null or empty pattern cannot be used: ", re);
-                        return null;
-                      }
-                      try {
-                        Pattern pattern = Pattern.compile(re);
-                        logger.trace("Compiled acceptable issuer regex as {}", pattern.pattern());
-                        return pattern;
-                      } catch (Throwable ex) {
-                        logger.warn("The pattern \"{}\" cannot be compiled: ", re, ex);
-                        return null;
-                      }
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-    if (acceptableIssuers.isEmpty()) {
-      throw new IllegalArgumentException("Acceptable issuer regular expressions must be passed in");
-    }
+  public JWKSStaticSetHandlerImpl(WebClient webClient, Collection<String> jwksUrls, Duration defaultJwkCacheDuration) {
+    this.jwksUrls = ImmutableList.copyOf(jwksUrls);
+    this.openIdHelper = new OpenIdHelper(webClient, defaultJwkCacheDuration.toSeconds());
   }
-
-  @Override
-  public JsonWebKeySetStaticHandler addKey(String issuer, JWK key) {
-    keys.put(issuer + '^' + key.getId(), key);
-    return this;
-  }
-
-  @Override
-  public JsonWebKeySetStaticHandler removeKey(String issuer, String kid) {
-    keys.remove(issuer + '^' + kid);
-    return this;
-  }
-
-  @Override
-  public void validateIssuer(String issuer) throws IllegalArgumentException {
-    for (Pattern acceptableIssuer : acceptableIssuers) {
-      if (acceptableIssuer.matcher(issuer).matches()) {
-        return;
+  
+  private JWK findJwk(String kid) {
+    TimedObject<JWK> jwk = keys.get(kid);
+    long now = System.currentTimeMillis();
+    if (null != jwk) {
+      if (jwk.expiredBefore(now)) {
+        keys.remove(kid);
+      } else {
+        return jwk.getValue();
       }
     }
-    logger.warn("Failed to find issuer \"{}\" in {}", issuer, acceptableIssuers);
-    throw new IllegalArgumentException("Parse of signed JWT failed");
+    return null;
   }
 
   @Override
   public Future<JWK> findJwk(String issuer, String kid) {
-    JWK jwk = keys.get(issuer + '^' + kid);
-    if (null == jwk) {
-      logger.error("Failed to find key {} from store from {}", kid, keys.keySet());
-      return Future.failedFuture(
-              new IllegalArgumentException("Parse of signed JWT failed",
-                       new IllegalArgumentException("Failed to find key " + kid)
-              )
-      );
-    } else {
-      return Future.succeededFuture(jwk);
+    synchronized (keys) {
+      JWK jwk = findJwk(kid);
+      if (jwk != null) {
+        return Future.succeededFuture(jwk);
+      }
+    
+      Promise<Void> refreshPromise = Promise.promise();
+      Future<Void> newRefreshFuture = refreshPromise.future();
+      Future<Void> result = refreshFuture.compareAndExchange(null, newRefreshFuture);
+      if (result == null) {
+        result = updateCache()
+                .compose(newkeys -> {
+                  synchronized (keys) {
+                    keys.putAll(newkeys);
+                  }
+                  refreshPromise.complete();
+                  refreshFuture.set(null);
+                  return Future.succeededFuture();
+                });
+      } 
+      return result.compose(v -> {
+        synchronized (keys) {
+          JWK newjwk = findJwk(kid);
+          if (newjwk != null) {
+            return Future.succeededFuture(newjwk);
+          }
+          return Future.failedFuture(new IllegalArgumentException("The key \"" + kid + "\" cannot be found."));
+        }
+      });
     }
   }
-
   
+  private Future<Map<String, TimedObject<JWK>>> updateCache() {
+    Map<String, TimedObject<JWK>> result = new HashMap<>();
+    List<Future<Void>> futures = new ArrayList<>();
+    
+    for (String jwksUrl : jwksUrls) {
+      futures.add(
+              openIdHelper.get(jwksUrl)
+                      .compose(tjo -> {
+                        return addKeysToCache(jwksUrl, tjo, result);
+                      })
+      );
+    }
+    
+    return Future.all(futures)
+            .compose(cf -> {
+              return Future.succeededFuture(result);
+            });
+  }
   
+  private Future<Void> addKeysToCache(String url, TimedObject<JsonObject> data, Map<String, TimedObject<JWK>> result) {
+    try {
+      Object keysObject = data.getValue().getValue("keys");
+      if (keysObject instanceof JsonArray) {
+        JsonArray ja = (JsonArray) keysObject;
+        for (Iterator<Object> iter = ja.iterator(); iter.hasNext();) {
+          Object keyData = iter.next();
+          try {
+            if (keyData instanceof JsonObject) {
+              JsonObject jo = (JsonObject) keyData;
+              String keyId = jo.getString("kid");
+              JWK jwk = new JWK(jo);
+              synchronized (result) {
+                result.put(keyId, new TimedObject<>(jwk, data.getExpiryMs()));
+              }
+            }
+          } catch (Throwable ex) {
+            logger.warn("Failed to parse {} as a JWK: ", keyData, ex);
+          }
+        }
+      } else {
+        logger.error("Failed to get JWKS from {} (returned value does not contain a keys array: {}))", url, data.getValue());
+        return Future.failedFuture(new IllegalArgumentException("Failed to parse JWKS from " + url));
+      }
+    } catch (Throwable ex) {
+      logger.error("Failed to get process JWKS from {} ({}): ", url, data.getValue(), ex);
+      return Future.failedFuture(new IllegalArgumentException("Failed to process JWKS from " + url));
+    }
+    return Future.succeededFuture();
+  }
   
 }

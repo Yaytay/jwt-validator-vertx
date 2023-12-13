@@ -31,13 +31,13 @@ public class JwtValidatorVertxImplTest {
   
   @Test
   public void testGetPermittedAlgorithms() {
-    JwtValidatorVertxImpl instance = new JwtValidatorVertxImpl(null);
+    JwtValidatorVertxImpl instance = new JwtValidatorVertxImpl(null, null);
     assertThat(instance.getPermittedAlgorithms(), hasSize(11));
   }
 
   @Test
   public void testSetPermittedAlgorithms() throws Exception {
-    JwtValidatorVertxImpl instance = new JwtValidatorVertxImpl(null);
+    JwtValidatorVertxImpl instance = new JwtValidatorVertxImpl(null, null);
     assertThat(instance.getPermittedAlgorithms(), hasSize(11));
     instance.setPermittedAlgorithms(ImmutableSet.<String>builder().add("RS256").build());
     assertThat(instance.getPermittedAlgorithms(), hasSize(1));
@@ -49,7 +49,7 @@ public class JwtValidatorVertxImplTest {
 
   @Test
   public void testAddPermittedAlgorithm() throws Exception {
-    JwtValidatorVertxImpl instance = new JwtValidatorVertxImpl(null);
+    JwtValidatorVertxImpl instance = new JwtValidatorVertxImpl(null, null);
     assertThat(instance.getPermittedAlgorithms(), hasSize(11));
     instance.setPermittedAlgorithms(ImmutableSet.<String>builder().add("RS256").build());
     assertThat(instance.getPermittedAlgorithms(), hasSize(1));

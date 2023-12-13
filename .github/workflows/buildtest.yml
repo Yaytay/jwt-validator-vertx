@@ -47,6 +47,7 @@ jobs:
     - name: Build with Maven
       env:
         MAVEN_OPTS: -Djava.security.manager=allow
+        NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
       run: mvn -B clean install site --file pom.xml
 
     - uses: codecov/codecov-action@v3

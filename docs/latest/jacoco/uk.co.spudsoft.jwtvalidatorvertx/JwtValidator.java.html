@@ -17,7 +17,6 @@
 package uk.co.spudsoft.jwtvalidatorvertx;
 
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -35,52 +34,58 @@ import uk.co.spudsoft.jwtvalidatorvertx.impl.JwtValidatorVertxImpl;
  * &lt;LI&gt; The caller passes in the issuer, the validator performs OpenID Discovery to find the JWKS URL and then finds the keys from there.
  * &lt;LI&gt; The configuration of the validator specifies a number of JWKS URLs.
  * &lt;/UL&gt;
- * 
+ * &lt;p&gt;
  * The former configuration is appropriate when used in a SAAS application with many issuers, each of which has it's own JWKS.
  * If the validator is not being used in a SAAS application, or the issuers in a SAAS application share keys, then the second
  * approach is a lot more memory efficient.
- * 
- * An instance of JwtValidator can only support one of these two models, determined by the JwsonWebKeySetHandler that it uses.
- * 
+ * &lt;p&gt;
+ * An instance of JwtValidator can only support one of these two models, determined by the JwsonWebKeySetHandler that it uses (and you probably only want one JwtValidator in your service).
+ * &lt;p&gt;
  * When a dynamic configuration is used the issuer acceptability must pass three steps:
  * &lt;UL&gt;
  * &lt;LI&gt;The issuer passed in to the JwtValidator must be non-null and acceptable.
  * &lt;LI&gt;The issuer found in the token must be non-null and acceptable.
  * &lt;LI&gt;The issuer passed in and the issuer in the token must be the same.
  * &lt;/UL&gt;
- * 
+ * &lt;p&gt;
  * With a static configuration the passed in issuer is optional, and thus the first and last steps may be skipped.
  * If an issuer is passed in to a static configuration all three steps will take place.
+ * &lt;p&gt;
+ * There are circumstances in which a client will want to use a static JwtValidator, but also to use the a {@link OpenIdDiscoveryHandler}.
+ * This is OK, but the caching of JWKSs will not be shared between the two sides because there is a fundamental difference in requirements between the two.
+ * When the OpenIdDiscoveryHandler is used to find JWKs the key IDs are specific to the issuer, but the static configuration requires all key IDs to be globally unique.
+ * &lt;p&gt;
+ * The WebClient passed in to create the JwtValidator does not have to be dedicated to it.
  * 
  * @author jtalbut
  */
 public interface JwtValidator {
   
   /**
-   * Create a JwtValidatorVertx.
+   * Create a JwtValidatorVertx that will use an OpenIdDiscoveryHandler to find JWKs from any acceptable issuer.
    * 
-   * @param vertx The Vertx instance that will be used for asynchronous communication with JWKS endpoints.
+   * @param webClient The Vertx WebClient instance that will be used for asynchronous communication with JWKS endpoints.
    * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
    * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
    * @return A newly created JwtValidatorVertx.
    */
-  static JwtValidator createDynamic(Vertx vertx, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
-<span class="fc" id="L68">    JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(WebClient.create(vertx), issuerAcceptabilityHandler, defaultJwkCacheDuration);</span>
-<span class="fc" id="L69">    return create(openIdDiscoveryHandler, issuerAcceptabilityHandler);</span>
+  static JwtValidator createDynamic(WebClient webClient, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
+<span class="fc" id="L73">    JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration);</span>
+<span class="fc" id="L74">    return create(openIdDiscoveryHandler, issuerAcceptabilityHandler);</span>
   }
   
   /**
-   * Create a JwtValidatorVertx.
+   * Create a JwtValidatorVertx that will use a fixed set of URLs for downloading JWKs.
    * 
-   * @param vertx The Vertx instance that will be used for asynchronous communication with JWKS endpoints.
+   * @param webClient The Vertx WebClient instance that will be used for asynchronous communication with JWKS endpoints.
    * @param jwksEndpoints The object used to determine the acceptability of issuers.
    * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
    * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
    * @return A newly created JwtValidatorVertx.
    */
-  static JwtValidator createStatic(Vertx vertx, Collection&lt;String&gt; jwksEndpoints, Duration defaultJwkCacheDuration, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
-<span class="fc" id="L82">    JsonWebKeySetHandler staticHandler = JsonWebKeySetKnownJwksHandler.create(WebClient.create(vertx), jwksEndpoints, defaultJwkCacheDuration);</span>
-<span class="fc" id="L83">    return create(staticHandler, issuerAcceptabilityHandler);</span>
+  static JwtValidator createStatic(WebClient webClient, Collection&lt;String&gt; jwksEndpoints, Duration defaultJwkCacheDuration, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
+<span class="fc" id="L87">    JsonWebKeySetHandler staticHandler = JsonWebKeySetKnownJwksHandler.create(webClient, jwksEndpoints, defaultJwkCacheDuration);</span>
+<span class="fc" id="L88">    return create(staticHandler, issuerAcceptabilityHandler);</span>
   }
 
   /**
@@ -90,8 +95,8 @@ public interface JwtValidator {
    * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
    * @return A newly created JwtValidatorVertx.
    */
-  private static JwtValidator create(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
-<span class="fc" id="L94">    return new JwtValidatorVertxImpl(jsonWebKeySetHandler, issuerAcceptabilityHandler);</span>
+  static JwtValidator create(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
+<span class="fc" id="L99">    return new JwtValidatorVertxImpl(jsonWebKeySetHandler, issuerAcceptabilityHandler);</span>
   }
 
   /**

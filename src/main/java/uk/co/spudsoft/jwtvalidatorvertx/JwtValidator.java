@@ -90,7 +90,7 @@ public interface JwtValidator {
    * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
    * @return A newly created JwtValidatorVertx.
    */
-  private static JwtValidator create(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
+  static JwtValidator create(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
     return new JwtValidatorVertxImpl(jsonWebKeySetHandler, issuerAcceptabilityHandler);
   }
 

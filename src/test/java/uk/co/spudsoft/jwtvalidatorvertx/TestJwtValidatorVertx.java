@@ -9,6 +9,7 @@ import com.google.common.cache.Cache;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkJwksHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkTokenBuilder;
 import io.vertx.core.Vertx;
+import io.vertx.ext.web.client.WebClient;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -59,7 +60,7 @@ public class TestJwtValidatorVertx extends AbstractTokenValidationTester {
     logger.debug("Starting JWKS endpoint");
     jwks.start();
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(jwks.getBaseUrl()), null, Duration.ofMillis(1000));
-    tokenValidator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    tokenValidator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
     tokenValidator.setRequireExp(true);
     tokenValidator.setRequireNbf(true);
     tokenValidator.setTimeLeeway(Duration.ofSeconds(3));

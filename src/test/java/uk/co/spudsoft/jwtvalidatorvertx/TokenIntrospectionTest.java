@@ -9,6 +9,7 @@ import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableMap;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class TokenIntrospectionTest {
     JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.of(1, ChronoUnit.MINUTES));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.of(1, ChronoUnit.MINUTES));
     
     ArrayNode aud = objectMapper.createArrayNode();
     aud.add("bob");

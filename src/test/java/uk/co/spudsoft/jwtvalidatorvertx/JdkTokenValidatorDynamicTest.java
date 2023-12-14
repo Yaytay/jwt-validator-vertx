@@ -9,6 +9,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -97,7 +98,7 @@ public class JdkTokenValidatorDynamicTest {
 
   public JdkTokenValidatorDynamicTest(Vertx vertx) {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    defaultValidator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    defaultValidator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
   }
 
   @Test
@@ -285,7 +286,7 @@ public class JdkTokenValidatorDynamicTest {
     JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
     validator.setPermittedAlgorithms(ImmutableSet.<String>builder().add("RS512", "RS384", "RS256").build());
     
     String kid = UUID.randomUUID().toString();
@@ -334,7 +335,7 @@ public class JdkTokenValidatorDynamicTest {
   @Order(13)
   public void testNoExpPermitted(VertxTestContext testContext) throws Exception {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
     validator.setRequireExp(false);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -354,7 +355,7 @@ public class JdkTokenValidatorDynamicTest {
   @Order(14)
   public void testNoExpRejected(VertxTestContext testContext) throws Exception {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
     validator.setRequireExp(true);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -374,7 +375,7 @@ public class JdkTokenValidatorDynamicTest {
   @Order(12)
   public void testExpInThePast() throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
     validator.setTimeLeeway(Duration.ofSeconds(6));
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -404,7 +405,7 @@ public class JdkTokenValidatorDynamicTest {
   @Order(13)
   public void testNoNbfPermitted(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
     validator.setRequireNbf(false);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -424,7 +425,7 @@ public class JdkTokenValidatorDynamicTest {
   @Order(14)
   public void testNoNbfRejected(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
     validator.setRequireNbf(true);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -443,7 +444,7 @@ public class JdkTokenValidatorDynamicTest {
   @Order(13)
   public void testNbfInTheFuture() throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
     validator.setTimeLeeway(Duration.ofSeconds(6));
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -473,7 +474,7 @@ public class JdkTokenValidatorDynamicTest {
   @Order(14)
   public void testBadIssAccepted(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(jwks.getBaseUrl().replace("bob", "carol")), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createDynamic(vertx, iah, Duration.ofMinutes(1));
+    JwtValidator validator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
     jwks.setKeyCache(keyCache);

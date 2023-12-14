@@ -9,6 +9,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -88,7 +89,7 @@ public class JdkTokenValidatorStaticTest {
     logger.debug("Starting JWKS endpoint");
     jwks.start();
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    defaultValidator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    defaultValidator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
   }
 
   @AfterAll
@@ -282,7 +283,7 @@ public class JdkTokenValidatorStaticTest {
     JdkTokenBuilder builder = new JdkTokenBuilder(keyCache);
 
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
     validator.setPermittedAlgorithms(ImmutableSet.<String>builder().add("RS512", "RS384", "RS256").build());
     
     String kid = UUID.randomUUID().toString();
@@ -331,7 +332,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(13)
   public void testNoExpPermitted(VertxTestContext testContext) throws Exception {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
     validator.setRequireExp(false);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -351,7 +352,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(14)
   public void testNoExpRejected(VertxTestContext testContext) throws Exception {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
     validator.setRequireExp(true);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -371,7 +372,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(12)
   public void testExpInThePast() throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
     validator.setTimeLeeway(Duration.ofSeconds(6));
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -401,7 +402,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(13)
   public void testNoNbfPermitted(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
     validator.setRequireNbf(false);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -421,7 +422,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(14)
   public void testNoNbfRejected(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
     validator.setRequireNbf(true);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -440,7 +441,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(13)
   public void testNbfInTheFuture() throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("http://localhost.*"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
     validator.setTimeLeeway(Duration.ofSeconds(6));
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
@@ -470,7 +471,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(14)
   public void testBadIssRejected(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("X"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
     jwks.setKeyCache(keyCache);
@@ -489,7 +490,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(14)
   public void testNoIssRejected(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("X"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
     jwks.setKeyCache(keyCache);
@@ -508,7 +509,7 @@ public class JdkTokenValidatorStaticTest {
   @Order(14)
   public void testMismatchedIssRejected(VertxTestContext testContext) throws Throwable {
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList("X"), null, Duration.ofMillis(1000));
-    JwtValidator validator = JwtValidator.createStatic(vertx, Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
+    JwtValidator validator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl() + "/jwks"), Duration.ofMinutes(1), iah);
 
     Cache<String, AlgorithmAndKeyPair> keyCache = AlgorithmAndKeyPair.createCache(Duration.ofMinutes(1));
     jwks.setKeyCache(keyCache);

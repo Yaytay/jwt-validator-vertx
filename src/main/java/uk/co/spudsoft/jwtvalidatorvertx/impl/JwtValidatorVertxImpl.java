@@ -181,6 +181,9 @@ public class JwtValidatorVertxImpl implements JwtValidator {
       }
 
       return jsonWebKeySetHandler.findJwk(issuer, kid)
+              .onFailure(ex -> {
+                logger.warn("Failed to find JWK for {} ({}): ", kid, issuer, ex);
+              })
               .compose(jwk -> {
                 try {
                   verify(jwk, jwt);

@@ -76,6 +76,11 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetKnownJwksHandler {
     this.openIdHelper = new OpenIdHelper(webClient, defaultJwkCacheDuration.toSeconds());
   }
   
+  @Override
+  public void optimize() {
+    findJwk(null, "");
+  }
+  
   private JWK findJwk(String kid) {
     TimedObject<JWK> jwk = keys.get(kid);
     long now = System.currentTimeMillis();

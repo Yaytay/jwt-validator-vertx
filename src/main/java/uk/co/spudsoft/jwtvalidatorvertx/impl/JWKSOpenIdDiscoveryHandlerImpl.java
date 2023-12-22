@@ -71,6 +71,11 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
     this.openIdHelper = new OpenIdHelper(webClient, defaultJwkCacheDuration.toSeconds());
   }
 
+  @Override
+  public void optimize() {
+    // No preload of keys is possible.
+  }
+
   private void validateIssuer(String issuer) throws IllegalArgumentException {
     if (discoveryDataCache.containsKey(issuer)) {
       return ;

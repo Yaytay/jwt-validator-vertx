@@ -25,6 +25,15 @@ import javax.annotation.Nullable;
  * @author jtalbut
  */
 public interface JsonWebKeySetHandler {
+  
+  /**
+   * Perform whatever initialization is required to get this handler working.
+   * <P>
+   * This is primarily intended to provide the opportunity for handlers to preload JWKs.
+   * It shouldn't matter whether or not the preload has completed, hence this method returns void 
+   * and it is expected that processing continues in the background.
+   */
+  void optimize();
  
   /**
    * Find a JWK for the given issuer and kid.

@@ -96,7 +96,8 @@ public interface JwtValidator {
    * @return A newly created JwtValidatorVertx.
    */
   static JwtValidator create(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
-<span class="fc" id="L99">    return new JwtValidatorVertxImpl(jsonWebKeySetHandler, issuerAcceptabilityHandler);</span>
+<span class="fc" id="L99">    jsonWebKeySetHandler.optimize();</span>
+<span class="fc" id="L100">    return new JwtValidatorVertxImpl(jsonWebKeySetHandler, issuerAcceptabilityHandler);</span>
   }
 
   /**

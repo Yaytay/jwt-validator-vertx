@@ -71,120 +71,125 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
 <span class="fc" id="L71">    this.openIdHelper = new OpenIdHelper(webClient, defaultJwkCacheDuration.toSeconds());</span>
 <span class="fc" id="L72">  }</span>
 
+  @Override
+  public void optimize() {
+    // No preload of keys is possible.
+<span class="fc" id="L77">  }</span>
+
   private void validateIssuer(String issuer) throws IllegalArgumentException {
-<span class="fc bfc" id="L75" title="All 2 branches covered.">    if (discoveryDataCache.containsKey(issuer)) {</span>
-<span class="fc" id="L76">      return ;</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">    if (discoveryDataCache.containsKey(issuer)) {</span>
+<span class="fc" id="L81">      return ;</span>
     }
-<span class="fc bfc" id="L78" title="All 2 branches covered.">    if (issuerAcceptabilityHandler.isAcceptable(issuer)) {</span>
-<span class="fc" id="L79">      return;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">    if (issuerAcceptabilityHandler.isAcceptable(issuer)) {</span>
+<span class="fc" id="L84">      return;</span>
     }
-<span class="fc" id="L81">    logger.warn(&quot;Issuer ({}) not considered acceptable by {}&quot;, issuer, issuerAcceptabilityHandler);</span>
-<span class="fc" id="L82">    throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
+<span class="fc" id="L86">    logger.warn(&quot;Issuer ({}) not considered acceptable by {}&quot;, issuer, issuerAcceptabilityHandler);</span>
+<span class="fc" id="L87">    throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
   }
   
   @Override
   public Future&lt;DiscoveryData&gt; performOpenIdDiscovery(String issuer) {
     
     try {
-<span class="fc" id="L89">      validateIssuer(issuer);</span>
-<span class="fc" id="L90">    } catch (Throwable ex) {</span>
-<span class="fc" id="L91">      return Future.failedFuture(ex);</span>
-<span class="fc" id="L92">    }</span>
+<span class="fc" id="L94">      validateIssuer(issuer);</span>
+<span class="fc" id="L95">    } catch (Throwable ex) {</span>
+<span class="fc" id="L96">      return Future.failedFuture(ex);</span>
+<span class="fc" id="L97">    }</span>
 
-<span class="fc bfc" id="L94" title="All 2 branches covered.">    String discoveryUrl = issuer + (issuer.endsWith(&quot;/&quot;) ? &quot;&quot; : &quot;/&quot;) + &quot;.well-known/openid-configuration&quot;;</span>
-<span class="fc" id="L95">    return discoveryDataCache.get(issuer</span>
-<span class="fc" id="L96">            , () -&gt; openIdHelper.get(discoveryUrl)</span>
-<span class="fc" id="L97">                    .map(tjo -&gt; discoveryDataCache.entry(new DiscoveryData(tjo.getValue()), tjo.getExpiryMs()))</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">    String discoveryUrl = issuer + (issuer.endsWith(&quot;/&quot;) ? &quot;&quot; : &quot;/&quot;) + &quot;.well-known/openid-configuration&quot;;</span>
+<span class="fc" id="L100">    return discoveryDataCache.get(issuer</span>
+<span class="fc" id="L101">            , () -&gt; openIdHelper.get(discoveryUrl)</span>
+<span class="fc" id="L102">                    .map(tjo -&gt; discoveryDataCache.entry(new DiscoveryData(tjo.getValue()), tjo.getExpiryMs()))</span>
     );
   }
 
   @Override
   public Future&lt;JWK&gt; findJwk(DiscoveryData discoveryData, String kid) {
     
-<span class="fc" id="L104">    String jwksUri = discoveryData.getJwksUri();</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">    if (Strings.isNullOrEmpty(jwksUri)) {</span>
-<span class="nc" id="L106">      return Future.failedFuture(&quot;Discovery data does not contain jwks_uri&quot;);</span>
+<span class="fc" id="L109">    String jwksUri = discoveryData.getJwksUri();</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">    if (Strings.isNullOrEmpty(jwksUri)) {</span>
+<span class="nc" id="L111">      return Future.failedFuture(&quot;Discovery data does not contain jwks_uri&quot;);</span>
     }
     
     AsyncLoadingCache&lt;String, JWK&gt; finalJwkCache;
-<span class="fc" id="L110">    synchronized (kidCache) {</span>
-<span class="fc" id="L111">      AsyncLoadingCache&lt;String, JWK&gt; jwkCache = kidCache.get(jwksUri);</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">      if (jwkCache == null) {</span>
-<span class="fc" id="L113">        jwkCache = new AsyncLoadingCache&lt;&gt;();</span>
-<span class="fc" id="L114">        kidCache.put(jwksUri, jwkCache);</span>
+<span class="fc" id="L115">    synchronized (kidCache) {</span>
+<span class="fc" id="L116">      AsyncLoadingCache&lt;String, JWK&gt; jwkCache = kidCache.get(jwksUri);</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">      if (jwkCache == null) {</span>
+<span class="fc" id="L118">        jwkCache = new AsyncLoadingCache&lt;&gt;();</span>
+<span class="fc" id="L119">        kidCache.put(jwksUri, jwkCache);</span>
       }
-<span class="fc" id="L116">      finalJwkCache = jwkCache;</span>
-<span class="fc" id="L117">    }</span>
+<span class="fc" id="L121">      finalJwkCache = jwkCache;</span>
+<span class="fc" id="L122">    }</span>
     
-<span class="fc" id="L119">    return finalJwkCache.get(kid</span>
-<span class="fc" id="L120">            , () -&gt; openIdHelper.get(discoveryData.getJwksUri())</span>
-<span class="fc" id="L121">                    .compose(tjo -&gt; processJwkSet(finalJwkCache, tjo, kid))</span>
+<span class="fc" id="L124">    return finalJwkCache.get(kid</span>
+<span class="fc" id="L125">            , () -&gt; openIdHelper.get(discoveryData.getJwksUri())</span>
+<span class="fc" id="L126">                    .compose(tjo -&gt; processJwkSet(finalJwkCache, tjo, kid))</span>
     );
   }
 
   @Override
   public Future&lt;JWK&gt; findJwk(String issuer, String kid) {
-<span class="fc" id="L127">    return performOpenIdDiscovery(issuer)</span>
-<span class="fc" id="L128">            .compose(dd -&gt; findJwk(dd, kid));</span>
+<span class="fc" id="L132">    return performOpenIdDiscovery(issuer)</span>
+<span class="fc" id="L133">            .compose(dd -&gt; findJwk(dd, kid));</span>
   }
   
   static Future&lt;TimedObject&lt;JWK&gt;&gt; processJwkSet(AsyncLoadingCache&lt;String, JWK&gt; jwkCache, TimedObject&lt;JsonObject&gt; data, String kid) {
-<span class="fc" id="L132">    long expiry = data.getExpiryMs();</span>
-<span class="fc" id="L133">    JWK result = null;</span>
-<span class="fc" id="L134">    JsonObject foundKey = null;</span>
+<span class="fc" id="L137">    long expiry = data.getExpiryMs();</span>
+<span class="fc" id="L138">    JWK result = null;</span>
+<span class="fc" id="L139">    JsonObject foundKey = null;</span>
     
     try {
-<span class="fc" id="L137">      Object keysObject = data.getValue().getValue(&quot;keys&quot;);</span>
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">      if (keysObject instanceof JsonArray) {</span>
-<span class="fc" id="L139">        JsonArray ja = (JsonArray) keysObject;</span>
-<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (Iterator&lt;Object&gt; iter = ja.iterator(); iter.hasNext();) {</span>
-<span class="fc" id="L141">          Object keyData = iter.next();</span>
+<span class="fc" id="L142">      Object keysObject = data.getValue().getValue(&quot;keys&quot;);</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">      if (keysObject instanceof JsonArray) {</span>
+<span class="fc" id="L144">        JsonArray ja = (JsonArray) keysObject;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (Iterator&lt;Object&gt; iter = ja.iterator(); iter.hasNext();) {</span>
+<span class="fc" id="L146">          Object keyData = iter.next();</span>
           try {
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">            if (keyData instanceof JsonObject) {</span>
-<span class="fc" id="L144">              JsonObject jo = (JsonObject) keyData;</span>
-<span class="fc" id="L145">              String keyId = jo.getString(&quot;kid&quot;);</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">              if (kid.equals(keyId)) {</span>
-<span class="fc" id="L147">                result = new JWK(jo);</span>
-<span class="fc" id="L148">                foundKey = jo;</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">            if (keyData instanceof JsonObject) {</span>
+<span class="fc" id="L149">              JsonObject jo = (JsonObject) keyData;</span>
+<span class="fc" id="L150">              String keyId = jo.getString(&quot;kid&quot;);</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">              if (kid.equals(keyId)) {</span>
+<span class="fc" id="L152">                result = new JWK(jo);</span>
+<span class="fc" id="L153">                foundKey = jo;</span>
               } else {
-<span class="nc" id="L150">                JWK other = new JWK(jo);</span>
-<span class="nc" id="L151">                jwkCache.put(keyId, jwkCache.entry(other, expiry));</span>
+<span class="nc" id="L155">                JWK other = new JWK(jo);</span>
+<span class="nc" id="L156">                jwkCache.put(keyId, jwkCache.entry(other, expiry));</span>
               }
             }
-<span class="nc" id="L154">          } catch (Throwable ex) {</span>
-<span class="nc" id="L155">            logger.warn(&quot;Failed to parse {} as a JWK: &quot;, keyData, ex);</span>
-<span class="fc" id="L156">          }</span>
-<span class="fc" id="L157">        }</span>
-<span class="fc" id="L158">      } else {</span>
-<span class="nc" id="L159">        logger.error(&quot;Failed to get key {} from JWKS from {}&quot;, kid, data.getValue());</span>
-<span class="nc" id="L160">        return Future.failedFuture(</span>
+<span class="nc" id="L159">          } catch (Throwable ex) {</span>
+<span class="nc" id="L160">            logger.warn(&quot;Failed to parse {} as a JWK: &quot;, keyData, ex);</span>
+<span class="fc" id="L161">          }</span>
+<span class="fc" id="L162">        }</span>
+<span class="fc" id="L163">      } else {</span>
+<span class="nc" id="L164">        logger.error(&quot;Failed to get key {} from JWKS from {}&quot;, kid, data.getValue());</span>
+<span class="nc" id="L165">        return Future.failedFuture(</span>
                 new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;,
                          new IllegalArgumentException(&quot;Failed to get public key for &quot; + kid)
                 )
         );
       }
-<span class="nc" id="L166">    } catch (Throwable ex) {</span>
-<span class="nc" id="L167">      logger.error(&quot;Failed to get public key for {} from {}&quot;, kid, data.getValue());</span>
-<span class="nc" id="L168">      return Future.failedFuture(</span>
+<span class="nc" id="L171">    } catch (Throwable ex) {</span>
+<span class="nc" id="L172">      logger.error(&quot;Failed to get public key for {} from {}&quot;, kid, data.getValue());</span>
+<span class="nc" id="L173">      return Future.failedFuture(</span>
               new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;,
                        new IllegalArgumentException(&quot;Failed to get public key for &quot; + kid)
               )
       );
-<span class="fc" id="L173">    }</span>
-<span class="fc bfc" id="L174" title="All 2 branches covered.">    if (result == null) {</span>
-<span class="fc" id="L175">      logger.error(&quot;Failed to find key {} from JWKS from {}&quot;, kid, data.getValue());</span>
-<span class="fc" id="L176">      return Future.failedFuture(</span>
+<span class="fc" id="L178">    }</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">    if (result == null) {</span>
+<span class="fc" id="L180">      logger.error(&quot;Failed to find key {} from JWKS from {}&quot;, kid, data.getValue());</span>
+<span class="fc" id="L181">      return Future.failedFuture(</span>
               new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;,
                        new IllegalArgumentException(&quot;Failed to find key &quot; + kid)
               )
       );
     } else {
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">      if (logger.isDebugEnabled()) {</span>
-<span class="fc" id="L183">        logger.debug(&quot;Got new {} public key with id {}: {}&quot;, result.getAlgorithm(), kid, foundKey);</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">      if (logger.isDebugEnabled()) {</span>
+<span class="fc" id="L188">        logger.debug(&quot;Got new {} public key with id {}: {}&quot;, result.getAlgorithm(), kid, foundKey);</span>
       } else {
-<span class="nc" id="L185">        logger.info(&quot;Got new public key with id {}&quot;, kid);</span>
+<span class="nc" id="L190">        logger.info(&quot;Got new public key with id {}&quot;, kid);</span>
       }
-<span class="fc" id="L187">      return Future.succeededFuture(jwkCache.entry(result, expiry));</span>
+<span class="fc" id="L192">      return Future.succeededFuture(jwkCache.entry(result, expiry));</span>
     }
   }
  }

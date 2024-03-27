@@ -677,11 +677,9 @@
                   <goal>sign</goal>
                 </goals>
                 <configuration>
-                  <keyname>Jim E. Talbut</keyname>
-                  <gpgArguments>
-                    <arg>--pinentry-mode</arg>
-                    <arg>loopback</arg>
-                  </gpgArguments>
+                  <signer>bc</signer>
+                  <keyEnvName>GPG_PRIVATEKEY</keyEnvName>
+                  <passphraseEnvName>GPG_PASSPHRASE</passphraseEnvName>
                 </configuration>
               </execution>
             </executions>

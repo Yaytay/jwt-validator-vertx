@@ -129,6 +129,13 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetKnownJwksHandler {
   }
   
   private Future<Map<String, TimedObject<JWK>>> updateCache() {
+    
+    if (jwksUrls.isEmpty()) {
+      logger.error("Unable to validate any JWKs because no jwksUrls have been configured");
+      IllegalStateException ex = new IllegalStateException("Unable to validate any JWKs because no jwksUrls have been configured");
+      return Future.failedFuture(ex);
+    }
+    
     Map<String, TimedObject<JWK>> result = new HashMap<>();
     List<Future<Void>> futures = new ArrayList<>();
     

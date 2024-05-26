@@ -39,7 +39,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.impl.JwtValidatorVertxImpl;
  * If the validator is not being used in a SAAS application, or the issuers in a SAAS application share keys, then the second
  * approach is a lot more memory efficient.
  * <p>
- * An instance of JwtValidator can only support one of these two models, determined by the JwsonWebKeySetHandler that it uses (and you probably only want one JwtValidator in your service).
+ * An instance of JwtValidator can only support one of these two models, determined by the JsonWebKeySetHandler that it uses (and you probably only want one JwtValidator in your service).
  * <p>
  * When a dynamic configuration is used the issuer acceptability must pass three steps:
  * <UL>
@@ -51,7 +51,7 @@ import uk.co.spudsoft.jwtvalidatorvertx.impl.JwtValidatorVertxImpl;
  * With a static configuration the passed in issuer is optional, and thus the first and last steps may be skipped.
  * If an issuer is passed in to a static configuration all three steps will take place.
  * <p>
- * There are circumstances in which a client will want to use a static JwtValidator, but also to use the a {@link OpenIdDiscoveryHandler}.
+ * There are circumstances in which a client will want to use a static JwtValidator, but also to use the {@link OpenIdDiscoveryHandler}.
  * This is OK, but the caching of JWKSs will not be shared between the two sides because there is a fundamental difference in requirements between the two.
  * When the OpenIdDiscoveryHandler is used to find JWKs the key IDs are specific to the issuer, but the static configuration requires all key IDs to be globally unique.
  * <p>

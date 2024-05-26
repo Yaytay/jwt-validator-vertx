@@ -191,7 +191,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.11.0</version>
+      <version>5.12.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -284,7 +284,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.5.0</version>
+        <version>3.6.0</version>
         <executions>
           <execution>
             <phase>initialize</phase>
@@ -331,7 +331,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.8.4.0</version>        
+        <version>4.8.5.0</version>        
         <configuration>
           <fork>true</fork>
           <effort>Max</effort>
@@ -496,7 +496,7 @@
       <plugin>
         <groupId>org.owasp</groupId>
         <artifactId>dependency-check-maven</artifactId>
-        <version>9.1.0</version>
+        <version>9.2.0</version>
         <configuration>
           <failBuildOnCVSS>8</failBuildOnCVSS>
           <failOnError>false</failOnError>

@@ -129,54 +129,61 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetKnownJwksHandler {
   }
   
   private Future&lt;Map&lt;String, TimedObject&lt;JWK&gt;&gt;&gt; updateCache() {
-<span class="fc" id="L132">    Map&lt;String, TimedObject&lt;JWK&gt;&gt; result = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L133">    List&lt;Future&lt;Void&gt;&gt; futures = new ArrayList&lt;&gt;();</span>
     
-<span class="fc bfc" id="L135" title="All 2 branches covered.">    for (String jwksUrl : jwksUrls) {</span>
-<span class="fc" id="L136">      futures.add(</span>
-<span class="fc" id="L137">              openIdHelper.get(jwksUrl)</span>
-<span class="fc" id="L138">                      .compose(tjo -&gt; {</span>
-<span class="fc" id="L139">                        return addKeysToCache(jwksUrl, tjo, result);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">    if (jwksUrls.isEmpty()) {</span>
+<span class="nc" id="L134">      logger.error(&quot;Unable to validate any JWKs because no jwksUrls have been configured&quot;);</span>
+<span class="nc" id="L135">      IllegalStateException ex = new IllegalStateException(&quot;Unable to validate any JWKs because no jwksUrls have been configured&quot;);</span>
+<span class="nc" id="L136">      return Future.failedFuture(ex);</span>
+    }
+    
+<span class="fc" id="L139">    Map&lt;String, TimedObject&lt;JWK&gt;&gt; result = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L140">    List&lt;Future&lt;Void&gt;&gt; futures = new ArrayList&lt;&gt;();</span>
+    
+<span class="fc bfc" id="L142" title="All 2 branches covered.">    for (String jwksUrl : jwksUrls) {</span>
+<span class="fc" id="L143">      futures.add(</span>
+<span class="fc" id="L144">              openIdHelper.get(jwksUrl)</span>
+<span class="fc" id="L145">                      .compose(tjo -&gt; {</span>
+<span class="fc" id="L146">                        return addKeysToCache(jwksUrl, tjo, result);</span>
                       })
       );
-<span class="fc" id="L142">    }</span>
+<span class="fc" id="L149">    }</span>
     
-<span class="fc" id="L144">    return Future.all(futures)</span>
-<span class="fc" id="L145">            .compose(cf -&gt; {</span>
-<span class="fc" id="L146">              return Future.succeededFuture(result);</span>
+<span class="fc" id="L151">    return Future.all(futures)</span>
+<span class="fc" id="L152">            .compose(cf -&gt; {</span>
+<span class="fc" id="L153">              return Future.succeededFuture(result);</span>
             });
   }
   
   private Future&lt;Void&gt; addKeysToCache(String url, TimedObject&lt;JsonObject&gt; data, Map&lt;String, TimedObject&lt;JWK&gt;&gt; result) {
     try {
-<span class="fc" id="L152">      Object keysObject = data.getValue().getValue(&quot;keys&quot;);</span>
-<span class="pc bpc" id="L153" title="1 of 2 branches missed.">      if (keysObject instanceof JsonArray) {</span>
-<span class="fc" id="L154">        JsonArray ja = (JsonArray) keysObject;</span>
-<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (Iterator&lt;Object&gt; iter = ja.iterator(); iter.hasNext();) {</span>
-<span class="fc" id="L156">          Object keyData = iter.next();</span>
+<span class="fc" id="L159">      Object keysObject = data.getValue().getValue(&quot;keys&quot;);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">      if (keysObject instanceof JsonArray) {</span>
+<span class="fc" id="L161">        JsonArray ja = (JsonArray) keysObject;</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (Iterator&lt;Object&gt; iter = ja.iterator(); iter.hasNext();) {</span>
+<span class="fc" id="L163">          Object keyData = iter.next();</span>
           try {
-<span class="pc bpc" id="L158" title="1 of 2 branches missed.">            if (keyData instanceof JsonObject) {</span>
-<span class="fc" id="L159">              JsonObject jo = (JsonObject) keyData;</span>
-<span class="fc" id="L160">              String keyId = jo.getString(&quot;kid&quot;);</span>
-<span class="fc" id="L161">              JWK jwk = new JWK(jo);</span>
-<span class="fc" id="L162">              synchronized (result) {</span>
-<span class="fc" id="L163">                result.put(keyId, new TimedObject&lt;&gt;(jwk, data.getExpiryMs()));</span>
-<span class="fc" id="L164">              }</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">            if (keyData instanceof JsonObject) {</span>
+<span class="fc" id="L166">              JsonObject jo = (JsonObject) keyData;</span>
+<span class="fc" id="L167">              String keyId = jo.getString(&quot;kid&quot;);</span>
+<span class="fc" id="L168">              JWK jwk = new JWK(jo);</span>
+<span class="fc" id="L169">              synchronized (result) {</span>
+<span class="fc" id="L170">                result.put(keyId, new TimedObject&lt;&gt;(jwk, data.getExpiryMs()));</span>
+<span class="fc" id="L171">              }</span>
             }
-<span class="nc" id="L166">          } catch (Throwable ex) {</span>
-<span class="nc" id="L167">            logger.warn(&quot;Failed to parse {} as a JWK: &quot;, keyData, ex);</span>
-<span class="fc" id="L168">          }</span>
-<span class="fc" id="L169">        }</span>
-<span class="fc" id="L170">      } else {</span>
-<span class="nc" id="L171">        logger.error(&quot;Failed to get JWKS from {} (returned value does not contain a keys array: {}))&quot;, url, data.getValue());</span>
-<span class="nc" id="L172">        return Future.failedFuture(new IllegalArgumentException(&quot;Failed to parse JWKS from &quot; + url));</span>
+<span class="nc" id="L173">          } catch (Throwable ex) {</span>
+<span class="nc" id="L174">            logger.warn(&quot;Failed to parse {} as a JWK: &quot;, keyData, ex);</span>
+<span class="fc" id="L175">          }</span>
+<span class="fc" id="L176">        }</span>
+<span class="fc" id="L177">      } else {</span>
+<span class="nc" id="L178">        logger.error(&quot;Failed to get JWKS from {} (returned value does not contain a keys array: {}))&quot;, url, data.getValue());</span>
+<span class="nc" id="L179">        return Future.failedFuture(new IllegalArgumentException(&quot;Failed to parse JWKS from &quot; + url));</span>
       }
-<span class="nc" id="L174">    } catch (Throwable ex) {</span>
-<span class="nc" id="L175">      logger.error(&quot;Failed to get process JWKS from {} ({}): &quot;, url, data.getValue(), ex);</span>
-<span class="nc" id="L176">      return Future.failedFuture(new IllegalArgumentException(&quot;Failed to process JWKS from &quot; + url));</span>
-<span class="fc" id="L177">    }</span>
-<span class="fc" id="L178">    return Future.succeededFuture();</span>
+<span class="nc" id="L181">    } catch (Throwable ex) {</span>
+<span class="nc" id="L182">      logger.error(&quot;Failed to get process JWKS from {} ({}): &quot;, url, data.getValue(), ex);</span>
+<span class="nc" id="L183">      return Future.failedFuture(new IllegalArgumentException(&quot;Failed to process JWKS from &quot; + url));</span>
+<span class="fc" id="L184">    }</span>
+<span class="fc" id="L185">    return Future.succeededFuture();</span>
   }
   
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

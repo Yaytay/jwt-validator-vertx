@@ -33,7 +33,7 @@ public interface JsonWebKeySetKnownJwksHandler extends JsonWebKeySetHandler {
   /**
    * Construct an instance of the implementation class.
    * 
-   * With a static map of JWKs the security of the system is not compromised by allowing any issuer, though you should question why this is necessary.
+   * With a static map of JWKs the security of the system is not compromised by allowing any issuer, though you should question why this is necessary (so still avoid overly permissive acceptable issuer regexes).
    * 
    * Each JWKs endpoint must use KIDs that are globally unique.
    * 

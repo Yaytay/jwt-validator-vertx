@@ -61,7 +61,7 @@ public class TestJwtValidatorVertx extends AbstractTokenValidationTester {
     jwks.start();
     logger.debug("Started JWKS endpoint at {}", jwks.getBaseUrl());
     IssuerAcceptabilityHandler iah = IssuerAcceptabilityHandler.create(Arrays.asList(jwks.getBaseUrl()), null, Duration.ofMillis(1000));
-    tokenValidator = JwtValidator.createDynamic(WebClient.create(vertx), iah, Duration.ofMinutes(1));
+    tokenValidator = JwtValidator.createStatic(WebClient.create(vertx), Arrays.asList(jwks.getBaseUrl()), Duration.ofMinutes(1), iah);
     tokenValidator.setRequireExp(true);
     tokenValidator.setRequireNbf(true);
     tokenValidator.setTimeLeeway(Duration.ofSeconds(3));

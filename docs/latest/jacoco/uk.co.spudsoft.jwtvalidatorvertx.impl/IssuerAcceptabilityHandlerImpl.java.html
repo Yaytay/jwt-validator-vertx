@@ -105,67 +105,71 @@ public class IssuerAcceptabilityHandlerImpl implements IssuerAcceptabilityHandle
     Set&lt;String&gt; localAcceptableIssuers;
 <span class="fc" id="L106">    boolean shouldUpdate = false;</span>
     long now;
-<span class="fc" id="L108">    synchronized (lock) {</span>
-<span class="fc" id="L109">      now = System.currentTimeMillis();</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">      if (lastFileCheck + pollPeriodMs &lt; now) {</span>
-<span class="fc" id="L111">        lastFileCheck = now;</span>
-<span class="fc" id="L112">        shouldUpdate = true;</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">    if (Strings.isNullOrEmpty(issuer)) {</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">      logger.warn(&quot;Invalid issuer: {}&quot;, (issuer == null ? &quot;&lt;null&gt;&quot; : &quot;&lt;blank&gt;&quot;));</span>
+<span class="nc" id="L110">      return false;</span>
+    }
+<span class="fc" id="L112">    synchronized (lock) {</span>
+<span class="fc" id="L113">      now = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">      if (lastFileCheck + pollPeriodMs &lt; now) {</span>
+<span class="fc" id="L115">        lastFileCheck = now;</span>
+<span class="fc" id="L116">        shouldUpdate = true;</span>
       } 
-<span class="fc" id="L114">      localAcceptableIssuers = acceptableIssuers;</span>
-<span class="fc" id="L115">    }</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">    if (shouldUpdate) {</span>
-<span class="fc" id="L117">      checkFile(now);</span>
-<span class="fc" id="L118">      synchronized (lock) {</span>
-<span class="fc" id="L119">        localAcceptableIssuers = acceptableIssuers;</span>
-<span class="fc" id="L120">      }</span>
+<span class="fc" id="L118">      localAcceptableIssuers = acceptableIssuers;</span>
+<span class="fc" id="L119">    }</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">    if (shouldUpdate) {</span>
+<span class="fc" id="L121">      checkFile(now);</span>
+<span class="fc" id="L122">      synchronized (lock) {</span>
+<span class="fc" id="L123">        localAcceptableIssuers = acceptableIssuers;</span>
+<span class="fc" id="L124">      }</span>
     }
-<span class="fc bfc" id="L122" title="All 2 branches covered.">    if (localAcceptableIssuers.contains(issuer)) {</span>
-<span class="fc" id="L123">      return true;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">    if (localAcceptableIssuers.contains(issuer)) {</span>
+<span class="fc" id="L127">      return true;</span>
     }
-<span class="fc bfc" id="L125" title="All 2 branches covered.">    for (Pattern acceptableIssuer : acceptableIssuerRegexes) {</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">      if (acceptableIssuer.matcher(issuer).matches()) {</span>
-<span class="fc" id="L127">        return true;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">    for (Pattern acceptableIssuer : acceptableIssuerRegexes) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">      if (acceptableIssuer.matcher(issuer).matches()) {</span>
+<span class="fc" id="L131">        return true;</span>
       }
-<span class="fc" id="L129">    }</span>
-<span class="fc" id="L130">    return false;</span>
+<span class="fc" id="L133">    }</span>
+<span class="fc" id="L134">    return false;</span>
   }
   
   private void checkFile(long now) {
-<span class="fc bfc" id="L134" title="All 2 branches covered.">    if (acceptableIssuersFile == null) {</span>
-<span class="fc" id="L135">      return ;</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">    if (acceptableIssuersFile == null) {</span>
+<span class="fc" id="L139">      return ;</span>
     }
     try {
-<span class="fc bfc" id="L138" title="All 2 branches covered.">      if (acceptableIssuersFile.isFile()) {</span>
-<span class="fc" id="L139">        long lastModNew = acceptableIssuersFile.lastModified();</span>
-<span class="pc bpc" id="L140" title="2 of 4 branches missed.">        if (lastModNew != fileLastModified &amp;&amp; lastModNew + pollPeriodMs &lt; now) {</span>
-<span class="fc" id="L141">          fileLastModified = lastModNew;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">      if (acceptableIssuersFile.isFile()) {</span>
+<span class="fc" id="L143">        long lastModNew = acceptableIssuersFile.lastModified();</span>
+<span class="pc bpc" id="L144" title="2 of 4 branches missed.">        if (lastModNew != fileLastModified &amp;&amp; lastModNew + pollPeriodMs &lt; now) {</span>
+<span class="fc" id="L145">          fileLastModified = lastModNew;</span>
           
-<span class="fc" id="L143">          Set&lt;String&gt; newSet = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L144">          try (Stream&lt;String&gt; stream = Files.lines(acceptableIssuersFile.toPath())) {</span>
-<span class="fc" id="L145">            stream</span>
-<span class="fc" id="L146">                    .forEach(l -&gt; {</span>
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                      if (l != null) {</span>
-<span class="fc" id="L148">                        l = l.trim();</span>
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">                        if (!l.isEmpty()) {</span>
-<span class="fc" id="L150">                          newSet.add(l);</span>
+<span class="fc" id="L147">          Set&lt;String&gt; newSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L148">          try (Stream&lt;String&gt; stream = Files.lines(acceptableIssuersFile.toPath())) {</span>
+<span class="fc" id="L149">            stream</span>
+<span class="fc" id="L150">                    .forEach(l -&gt; {</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                      if (l != null) {</span>
+<span class="fc" id="L152">                        l = l.trim();</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                        if (!l.isEmpty()) {</span>
+<span class="fc" id="L154">                          newSet.add(l);</span>
                         }
                       }
-<span class="fc" id="L153">                    })</span>
+<span class="fc" id="L157">                    })</span>
                     ;
           }
-<span class="fc" id="L156">          synchronized (lock) {</span>
-<span class="fc" id="L157">            acceptableIssuers = newSet;</span>
-<span class="fc" id="L158">          }</span>
+<span class="fc" id="L160">          synchronized (lock) {</span>
+<span class="fc" id="L161">            acceptableIssuers = newSet;</span>
+<span class="fc" id="L162">          }</span>
         }
-<span class="fc" id="L160">      } else {</span>
-<span class="fc" id="L161">        synchronized (lock) {</span>
-<span class="fc" id="L162">          acceptableIssuers = Collections.emptySet();</span>
-<span class="fc" id="L163">        }</span>
+<span class="fc" id="L164">      } else {</span>
+<span class="fc" id="L165">        synchronized (lock) {</span>
+<span class="fc" id="L166">          acceptableIssuers = Collections.emptySet();</span>
+<span class="fc" id="L167">        }</span>
       }
-<span class="nc" id="L165">    } catch (Throwable ex) {</span>
-<span class="nc" id="L166">      logger.error(&quot;Error loading acceptable issuers file: &quot;, ex);</span>
-<span class="fc" id="L167">    }</span>
-<span class="fc" id="L168">  }</span>
+<span class="nc" id="L169">    } catch (Throwable ex) {</span>
+<span class="nc" id="L170">      logger.error(&quot;Error loading acceptable issuers file: &quot;, ex);</span>
+<span class="fc" id="L171">    }</span>
+<span class="fc" id="L172">  }</span>
   
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

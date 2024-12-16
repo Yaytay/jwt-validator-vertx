@@ -105,6 +105,10 @@ public class IssuerAcceptabilityHandlerImpl implements IssuerAcceptabilityHandle
     Set<String> localAcceptableIssuers;
     boolean shouldUpdate = false;
     long now;
+    if (Strings.isNullOrEmpty(issuer)) {
+      logger.warn("Invalid issuer: {}", (issuer == null ? "<null>" : "<blank>"));
+      return false;
+    }
     synchronized (lock) {
       now = System.currentTimeMillis();
       if (lastFileCheck + pollPeriodMs < now) {

@@ -128,8 +128,10 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
   ) throws Exception {
 
     JsonObject header = generateHeaderNode(kid, jwa);
+    logger.debug("header: {}", header);
 
     JsonObject claims = generateClaimsNode(iss, sub, exp, nbf, aud, otherClaims);
+    logger.debug("claims: {}", claims);
 
     String headerBase64 = base64Header(header);
 

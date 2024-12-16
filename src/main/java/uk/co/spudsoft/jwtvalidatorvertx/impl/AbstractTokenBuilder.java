@@ -149,7 +149,7 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
 
     String token = constructToken(headerBase64, claimsBase64, signatureBase64);
 
-    logger.debug("{} Token: {}", jwa, token);
+    logger.debug("Result: {}", token);
 
     return token;
   }

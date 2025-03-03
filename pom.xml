@@ -49,8 +49,8 @@
     <vertx.version>[4.4.5,4.99.0)</vertx.version>
     <slf4j.version>[1.7,)</slf4j.version>
     <logback.version>[1.2,)</logback.version>
-    <junit-jupiter.version>5.11.3</junit-jupiter.version>
-    <junit-platform.version>1.11.3</junit-platform.version>
+    <junit-jupiter.version>5.12.0</junit-jupiter.version>
+    <junit-platform.version>1.12.0</junit-platform.version>
   </properties>
   
   <dependencies>
@@ -63,7 +63,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>33.3.1-jre</version>
+      <version>33.4.0-jre</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>

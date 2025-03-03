@@ -138,7 +138,7 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
-      <version>5.5.0</version>
+      <version>5.5.1</version>
       <exclusions>
         <exclusion>
           <groupId>com.sun.xml.bind</groupId>
@@ -196,7 +196,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.14.2</version>
+      <version>5.15.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -214,7 +214,7 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.2.2</version>
+      <version>4.3.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -225,7 +225,7 @@
       <plugins>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.13.0</version>
+          <version>3.14.0</version>
           <configuration>
             <source>${jdk.version}</source>
             <target>${jdk.version}</target>
@@ -336,7 +336,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.8.6.6</version>        
+        <version>4.9.1.0</version>        
         <configuration>
           <fork>true</fork>
           <effort>Max</effort>
@@ -385,7 +385,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>10.21.0</version>
+            <version>10.21.3</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -501,7 +501,7 @@
       <plugin>
         <groupId>org.owasp</groupId>
         <artifactId>dependency-check-maven</artifactId>
-        <version>11.1.1</version>
+        <version>12.1.0</version>
         <configuration>
           <failBuildOnCVSS>8</failBuildOnCVSS>
           <failOnError>false</failOnError>

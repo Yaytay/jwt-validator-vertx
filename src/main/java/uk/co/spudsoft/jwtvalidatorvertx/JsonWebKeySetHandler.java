@@ -18,7 +18,6 @@ package uk.co.spudsoft.jwtvalidatorvertx;
 
 import io.vertx.core.Future;
 import io.vertx.ext.auth.impl.jose.JWK;
-import javax.annotation.Nullable;
 
 /**
  * Perform OpenID Connect discovery as per <a href="https://openid.net/specs/openid-connect-discovery-1_0.html">openid-connect-discovery-1_0</a>.
@@ -49,6 +48,6 @@ public interface JsonWebKeySetHandler {
    * @param kid The key ID being sought.
    * @return A Future that will be completed with a JWK.
    */
-  Future<JWK> findJwk(@Nullable String issuer, String kid);
+  Future<JWK> findJwk(String issuer, String kid);
   
 }

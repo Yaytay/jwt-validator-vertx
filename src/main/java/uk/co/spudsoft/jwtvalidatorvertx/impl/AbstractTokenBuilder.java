@@ -16,7 +16,6 @@ import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.AlgorithmAndKeyPair;
@@ -188,12 +187,12 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * @return a JsonObject of the payload for a token.
    */
   protected JsonObject generateClaimsNode(
-          @Nullable String iss
-          , @Nullable String sub
-          , @Nullable Long exp
-          , @Nullable Long nbf
-          , @Nullable List<String> aud
-          , @Nullable Map<String, Object> otherClaims
+          String iss
+          , String sub
+          , Long exp
+          , Long nbf
+          , List<String> aud
+          , Map<String, Object> otherClaims
   ) {
     JsonObject claims = new JsonObject();
     if (sub != null) {

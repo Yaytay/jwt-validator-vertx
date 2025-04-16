@@ -16,7 +16,6 @@ import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.AlgorithmAndKeyPair;
@@ -38,24 +37,24 @@ import uk.co.spudsoft.jwtvalidatorvertx.TokenBuilder;
 public abstract class AbstractTokenBuilder implements TokenBuilder {
 
   @SuppressWarnings(&quot;constantname&quot;)
-<span class="fc" id="L41">  private static final Logger logger = LoggerFactory.getLogger(AbstractTokenBuilder.class);</span>
+<span class="fc" id="L40">  private static final Logger logger = LoggerFactory.getLogger(AbstractTokenBuilder.class);</span>
 
   /**
    * Base64 encoded that implementations may (should) use.
    */
-<span class="fc" id="L46">  protected static final Encoder BASE64 = Base64.getUrlEncoder().withoutPadding();</span>
+<span class="fc" id="L45">  protected static final Encoder BASE64 = Base64.getUrlEncoder().withoutPadding();</span>
   /**
    * Secure random number generator that implementations may  use.
    */
-<span class="fc" id="L50">  protected static final SecureRandom RANDOM = new SecureRandom();</span>
+<span class="fc" id="L49">  protected static final SecureRandom RANDOM = new SecureRandom();</span>
   
-<span class="fc" id="L52">  private boolean headerNotValidBase64 = false;</span>
-<span class="fc" id="L53">  private boolean payloadNotValidBase64 = false;</span>
-<span class="fc" id="L54">  private boolean signatureNotValidBase64 = false;</span>
-<span class="fc" id="L55">  private boolean headerNotJson = false;</span>
-<span class="fc" id="L56">  private boolean payloadNotJson = false;</span>
-<span class="fc" id="L57">  private boolean signatureNotValidHash = false;</span>
-<span class="fc" id="L58">  private boolean kidInvalid = false;</span>
+<span class="fc" id="L51">  private boolean headerNotValidBase64 = false;</span>
+<span class="fc" id="L52">  private boolean payloadNotValidBase64 = false;</span>
+<span class="fc" id="L53">  private boolean signatureNotValidBase64 = false;</span>
+<span class="fc" id="L54">  private boolean headerNotJson = false;</span>
+<span class="fc" id="L55">  private boolean payloadNotJson = false;</span>
+<span class="fc" id="L56">  private boolean signatureNotValidHash = false;</span>
+<span class="fc" id="L57">  private boolean kidInvalid = false;</span>
   
   /**
    * The key cache that is shared with the {@link uk.co.spudsoft.jwtvalidatorvertx.JwksHandler}.
@@ -70,50 +69,50 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * 
    * @param keyCache The key cache that is shared with the {@link uk.co.spudsoft.jwtvalidatorvertx.JwksHandler}.
    */
-<span class="fc" id="L73">  public AbstractTokenBuilder(Cache&lt;String, AlgorithmAndKeyPair&gt; keyCache) {</span>
-<span class="fc" id="L74">    this.keyCache = keyCache;</span>
-<span class="fc" id="L75">  }</span>
+<span class="fc" id="L72">  public AbstractTokenBuilder(Cache&lt;String, AlgorithmAndKeyPair&gt; keyCache) {</span>
+<span class="fc" id="L73">    this.keyCache = keyCache;</span>
+<span class="fc" id="L74">  }</span>
 
   @Override
   public TokenBuilder setHeaderNotValidBase64(boolean headerNotValidBase64) {
-<span class="fc" id="L79">    this.headerNotValidBase64 = headerNotValidBase64;</span>
-<span class="fc" id="L80">    return this;</span>
+<span class="fc" id="L78">    this.headerNotValidBase64 = headerNotValidBase64;</span>
+<span class="fc" id="L79">    return this;</span>
   }
 
   @Override
   public TokenBuilder setPayloadNotValidBase64(boolean payloadNotValidBase64) {
-<span class="fc" id="L85">    this.payloadNotValidBase64 = payloadNotValidBase64;</span>
-<span class="fc" id="L86">    return  this;</span>
+<span class="fc" id="L84">    this.payloadNotValidBase64 = payloadNotValidBase64;</span>
+<span class="fc" id="L85">    return  this;</span>
   }
 
   @Override
   public TokenBuilder setSignatureNotValidBase64(boolean signatureNotValidBase64) {
-<span class="fc" id="L91">    this.signatureNotValidBase64 = signatureNotValidBase64;</span>
-<span class="fc" id="L92">    return this;</span>
+<span class="fc" id="L90">    this.signatureNotValidBase64 = signatureNotValidBase64;</span>
+<span class="fc" id="L91">    return this;</span>
   }
 
   @Override
   public TokenBuilder setHeaderNotJson(boolean headerNotJson) {
-<span class="fc" id="L97">    this.headerNotJson = headerNotJson;</span>
-<span class="fc" id="L98">    return this;</span>
+<span class="fc" id="L96">    this.headerNotJson = headerNotJson;</span>
+<span class="fc" id="L97">    return this;</span>
   }
 
   @Override
   public TokenBuilder setPayloadNotJson(boolean payloadNotJson) {
-<span class="fc" id="L103">    this.payloadNotJson = payloadNotJson;</span>
-<span class="fc" id="L104">    return this;</span>
+<span class="fc" id="L102">    this.payloadNotJson = payloadNotJson;</span>
+<span class="fc" id="L103">    return this;</span>
   }
 
   @Override
   public TokenBuilder setSignatureNotValidHash(boolean signatureNotValidHash) {
-<span class="fc" id="L109">    this.signatureNotValidHash = signatureNotValidHash;</span>
-<span class="fc" id="L110">    return this;</span>
+<span class="fc" id="L108">    this.signatureNotValidHash = signatureNotValidHash;</span>
+<span class="fc" id="L109">    return this;</span>
   }
   
   @Override
   public TokenBuilder setKidInvalid(boolean kidInvalid) {
-<span class="fc" id="L115">    this.kidInvalid = kidInvalid;</span>
-<span class="fc" id="L116">    return this;</span>
+<span class="fc" id="L114">    this.kidInvalid = kidInvalid;</span>
+<span class="fc" id="L115">    return this;</span>
   }
   
   @Override
@@ -127,33 +126,33 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
            Map&lt;String, Object&gt; otherClaims
   ) throws Exception {
 
-<span class="fc" id="L130">    JsonObject header = generateHeaderNode(kid, jwa);</span>
-<span class="fc" id="L131">    logger.debug(&quot;header: {}&quot;, header);</span>
+<span class="fc" id="L129">    JsonObject header = generateHeaderNode(kid, jwa);</span>
+<span class="fc" id="L130">    logger.debug(&quot;header: {}&quot;, header);</span>
 
-<span class="fc" id="L133">    JsonObject claims = generateClaimsNode(iss, sub, exp, nbf, aud, otherClaims);</span>
-<span class="fc" id="L134">    logger.debug(&quot;claims: {}&quot;, claims);</span>
+<span class="fc" id="L132">    JsonObject claims = generateClaimsNode(iss, sub, exp, nbf, aud, otherClaims);</span>
+<span class="fc" id="L133">    logger.debug(&quot;claims: {}&quot;, claims);</span>
 
-<span class="fc" id="L136">    String headerBase64 = base64Header(header);</span>
+<span class="fc" id="L135">    String headerBase64 = base64Header(header);</span>
 
-<span class="fc" id="L138">    String claimsBase64 = base64Claims(claims);</span>
+<span class="fc" id="L137">    String claimsBase64 = base64Claims(claims);</span>
 
     String signatureBase64;
     
-<span class="fc bfc" id="L142" title="All 4 branches covered.">    if ((kid != null) &amp;&amp; (jwa != JsonWebAlgorithm.none)) {</span>
-<span class="fc" id="L143">      byte[] signature = generateSignature(kid, jwa, headerBase64, claimsBase64);</span>
-<span class="fc bfc" id="L144" title="All 2 branches covered.">      if (signatureNotValidHash) {</span>
-<span class="fc" id="L145">        signature = Arrays.copyOf(signature, signature.length - 1);</span>
+<span class="fc bfc" id="L141" title="All 4 branches covered.">    if ((kid != null) &amp;&amp; (jwa != JsonWebAlgorithm.none)) {</span>
+<span class="fc" id="L142">      byte[] signature = generateSignature(kid, jwa, headerBase64, claimsBase64);</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">      if (signatureNotValidHash) {</span>
+<span class="fc" id="L144">        signature = Arrays.copyOf(signature, signature.length - 1);</span>
       }
-<span class="fc" id="L147">      signatureBase64 = base64Signature(signature);</span>
-<span class="fc" id="L148">    } else {</span>
-<span class="fc" id="L149">      signatureBase64 = &quot;&quot;;</span>
+<span class="fc" id="L146">      signatureBase64 = base64Signature(signature);</span>
+<span class="fc" id="L147">    } else {</span>
+<span class="fc" id="L148">      signatureBase64 = &quot;&quot;;</span>
     }
 
-<span class="fc" id="L152">    String token = constructToken(headerBase64, claimsBase64, signatureBase64);</span>
+<span class="fc" id="L151">    String token = constructToken(headerBase64, claimsBase64, signatureBase64);</span>
 
-<span class="fc" id="L154">    logger.debug(&quot;Result: {}&quot;, token);</span>
+<span class="fc" id="L153">    logger.debug(&quot;Result: {}&quot;, token);</span>
 
-<span class="fc" id="L156">    return token;</span>
+<span class="fc" id="L155">    return token;</span>
   }
 
   /**
@@ -163,17 +162,17 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * @return The created JsonObject header node.
    */
   protected JsonObject generateHeaderNode(String kid, JsonWebAlgorithm algorithm) {
-<span class="fc" id="L166">    JsonObject header = new JsonObject();</span>
-<span class="fc" id="L167">    header.put(&quot;typ&quot;, &quot;JWT&quot;);</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">    if (kid != null) {</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">      if (kidInvalid) {</span>
-<span class="fc" id="L170">        header.put(&quot;kid&quot;, &quot;INVALID&quot;);</span>
+<span class="fc" id="L165">    JsonObject header = new JsonObject();</span>
+<span class="fc" id="L166">    header.put(&quot;typ&quot;, &quot;JWT&quot;);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">    if (kid != null) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">      if (kidInvalid) {</span>
+<span class="fc" id="L169">        header.put(&quot;kid&quot;, &quot;INVALID&quot;);</span>
       } else {
-<span class="fc" id="L172">        header.put(&quot;kid&quot;, kid);</span>
+<span class="fc" id="L171">        header.put(&quot;kid&quot;, kid);</span>
       }
     }
-<span class="fc" id="L175">    header.put(&quot;alg&quot;, algorithm.getName());</span>
-<span class="fc" id="L176">    return header;</span>
+<span class="fc" id="L174">    header.put(&quot;alg&quot;, algorithm.getName());</span>
+<span class="fc" id="L175">    return header;</span>
   }
 
   /**
@@ -188,43 +187,43 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * @return a JsonObject of the payload for a token.
    */
   protected JsonObject generateClaimsNode(
-          @Nullable String iss
-          , @Nullable String sub
-          , @Nullable Long exp
-          , @Nullable Long nbf
-          , @Nullable List&lt;String&gt; aud
-          , @Nullable Map&lt;String, Object&gt; otherClaims
+          String iss
+          , String sub
+          , Long exp
+          , Long nbf
+          , List&lt;String&gt; aud
+          , Map&lt;String, Object&gt; otherClaims
   ) {
-<span class="fc" id="L198">    JsonObject claims = new JsonObject();</span>
-<span class="fc bfc" id="L199" title="All 2 branches covered.">    if (sub != null) {</span>
-<span class="fc" id="L200">      claims.put(&quot;sub&quot;, sub);</span>
+<span class="fc" id="L197">    JsonObject claims = new JsonObject();</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">    if (sub != null) {</span>
+<span class="fc" id="L199">      claims.put(&quot;sub&quot;, sub);</span>
     }
-<span class="fc bfc" id="L202" title="All 2 branches covered.">    if (iss != null) {</span>
-<span class="fc" id="L203">      claims.put(&quot;iss&quot;, iss);</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">    if (iss != null) {</span>
+<span class="fc" id="L202">      claims.put(&quot;iss&quot;, iss);</span>
     }
-<span class="fc bfc" id="L205" title="All 2 branches covered.">    if (exp != null) {</span>
-<span class="fc" id="L206">      claims.put(&quot;exp&quot;, exp);</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">    if (exp != null) {</span>
+<span class="fc" id="L205">      claims.put(&quot;exp&quot;, exp);</span>
     }
-<span class="fc bfc" id="L208" title="All 2 branches covered.">    if (nbf != null) {</span>
-<span class="fc" id="L209">      claims.put(&quot;nbf&quot;, nbf);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">    if (nbf != null) {</span>
+<span class="fc" id="L208">      claims.put(&quot;nbf&quot;, nbf);</span>
     }
-<span class="fc bfc" id="L211" title="All 2 branches covered.">    if (aud != null) {</span>
-<span class="pc bpc" id="L212" title="1 of 2 branches missed.">      if (aud.size() == 1) {</span>
-<span class="fc" id="L213">        claims.put(&quot;aud&quot;, aud.get(0));</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">    if (aud != null) {</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">      if (aud.size() == 1) {</span>
+<span class="fc" id="L212">        claims.put(&quot;aud&quot;, aud.get(0));</span>
       } else {
-<span class="nc" id="L215">        JsonArray array = new JsonArray();</span>
-<span class="nc" id="L216">        claims.put(&quot;aud&quot;, array);</span>
-<span class="nc bnc" id="L217" title="All 2 branches missed.">        for (String member : aud) {</span>
-<span class="nc" id="L218">          array.add(member);</span>
-<span class="nc" id="L219">        }</span>
+<span class="nc" id="L214">        JsonArray array = new JsonArray();</span>
+<span class="nc" id="L215">        claims.put(&quot;aud&quot;, array);</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        for (String member : aud) {</span>
+<span class="nc" id="L217">          array.add(member);</span>
+<span class="nc" id="L218">        }</span>
       }
     }
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">    if (otherClaims != null) {</span>
-<span class="fc bfc" id="L223" title="All 2 branches covered.">      for (Entry&lt;String, Object&gt; claim : otherClaims.entrySet()) {</span>
-<span class="fc" id="L224">        claims.put(claim.getKey(), claim.getValue());</span>
-<span class="fc" id="L225">      }</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">    if (otherClaims != null) {</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">      for (Entry&lt;String, Object&gt; claim : otherClaims.entrySet()) {</span>
+<span class="fc" id="L223">        claims.put(claim.getKey(), claim.getValue());</span>
+<span class="fc" id="L224">      }</span>
     }
-<span class="fc" id="L227">    return claims;</span>
+<span class="fc" id="L226">    return claims;</span>
   }
 
   /**
@@ -236,15 +235,15 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * @return The JSON encoded as base64 (possibly broken).
    */
   protected String base64JSon(boolean notJson, boolean brokenBase64, JsonObject json) {
-<span class="fc" id="L239">    String jsonString = json.toString();</span>
-<span class="fc bfc" id="L240" title="All 2 branches covered.">    if (notJson) {</span>
-<span class="fc" id="L241">      jsonString = jsonString.replaceAll(&quot;\&quot;&quot;, &quot;&quot;);</span>
+<span class="fc" id="L238">    String jsonString = json.toString();</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">    if (notJson) {</span>
+<span class="fc" id="L240">      jsonString = jsonString.replaceAll(&quot;\&quot;&quot;, &quot;&quot;);</span>
     }
-<span class="fc" id="L243">    String base64 = BASE64.encodeToString(jsonString.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc bfc" id="L244" title="All 2 branches covered.">    if (brokenBase64) {</span>
-<span class="fc" id="L245">      base64 = base64.substring(0, base64.length() - 1);</span>
+<span class="fc" id="L242">    String base64 = BASE64.encodeToString(jsonString.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">    if (brokenBase64) {</span>
+<span class="fc" id="L244">      base64 = base64.substring(0, base64.length() - 1);</span>
     }
-<span class="fc" id="L247">    return base64;</span>
+<span class="fc" id="L246">    return base64;</span>
   }
 
   /**
@@ -254,7 +253,7 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * @return The JSON encoded as base64 (possibly broken).
    */
   protected String base64Header(JsonObject header) {
-<span class="fc" id="L257">    return base64JSon(headerNotJson, headerNotValidBase64, header);</span>
+<span class="fc" id="L256">    return base64JSon(headerNotJson, headerNotValidBase64, header);</span>
   }
 
   /**
@@ -264,7 +263,7 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * @return The JSON encoded as base64 (possibly broken).
    */
   protected String base64Claims(JsonObject claims) {
-<span class="fc" id="L267">    return base64JSon(payloadNotJson, payloadNotValidBase64, claims);</span>
+<span class="fc" id="L266">    return base64JSon(payloadNotJson, payloadNotValidBase64, claims);</span>
   }
 
   /**
@@ -285,11 +284,11 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * @return The base64 encoded signature.
    */
   protected String base64Signature(byte[] signature) {
-<span class="fc" id="L288">    String signatureBase64 = BASE64.encodeToString(signature);</span>
-<span class="fc bfc" id="L289" title="All 2 branches covered.">    if (signatureNotValidBase64) {</span>
-<span class="fc" id="L290">      signatureBase64 = signatureBase64.substring(0, signatureBase64.length() - 1);</span>
+<span class="fc" id="L287">    String signatureBase64 = BASE64.encodeToString(signature);</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">    if (signatureNotValidBase64) {</span>
+<span class="fc" id="L289">      signatureBase64 = signatureBase64.substring(0, signatureBase64.length() - 1);</span>
     }
-<span class="fc" id="L292">    return signatureBase64;</span>
+<span class="fc" id="L291">    return signatureBase64;</span>
   }
 
   /**
@@ -300,9 +299,9 @@ public abstract class AbstractTokenBuilder implements TokenBuilder {
    * @return The final JWS.
    */
   protected String constructToken(String headerBase64, String claimsBase64, String signatureBase64) {
-<span class="fc" id="L303">    String token = headerBase64 + &quot;.&quot; + claimsBase64 + &quot;.&quot; + signatureBase64;</span>
-<span class="fc" id="L304">    return token;</span>
+<span class="fc" id="L302">    String token = headerBase64 + &quot;.&quot; + claimsBase64 + &quot;.&quot; + signatureBase64;</span>
+<span class="fc" id="L303">    return token;</span>
   }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

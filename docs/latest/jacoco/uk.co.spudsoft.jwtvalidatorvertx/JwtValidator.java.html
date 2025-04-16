@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nullable;
 import uk.co.spudsoft.jwtvalidatorvertx.impl.JwtValidatorVertxImpl;
 
 /**
@@ -70,8 +69,8 @@ public interface JwtValidator {
    * @return A newly created JwtValidatorVertx.
    */
   static JwtValidator createDynamic(WebClient webClient, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
-<span class="fc" id="L73">    JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration);</span>
-<span class="fc" id="L74">    return create(openIdDiscoveryHandler, issuerAcceptabilityHandler);</span>
+<span class="fc" id="L72">    JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration);</span>
+<span class="fc" id="L73">    return create(openIdDiscoveryHandler, issuerAcceptabilityHandler);</span>
   }
   
   /**
@@ -84,8 +83,8 @@ public interface JwtValidator {
    * @return A newly created JwtValidatorVertx.
    */
   static JwtValidator createStatic(WebClient webClient, Collection&lt;String&gt; jwksEndpoints, Duration defaultJwkCacheDuration, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
-<span class="fc" id="L87">    JsonWebKeySetHandler staticHandler = JsonWebKeySetKnownJwksHandler.create(webClient, jwksEndpoints, defaultJwkCacheDuration);</span>
-<span class="fc" id="L88">    return create(staticHandler, issuerAcceptabilityHandler);</span>
+<span class="fc" id="L86">    JsonWebKeySetHandler staticHandler = JsonWebKeySetKnownJwksHandler.create(webClient, jwksEndpoints, defaultJwkCacheDuration);</span>
+<span class="fc" id="L87">    return create(staticHandler, issuerAcceptabilityHandler);</span>
   }
 
   /**
@@ -96,8 +95,8 @@ public interface JwtValidator {
    * @return A newly created JwtValidatorVertx.
    */
   static JwtValidator create(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
-<span class="fc" id="L99">    jsonWebKeySetHandler.optimize();</span>
-<span class="fc" id="L100">    return new JwtValidatorVertxImpl(jsonWebKeySetHandler, issuerAcceptabilityHandler);</span>
+<span class="fc" id="L98">    jsonWebKeySetHandler.optimize();</span>
+<span class="fc" id="L99">    return new JwtValidatorVertxImpl(jsonWebKeySetHandler, issuerAcceptabilityHandler);</span>
   }
 
   /**
@@ -169,7 +168,7 @@ public interface JwtValidator {
    * @param ignoreRequiredAud Do not check for required audiences.
    * @return The token's parts.
    */
-  Future&lt;Jwt&gt; validateToken(@Nullable String issuer, String token, List&lt;String&gt; requiredAudList, boolean ignoreRequiredAud);
+  Future&lt;Jwt&gt; validateToken(String issuer, String token, List&lt;String&gt; requiredAudList, boolean ignoreRequiredAud);
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,27 +1,7 @@
 <configuration xmlns="http://jgitver.github.io/maven/configuration/1.1.0"
                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                xsi:schemaLocation="http://jgitver.github.io/maven/configuration/1.1.0 https://jgitver.github.io/maven/configuration/jgitver-configuration-v1_1_0.xsd">
-  <strategy>SCRIPT</strategy>
-  <scriptType>BEAN_SHELL</scriptType>
-  <script><![CDATA[
-    parts = new ArrayList();
-    parts.add(Integer.toString(metadata{"CURRENT_VERSION_MAJOR"}));
-    parts.add(Integer.toString(metadata{"CURRENT_VERSION_MINOR"}));
-    parts.add(Integer.toString(metadata{"CURRENT_VERSION_PATCH"}));
-    if (metadata{"COMMIT_DISTANCE"} > 0) {
-      parts.add(Integer.toString(metadata{"COMMIT_DISTANCE"}));
-    }
-    if ((metadata{"QUALIFIED_BRANCH_NAME"} != null) && !metadata{"DETACHED_HEAD"}) {
-      parts.add(metadata{"QUALIFIED_BRANCH_NAME"});
-    }
-    if (System.getenv(){"CI_COMMIT_BRANCH"} != null && !"master".equals(System.getenv(){"CI_COMMIT_BRANCH"})) {
-      parts.add(System.getenv(){"CI_COMMIT_BRANCH"}.replaceAll("-", "_"));
-    }
-    if (metadata{"DIRTY"}) {
-      parts.add("SNAPSHOT");
-    }
-    System.out.print(String.join(";", parts));
-  ]]></script>
+  <strategy>MAVEN</strategy>
   <exclusions>
     <exclusion>.m2</exclusion>
   </exclusions>

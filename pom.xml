@@ -63,7 +63,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>33.4.7-jre</version>
+      <version>33.4.8-jre</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -549,6 +549,9 @@
             <goals>
               <goal>download-licenses</goal>
             </goals>
+            <configuration>
+              <licensesOutputDirectory>${user.home}/.m2/licenses</licensesOutputDirectory>
+            </configuration>
           </execution>
         </executions>
       </plugin>

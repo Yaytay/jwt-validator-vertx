@@ -59,7 +59,6 @@ public class JwtValidatorVertxImpl implements JwtValidator {
 <span class="fc" id="L59">  private boolean requireNbf = true;</span>
   
 <span class="fc" id="L61">  private long timeLeewayMilliseconds = 0;</span>
-<span class="fc" id="L62">  private long minimumKeyCacheLifetime = 0;</span>
   
   private final JsonWebKeySetHandler jsonWebKeySetHandler;
   private final IssuerAcceptabilityHandler issuerAcceptabilityHandler;
@@ -69,39 +68,39 @@ public class JwtValidatorVertxImpl implements JwtValidator {
    * @param jsonWebKeySetHandler         Handler for obtaining JWKs
    * @param issuerAcceptabilityHandler   Handler for validating issuers found in the JWT.
    */
-<span class="fc" id="L72">  public JwtValidatorVertxImpl(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {</span>
-<span class="fc" id="L73">    this.jsonWebKeySetHandler = jsonWebKeySetHandler;</span>
-<span class="fc" id="L74">    this.issuerAcceptabilityHandler = issuerAcceptabilityHandler;</span>
-<span class="fc" id="L75">    this.permittedAlgs = new HashSet&lt;&gt;(DEFAULT_PERMITTED_ALGS);</span>
-<span class="fc" id="L76">  }</span>
+<span class="fc" id="L71">  public JwtValidatorVertxImpl(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {</span>
+<span class="fc" id="L72">    this.jsonWebKeySetHandler = jsonWebKeySetHandler;</span>
+<span class="fc" id="L73">    this.issuerAcceptabilityHandler = issuerAcceptabilityHandler;</span>
+<span class="fc" id="L74">    this.permittedAlgs = new HashSet&lt;&gt;(DEFAULT_PERMITTED_ALGS);</span>
+<span class="fc" id="L75">  }</span>
 
   @Override
   public Set&lt;String&gt; getPermittedAlgorithms() {
-<span class="fc" id="L80">    return ImmutableSet.copyOf(permittedAlgs);</span>
+<span class="fc" id="L79">    return ImmutableSet.copyOf(permittedAlgs);</span>
   }
 
   @Override
   public JwtValidator setPermittedAlgorithms(Set&lt;String&gt; algorithms) throws NoSuchAlgorithmException {
-<span class="fc" id="L85">    Set&lt;String&gt; copy = new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L86" title="All 2 branches covered.">    for (String alg : algorithms) {</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">      if (!DEFAULT_PERMITTED_ALGS.contains(alg)) {</span>
-<span class="fc" id="L88">        throw new NoSuchAlgorithmException();</span>
+<span class="fc" id="L84">    Set&lt;String&gt; copy = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">    for (String alg : algorithms) {</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">      if (!DEFAULT_PERMITTED_ALGS.contains(alg)) {</span>
+<span class="fc" id="L87">        throw new NoSuchAlgorithmException();</span>
       } else {
-<span class="fc" id="L90">        copy.add(alg);</span>
+<span class="fc" id="L89">        copy.add(alg);</span>
       }
-<span class="fc" id="L92">    }</span>
-<span class="fc" id="L93">    this.permittedAlgs = copy;</span>
-<span class="fc" id="L94">    return this;</span>
+<span class="fc" id="L91">    }</span>
+<span class="fc" id="L92">    this.permittedAlgs = copy;</span>
+<span class="fc" id="L93">    return this;</span>
   }
 
   @Override
   public JwtValidator addPermittedAlgorithm(String algorithm) throws NoSuchAlgorithmException {
-<span class="fc bfc" id="L99" title="All 2 branches covered.">    if (!DEFAULT_PERMITTED_ALGS.contains(algorithm)) {</span>
-<span class="fc" id="L100">      throw new NoSuchAlgorithmException();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">    if (!DEFAULT_PERMITTED_ALGS.contains(algorithm)) {</span>
+<span class="fc" id="L99">      throw new NoSuchAlgorithmException();</span>
     } else {
-<span class="fc" id="L102">      permittedAlgs.add(algorithm);</span>
+<span class="fc" id="L101">      permittedAlgs.add(algorithm);</span>
     }
-<span class="fc" id="L104">    return this;</span>
+<span class="fc" id="L103">    return this;</span>
   }
   
   /**
@@ -110,18 +109,8 @@ public class JwtValidatorVertxImpl implements JwtValidator {
    */
   @Override
   public JwtValidator setTimeLeeway(Duration timeLeeway) {
-<span class="fc" id="L113">    this.timeLeewayMilliseconds = timeLeeway.toMillis();</span>
-<span class="fc" id="L114">    return this;</span>
-  }
-
-  /**
-   * Set the minimum amount of time that JWKs (and OpenID Discovery data) will be cached for.
-   * @param minKeyCacheLifetime the minimum amount of time that JWKs (and OpenID Discovery data) will be cached for.
-   */
-  @Override
-  public JwtValidator setMinimumKeyCacheLifetime(Duration minKeyCacheLifetime) {
-<span class="nc" id="L123">    this.minimumKeyCacheLifetime = minKeyCacheLifetime.toMillis();</span>
-<span class="nc" id="L124">    return this;</span>
+<span class="fc" id="L112">    this.timeLeewayMilliseconds = timeLeeway.toMillis();</span>
+<span class="fc" id="L113">    return this;</span>
   }
 
   /**
@@ -130,8 +119,8 @@ public class JwtValidatorVertxImpl implements JwtValidator {
    */
   @Override
   public JwtValidator setRequireExp(boolean requireExp) {
-<span class="fc" id="L133">    this.requireExp = requireExp;</span>
-<span class="fc" id="L134">    return this;</span>
+<span class="fc" id="L122">    this.requireExp = requireExp;</span>
+<span class="fc" id="L123">    return this;</span>
   }
 
   /**
@@ -140,8 +129,8 @@ public class JwtValidatorVertxImpl implements JwtValidator {
    */
   @Override
   public JwtValidator setRequireNbf(boolean requireNbf) {
-<span class="fc" id="L143">    this.requireNbf = requireNbf;</span>
-<span class="fc" id="L144">    return this;</span>
+<span class="fc" id="L132">    this.requireNbf = requireNbf;</span>
+<span class="fc" id="L133">    return this;</span>
   }
   
   /**
@@ -161,164 +150,164 @@ public class JwtValidatorVertxImpl implements JwtValidator {
     
     Jwt jwt;
     try {
-<span class="fc" id="L164">      jwt = Jwt.parseJws(token);</span>
-<span class="fc" id="L165">    } catch (Throwable ex) {</span>
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">      if (logger.isTraceEnabled()) {</span>
-<span class="fc" id="L167">        logger.error(&quot;Parse of JWT ({}) failed: &quot;, token, ex);</span>
+<span class="fc" id="L153">      jwt = Jwt.parseJws(token);</span>
+<span class="fc" id="L154">    } catch (Throwable ex) {</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">      if (logger.isTraceEnabled()) {</span>
+<span class="fc" id="L156">        logger.error(&quot;Parse of JWT ({}) failed: &quot;, token, ex);</span>
       } else {
-<span class="nc" id="L169">        logger.error(&quot;Parse of JWT failed: &quot;, ex);</span>
+<span class="nc" id="L158">        logger.error(&quot;Parse of JWT failed: &quot;, ex);</span>
       }
-<span class="fc" id="L171">      return Future.failedFuture(new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;, ex));</span>
-<span class="fc" id="L172">    }</span>
+<span class="fc" id="L160">      return Future.failedFuture(new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;, ex));</span>
+<span class="fc" id="L161">    }</span>
 
     try {
-<span class="fc" id="L175">      validateAlgorithm(jwt.getAlgorithm());</span>
-<span class="fc" id="L176">      String kid = jwt.getKid();</span>
+<span class="fc" id="L164">      validateAlgorithm(jwt.getAlgorithm());</span>
+<span class="fc" id="L165">      String kid = jwt.getKid();</span>
 
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">      if (jwt.getPayloadSize() == 0) {</span>
-<span class="nc" id="L179">        logger.error(&quot;No payload claims found in JWT&quot;);</span>
-<span class="nc" id="L180">        return Future.failedFuture(new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;));</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">      if (jwt.getPayloadSize() == 0) {</span>
+<span class="nc" id="L168">        logger.error(&quot;No payload claims found in JWT&quot;);</span>
+<span class="nc" id="L169">        return Future.failedFuture(new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;));</span>
       }
 
-<span class="fc" id="L183">      return jsonWebKeySetHandler.findJwk(issuer, kid)</span>
-<span class="fc" id="L184">              .onFailure(ex -&gt; {</span>
-<span class="fc" id="L185">                logger.warn(&quot;Failed to find JWK for {} ({}): &quot;, kid, issuer, ex);</span>
-<span class="fc" id="L186">              })</span>
-<span class="fc" id="L187">              .compose(jwk -&gt; {</span>
+<span class="fc" id="L172">      return jsonWebKeySetHandler.findJwk(issuer, kid)</span>
+<span class="fc" id="L173">              .onFailure(ex -&gt; {</span>
+<span class="fc" id="L174">                logger.warn(&quot;Failed to find JWK for {} ({}): &quot;, kid, issuer, ex);</span>
+<span class="fc" id="L175">              })</span>
+<span class="fc" id="L176">              .compose(jwk -&gt; {</span>
                 try {
-<span class="fc" id="L189">                  verify(jwk, jwt);</span>
+<span class="fc" id="L178">                  verify(jwk, jwt);</span>
 
-<span class="fc" id="L191">                  long now = System.currentTimeMillis();</span>
-<span class="fc" id="L192">                  validateIssuer(jwt, issuer);</span>
-<span class="fc" id="L193">                  validateNbf(jwt, now);</span>
-<span class="fc" id="L194">                  validateExp(jwt, now);</span>
-<span class="fc" id="L195">                  validateAud(jwt, requiredAudList, ignoreRequiredAud);</span>
-<span class="fc" id="L196">                  validateSub(jwt);</span>
+<span class="fc" id="L180">                  long now = System.currentTimeMillis();</span>
+<span class="fc" id="L181">                  validateIssuer(jwt, issuer);</span>
+<span class="fc" id="L182">                  validateNbf(jwt, now);</span>
+<span class="fc" id="L183">                  validateExp(jwt, now);</span>
+<span class="fc" id="L184">                  validateAud(jwt, requiredAudList, ignoreRequiredAud);</span>
+<span class="fc" id="L185">                  validateSub(jwt);</span>
 
-<span class="fc" id="L198">                  return Future.succeededFuture(jwt);</span>
-<span class="fc" id="L199">                } catch (Throwable ex) {</span>
-<span class="fc" id="L200">                  logger.info(&quot;Validation of {} token failed: &quot;, jwt.getAlgorithm(), ex);</span>
-<span class="fc" id="L201">                  return Future.failedFuture(new IllegalArgumentException(&quot;Validation of &quot; + jwt.getAlgorithm() + &quot; signed JWT failed&quot;, ex));</span>
+<span class="fc" id="L187">                  return Future.succeededFuture(jwt);</span>
+<span class="fc" id="L188">                } catch (Throwable ex) {</span>
+<span class="fc" id="L189">                  logger.info(&quot;Validation of {} token failed: &quot;, jwt.getAlgorithm(), ex);</span>
+<span class="fc" id="L190">                  return Future.failedFuture(new IllegalArgumentException(&quot;Validation of &quot; + jwt.getAlgorithm() + &quot; signed JWT failed&quot;, ex));</span>
                 }
               });
-<span class="fc" id="L204">    } catch (Throwable ex) {</span>
-<span class="fc" id="L205">      logger.error(&quot;Failed to process token: &quot;, ex);</span>
-<span class="fc" id="L206">      return Future.failedFuture(ex);</span>
+<span class="fc" id="L193">    } catch (Throwable ex) {</span>
+<span class="fc" id="L194">      logger.error(&quot;Failed to process token: &quot;, ex);</span>
+<span class="fc" id="L195">      return Future.failedFuture(ex);</span>
     }
   }
 
   private void validateIssuer(Jwt jwt, String externalIssuer) {
-<span class="fc" id="L211">    String tokenIssuer = jwt.getIssuer();</span>
+<span class="fc" id="L200">    String tokenIssuer = jwt.getIssuer();</span>
 
     // empty issuer is never allowed
-<span class="fc bfc" id="L214" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(tokenIssuer)) {</span>
-<span class="fc" id="L215">      throw new IllegalStateException(&quot;No issuer in token.&quot;);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(tokenIssuer)) {</span>
+<span class="fc" id="L204">      throw new IllegalStateException(&quot;No issuer in token.&quot;);</span>
     }
     
-<span class="fc bfc" id="L218" title="All 2 branches covered.">    if (!issuerAcceptabilityHandler.isAcceptable(tokenIssuer)) {</span>
-<span class="fc" id="L219">      throw new IllegalStateException(&quot;Issuer from token (&quot; + tokenIssuer + &quot;) is not acceptable.&quot;);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">    if (!issuerAcceptabilityHandler.isAcceptable(tokenIssuer)) {</span>
+<span class="fc" id="L208">      throw new IllegalStateException(&quot;Issuer from token (&quot; + tokenIssuer + &quot;) is not acceptable.&quot;);</span>
     }
     
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">    if (externalIssuer != null) {</span>
-<span class="pc bpc" id="L223" title="1 of 2 branches missed.">      if (!externalIssuer.equals(tokenIssuer)) {</span>
-<span class="nc" id="L224">        throw new IllegalStateException(&quot;Issuer from token (&quot; + tokenIssuer + &quot;) does not match expected issuer (&quot; + externalIssuer + &quot;).&quot;);</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">    if (externalIssuer != null) {</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">      if (!externalIssuer.equals(tokenIssuer)) {</span>
+<span class="nc" id="L213">        throw new IllegalStateException(&quot;Issuer from token (&quot; + tokenIssuer + &quot;) does not match expected issuer (&quot; + externalIssuer + &quot;).&quot;);</span>
       }
     }
-<span class="fc" id="L227">  }</span>
+<span class="fc" id="L216">  }</span>
   
   private void verify(JWK jwk, Jwt jwt) throws IllegalArgumentException {
 
     // empty signature is never allowed
-<span class="pc bpc" id="L232" title="1 of 2 branches missed.">    if (Strings.isNullOrEmpty(jwt.getSignature())) {</span>
-<span class="nc" id="L233">      throw new IllegalStateException(&quot;No signature in token.&quot;);</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">    if (Strings.isNullOrEmpty(jwt.getSignature())) {</span>
+<span class="nc" id="L222">      throw new IllegalStateException(&quot;No signature in token.&quot;);</span>
     }
 
-<span class="fc" id="L236">    requireNonNull(jwk, &quot;JWK not set&quot;);</span>
+<span class="fc" id="L225">    requireNonNull(jwk, &quot;JWK not set&quot;);</span>
     
     // if we only allow secure alg, then none is not a valid option
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">    if (&quot;none&quot;.equals(jwk.getAlgorithm())) {</span>
-<span class="nc" id="L240">      throw new IllegalStateException(&quot;Algorithm \&quot;none\&quot; not allowed&quot;);</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">    if (&quot;none&quot;.equals(jwk.getAlgorithm())) {</span>
+<span class="nc" id="L229">      throw new IllegalStateException(&quot;Algorithm \&quot;none\&quot; not allowed&quot;);</span>
     }
 
-<span class="fc" id="L243">    byte[] payloadInput = B64DECODER.decode(jwt.getSignature());</span>
+<span class="fc" id="L232">    byte[] payloadInput = B64DECODER.decode(jwt.getSignature());</span>
 
-<span class="fc" id="L245">    byte[] signingInput = jwt.getSignatureBase().getBytes(StandardCharsets.UTF_8);</span>
+<span class="fc" id="L234">    byte[] signingInput = jwt.getSignatureBase().getBytes(StandardCharsets.UTF_8);</span>
 
     try {
-<span class="fc" id="L248">      JWS jws = new JWS(jwk);</span>
-<span class="fc bfc" id="L249" title="All 2 branches covered.">      if (!jws.verify(payloadInput, signingInput)) {</span>
-<span class="fc" id="L250">        throw new IllegalArgumentException(&quot;Signature verification failed&quot;);</span>
+<span class="fc" id="L237">      JWS jws = new JWS(jwk);</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">      if (!jws.verify(payloadInput, signingInput)) {</span>
+<span class="fc" id="L239">        throw new IllegalArgumentException(&quot;Signature verification failed&quot;);</span>
       }
-<span class="fc" id="L252">    } catch (Throwable ex) {</span>
-<span class="fc" id="L253">      logger.warn(&quot;Signature verification failed: &quot;, ex);</span>
-<span class="fc" id="L254">      throw new IllegalArgumentException(&quot;Signature verification failed&quot;, ex);</span>
-<span class="fc" id="L255">    }</span>
-<span class="fc" id="L256">  }</span>
+<span class="fc" id="L241">    } catch (Throwable ex) {</span>
+<span class="fc" id="L242">      logger.warn(&quot;Signature verification failed: &quot;, ex);</span>
+<span class="fc" id="L243">      throw new IllegalArgumentException(&quot;Signature verification failed&quot;, ex);</span>
+<span class="fc" id="L244">    }</span>
+<span class="fc" id="L245">  }</span>
 
   private void validateSub(Jwt jwt) throws IllegalArgumentException {
-<span class="fc bfc" id="L259" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(jwt.getSubject())) {</span>
-<span class="fc" id="L260">      throw new IllegalArgumentException(&quot;No subject specified in token&quot;);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">    if (Strings.isNullOrEmpty(jwt.getSubject())) {</span>
+<span class="fc" id="L249">      throw new IllegalArgumentException(&quot;No subject specified in token&quot;);</span>
     }
-<span class="fc" id="L262">  }</span>
+<span class="fc" id="L251">  }</span>
 
   private void validateAud(Jwt jwt, List&lt;String&gt; requiredAudList, boolean ignoreRequiredAud) throws IllegalArgumentException {
-<span class="pc bpc" id="L265" title="1 of 6 branches missed.">    if ((requiredAudList == null) || (!ignoreRequiredAud &amp;&amp; requiredAudList.isEmpty())) {</span>
-<span class="fc" id="L266">      throw new IllegalStateException(&quot;Required audience not set&quot;);</span>
+<span class="pc bpc" id="L254" title="1 of 6 branches missed.">    if ((requiredAudList == null) || (!ignoreRequiredAud &amp;&amp; requiredAudList.isEmpty())) {</span>
+<span class="fc" id="L255">      throw new IllegalStateException(&quot;Required audience not set&quot;);</span>
     }
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">    if (jwt.getAudience() == null) {</span>
-<span class="nc" id="L269">      throw new IllegalArgumentException(&quot;Token does not include aud claim&quot;);</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">    if (jwt.getAudience() == null) {</span>
+<span class="nc" id="L258">      throw new IllegalArgumentException(&quot;Token does not include aud claim&quot;);</span>
     }
-<span class="fc bfc" id="L271" title="All 2 branches covered.">    for (String aud : jwt.getAudience()) {</span>
-<span class="fc bfc" id="L272" title="All 2 branches covered.">      for (String requiredAud : requiredAudList) {</span>
-<span class="fc bfc" id="L273" title="All 2 branches covered.">        if (requiredAud.equals(aud)) {</span>
-<span class="fc" id="L274">          return;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">    for (String aud : jwt.getAudience()) {</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">      for (String requiredAud : requiredAudList) {</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        if (requiredAud.equals(aud)) {</span>
+<span class="fc" id="L263">          return;</span>
         }
-<span class="fc" id="L276">      }</span>
-<span class="fc" id="L277">    }</span>
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">    if (!ignoreRequiredAud) {</span>
-<span class="fc bfc" id="L279" title="All 2 branches covered.">      if (requiredAudList.size() == 1) {</span>
-<span class="fc" id="L280">        logger.warn(&quot;Required audience ({}) not found in token aud claim: {}&quot;, requiredAudList.get(0), jwt.getAudience());</span>
+<span class="fc" id="L265">      }</span>
+<span class="fc" id="L266">    }</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">    if (!ignoreRequiredAud) {</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">      if (requiredAudList.size() == 1) {</span>
+<span class="fc" id="L269">        logger.warn(&quot;Required audience ({}) not found in token aud claim: {}&quot;, requiredAudList.get(0), jwt.getAudience());</span>
       } else {
-<span class="fc" id="L282">        logger.warn(&quot;None of the required audiences ({}) found in token aud claim: {}&quot;, requiredAudList, jwt.getAudience());</span>
+<span class="fc" id="L271">        logger.warn(&quot;None of the required audiences ({}) found in token aud claim: {}&quot;, requiredAudList, jwt.getAudience());</span>
       }
-<span class="fc" id="L284">      throw new IllegalArgumentException(&quot;Required audience not found in token&quot;);</span>
+<span class="fc" id="L273">      throw new IllegalArgumentException(&quot;Required audience not found in token&quot;);</span>
     }
-<span class="nc" id="L286">  }</span>
+<span class="nc" id="L275">  }</span>
 
   private void validateExp(Jwt jwt, long now) throws IllegalArgumentException {
-<span class="fc bfc" id="L289" title="All 2 branches covered.">    if (jwt.getExpiration() != null) {</span>
-<span class="fc" id="L290">      long targetMs = now - timeLeewayMilliseconds;</span>
-<span class="fc bfc" id="L291" title="All 2 branches covered.">      if (1000 * jwt.getExpiration() &lt; targetMs) {</span>
-<span class="fc" id="L292">        logger.warn(&quot;Token exp = {} ({}), now = {} ({}), target = {} ({})&quot;, jwt.getExpiration(), jwt.getExpirationLocalDateTime(), now, LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneOffset.UTC), targetMs, LocalDateTime.ofInstant(Instant.ofEpochMilli(targetMs), ZoneOffset.UTC));</span>
-<span class="fc" id="L293">        throw new IllegalArgumentException(&quot;Token is not valid after &quot; + jwt.getExpirationLocalDateTime());</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">    if (jwt.getExpiration() != null) {</span>
+<span class="fc" id="L279">      long targetMs = now - timeLeewayMilliseconds;</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">      if (1000 * jwt.getExpiration() &lt; targetMs) {</span>
+<span class="fc" id="L281">        logger.warn(&quot;Token exp = {} ({}), now = {} ({}), target = {} ({})&quot;, jwt.getExpiration(), jwt.getExpirationLocalDateTime(), now, LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneOffset.UTC), targetMs, LocalDateTime.ofInstant(Instant.ofEpochMilli(targetMs), ZoneOffset.UTC));</span>
+<span class="fc" id="L282">        throw new IllegalArgumentException(&quot;Token is not valid after &quot; + jwt.getExpirationLocalDateTime());</span>
       }
-<span class="pc bpc" id="L295" title="1 of 2 branches missed.">    } else if (requireExp) {</span>
-<span class="fc" id="L296">      throw new IllegalArgumentException(&quot;Token does not specify exp&quot;);</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">    } else if (requireExp) {</span>
+<span class="fc" id="L285">      throw new IllegalArgumentException(&quot;Token does not specify exp&quot;);</span>
     }
-<span class="fc" id="L298">  }</span>
+<span class="fc" id="L287">  }</span>
 
   private void validateNbf(Jwt jwt, long now) throws IllegalArgumentException {
-<span class="fc bfc" id="L301" title="All 2 branches covered.">    if (jwt.getNotBefore() != null) {</span>
-<span class="fc" id="L302">      long targetMs = now + timeLeewayMilliseconds;</span>
-<span class="fc bfc" id="L303" title="All 2 branches covered.">      if (1000 * jwt.getNotBefore() &gt; targetMs) {</span>
-<span class="fc" id="L304">        logger.warn(&quot;Token nbf = {} ({}), now = {} ({}), target = {} ({})&quot;, jwt.getNotBefore(), jwt.getNotBeforeLocalDateTime(), now, LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneOffset.UTC), targetMs, LocalDateTime.ofInstant(Instant.ofEpochMilli(targetMs), ZoneOffset.UTC));</span>
-<span class="fc" id="L305">        throw new IllegalArgumentException(&quot;Token is not valid until &quot; + jwt.getNotBeforeLocalDateTime());</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">    if (jwt.getNotBefore() != null) {</span>
+<span class="fc" id="L291">      long targetMs = now + timeLeewayMilliseconds;</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">      if (1000 * jwt.getNotBefore() &gt; targetMs) {</span>
+<span class="fc" id="L293">        logger.warn(&quot;Token nbf = {} ({}), now = {} ({}), target = {} ({})&quot;, jwt.getNotBefore(), jwt.getNotBeforeLocalDateTime(), now, LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneOffset.UTC), targetMs, LocalDateTime.ofInstant(Instant.ofEpochMilli(targetMs), ZoneOffset.UTC));</span>
+<span class="fc" id="L294">        throw new IllegalArgumentException(&quot;Token is not valid until &quot; + jwt.getNotBeforeLocalDateTime());</span>
       }
-<span class="fc bfc" id="L307" title="All 2 branches covered.">    } else if (requireNbf) {</span>
-<span class="fc" id="L308">      throw new IllegalArgumentException(&quot;Token does not specify exp&quot;);</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">    } else if (requireNbf) {</span>
+<span class="fc" id="L297">      throw new IllegalArgumentException(&quot;Token does not specify nbf&quot;);</span>
     }
-<span class="fc" id="L310">  }</span>
+<span class="fc" id="L299">  }</span>
 
   private void validateAlgorithm(String algorithm) throws IllegalArgumentException {
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">    if (algorithm == null) {</span>
-<span class="nc" id="L314">      logger.warn(&quot;No signature algorithm in token.&quot;);</span>
-<span class="nc" id="L315">      throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">    if (algorithm == null) {</span>
+<span class="nc" id="L303">      logger.warn(&quot;No signature algorithm in token.&quot;);</span>
+<span class="nc" id="L304">      throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
     }
-<span class="fc bfc" id="L317" title="All 2 branches covered.">    if (!permittedAlgs.contains(algorithm)) {</span>
-<span class="fc" id="L318">      logger.warn(&quot;Failed to find algorithm \&quot;{}\&quot; in {}&quot;, algorithm, permittedAlgs);</span>
-<span class="fc" id="L319">      throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">    if (!permittedAlgs.contains(algorithm)) {</span>
+<span class="fc" id="L307">      logger.warn(&quot;Failed to find algorithm \&quot;{}\&quot; in {}&quot;, algorithm, permittedAlgs);</span>
+<span class="fc" id="L308">      throw new IllegalArgumentException(&quot;Parse of signed JWT failed&quot;);</span>
     }
-<span class="fc" id="L321">  }</span>
+<span class="fc" id="L310">  }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

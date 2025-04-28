@@ -145,13 +145,6 @@ public interface JwtValidator {
   JwtValidator setTimeLeeway(Duration timeLeeway);
 
   /**
-   * Set the maximum amount of time that can pass between the exp and now.
-   * @param minKeyCacheLifetime the minimum amount of time for which keys will be cached.
-   * @return this for fluent configuration.
-   */
-  JwtValidator setMinimumKeyCacheLifetime(Duration minKeyCacheLifetime);
-
-  /**
    * Validate the token and either return a failed Future or return a Future containing the JWT's constituent parts.
    * 
    * There are two ways in which keys can be located for token verification:

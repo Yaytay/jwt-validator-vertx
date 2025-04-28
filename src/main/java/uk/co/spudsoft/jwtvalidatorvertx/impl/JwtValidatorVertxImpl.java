@@ -59,7 +59,6 @@ public class JwtValidatorVertxImpl implements JwtValidator {
   private boolean requireNbf = true;
   
   private long timeLeewayMilliseconds = 0;
-  private long minimumKeyCacheLifetime = 0;
   
   private final JsonWebKeySetHandler jsonWebKeySetHandler;
   private final IssuerAcceptabilityHandler issuerAcceptabilityHandler;
@@ -111,16 +110,6 @@ public class JwtValidatorVertxImpl implements JwtValidator {
   @Override
   public JwtValidator setTimeLeeway(Duration timeLeeway) {
     this.timeLeewayMilliseconds = timeLeeway.toMillis();
-    return this;
-  }
-
-  /**
-   * Set the minimum amount of time that JWKs (and OpenID Discovery data) will be cached for.
-   * @param minKeyCacheLifetime the minimum amount of time that JWKs (and OpenID Discovery data) will be cached for.
-   */
-  @Override
-  public JwtValidator setMinimumKeyCacheLifetime(Duration minKeyCacheLifetime) {
-    this.minimumKeyCacheLifetime = minKeyCacheLifetime.toMillis();
     return this;
   }
 
@@ -305,7 +294,7 @@ public class JwtValidatorVertxImpl implements JwtValidator {
         throw new IllegalArgumentException("Token is not valid until " + jwt.getNotBeforeLocalDateTime());
       }
     } else if (requireNbf) {
-      throw new IllegalArgumentException("Token does not specify exp");
+      throw new IllegalArgumentException("Token does not specify nbf");
     }
   }
 

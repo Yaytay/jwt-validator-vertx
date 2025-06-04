@@ -76,14 +76,14 @@ jobs:
           --file pom.xml \
           deploy
           
-    - name: Set up maven for OSSRH deployment
+    - name: Set up maven for central sonatype deployment
       uses: actions/setup-java@v4
       with:
         java-version: '21'
         distribution: 'zulu'
-        server-id: central # Value of the distributionManagement/repository/id field of the pom.xml
-        server-username: MAVEN_USERNAME # env variable for username in deploy
-        server-password: MAVEN_PASSWORD # env variable for token in deploy
+        server-id: central
+        server-username: CENTRAL_SONATYPE_USERNAME # env variable for username in deploy
+        server-password: CENTRAL_SONATYPE_PASSWORD # env variable for token in deploy
         
     - name: Deploy with Maven to Maven Central
       env:
@@ -97,7 +97,6 @@ jobs:
           -P release \
           --batch-mode \
           -DskipTests \
-          -DaltDeploymentRepository=ossrh::https://oss.sonatype.org/service/local/staging/deploy/maven2/ \
           --file pom.xml \
           deploy
           

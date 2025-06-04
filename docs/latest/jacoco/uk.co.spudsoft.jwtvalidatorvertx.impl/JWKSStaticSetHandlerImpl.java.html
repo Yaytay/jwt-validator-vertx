@@ -171,7 +171,7 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetKnownJwksHandler {
 <span class="fc" id="L171">              }</span>
             }
 <span class="nc" id="L173">          } catch (Throwable ex) {</span>
-<span class="nc" id="L174">            logger.warn(&quot;Failed to parse {} as a JWK: &quot;, keyData, ex);</span>
+<span class="nc" id="L174">            logger.warn(&quot;Failed to parse {} from {} as a JWK: &quot;, keyData, url, ex);</span>
 <span class="fc" id="L175">          }</span>
 <span class="fc" id="L176">        }</span>
 <span class="fc" id="L177">      } else {</span>

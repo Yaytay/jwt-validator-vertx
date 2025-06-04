@@ -15,7 +15,7 @@ JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,AbstractTokenBuilder
 JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,ECJwkBuilder,24,137,2,6,5,34,2,9,0,6
 JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,EdECJwkBuilder,0,80,0,2,0,21,0,5,0,4
 JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,JWKSOpenIdDiscoveryHandlerImpl,60,272,5,17,11,61,5,19,0,13
-JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,JWKSStaticSetHandlerImpl,62,257,4,16,11,66,4,17,0,11
+JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,JWKSStaticSetHandlerImpl,74,257,4,16,11,66,4,17,0,11
 JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,AsyncLoadingCache.Data,0,36,0,2,0,11,0,3,0,2
 JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,IssuerAcceptabilityHandlerImpl,15,245,9,29,4,70,8,18,0,7
 JWT Validator - Vertx,uk.co.spudsoft.jwtvalidatorvertx.impl,JwtValidatorVertxImpl,44,570,11,49,10,117,11,37,0,18

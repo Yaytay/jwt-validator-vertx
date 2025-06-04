@@ -348,7 +348,7 @@
             <plugin>
               <groupId>com.h3xstream.findsecbugs</groupId>
               <artifactId>findsecbugs-plugin</artifactId>
-              <version>1.13.0</version>
+              <version>1.14.0</version>
             </plugin>
           </plugins>
         </configuration>
@@ -706,7 +706,6 @@
             <extensions>true</extensions>
             <configuration>
               <publishingServerId>central</publishingServerId>
-              <tokenAuth>true</tokenAuth>
               <autoPublish>true</autoPublish>
             </configuration>
           </plugin>

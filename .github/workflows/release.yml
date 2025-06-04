@@ -94,7 +94,7 @@ jobs:
         CENTRAL_SONATYPE_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_PASSWORD }}
       run: |
         mvn -B \
-          -P release \
+          -P ci-cd,release \
           --batch-mode \
           -DskipTests \
           --file pom.xml \

@@ -123,7 +123,7 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
     
     return finalJwkCache.get(kid
             , () -> openIdHelper.get(discoveryData.getJwksUri())
-                    .compose(tjo -> processJwkSet(finalJwkCache, tjo, kid))
+                    .compose(tjo -> processJwkSet(discoveryData.getJwksUri(), finalJwkCache, tjo, kid))
     );
   }
 
@@ -133,7 +133,7 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
             .compose(dd -> findJwk(dd, kid));
   }
   
-  static Future<TimedObject<JWK>> processJwkSet(AsyncLoadingCache<String, JWK> jwkCache, TimedObject<JsonObject> data, String kid) {
+  static Future<TimedObject<JWK>> processJwkSet(String sourceUrl, AsyncLoadingCache<String, JWK> jwkCache, TimedObject<JsonObject> data, String kid) {
     long expiry = data.getExpiryMs();
     JWK result = null;
     JsonObject foundKey = null;
@@ -157,7 +157,7 @@ public class JWKSOpenIdDiscoveryHandlerImpl implements JsonWebKeySetOpenIdDiscov
               }
             }
           } catch (Throwable ex) {
-            logger.warn("Failed to parse {} as a JWK: ", keyData, ex);
+            logger.warn("Failed to parse {} from {} as a JWK: ", keyData, sourceUrl, ex);
           }
         }
       } else {

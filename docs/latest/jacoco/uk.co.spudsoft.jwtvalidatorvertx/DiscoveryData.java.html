@@ -48,6 +48,14 @@ public class DiscoveryData {
 <span class="fc" id="L48">    return json.getValue(key);</span>
   }
 
+  /**
+   * Get a string value from the response.
+   * @param key the key to extract from the response.
+   * @return the string value from the response with the given key.
+   */
+  public String getString(String key) {
+<span class="nc" id="L57">    return json.getString(key);</span>
+  }
   
   /**
    * Get the issuer.
@@ -60,7 +68,7 @@ public class DiscoveryData {
    * @return the issuer.
    */
   public String getIssuer() {
-<span class="fc" id="L63">    return json.getString(&quot;issuer&quot;);</span>
+<span class="fc" id="L71">    return json.getString(&quot;issuer&quot;);</span>
   }
   
   /**
@@ -72,7 +80,7 @@ public class DiscoveryData {
    * @return the authorization endpoint.
    */
   public String getAuthorizationEndpoint() {
-<span class="fc" id="L75">    return json.getString(&quot;authorization_endpoint&quot;);</span>
+<span class="fc" id="L83">    return json.getString(&quot;authorization_endpoint&quot;);</span>
   }
 
   /**
@@ -83,7 +91,7 @@ public class DiscoveryData {
    * @return the token endpoint.
    */
   public String getTokenEndpoint() {
-<span class="fc" id="L86">    return json.getString(&quot;token_endpoint&quot;);</span>
+<span class="fc" id="L94">    return json.getString(&quot;token_endpoint&quot;);</span>
   }
 
   /**
@@ -96,7 +104,7 @@ public class DiscoveryData {
    * @return the user-info endpoint.
    */
   public String getUserinfoEndpoint() {
-<span class="fc" id="L99">    return json.getString(&quot;userinfo_endpoint&quot;);</span>
+<span class="fc" id="L107">    return json.getString(&quot;userinfo_endpoint&quot;);</span>
   }
 
   /**
@@ -114,7 +122,7 @@ public class DiscoveryData {
    * @return the JWKS URI.
    */
   public String getJwksUri() {
-<span class="fc" id="L117">    return json.getString(&quot;jwks_uri&quot;);</span>
+<span class="fc" id="L125">    return json.getString(&quot;jwks_uri&quot;);</span>
   }
   
   /**
@@ -126,7 +134,7 @@ public class DiscoveryData {
    * @return the registration endpoint.
    */
   public String getRegistrationEndpoint() {
-<span class="fc" id="L129">    return json.getString(&quot;registration_endpoint&quot;);</span>
+<span class="fc" id="L137">    return json.getString(&quot;registration_endpoint&quot;);</span>
   }
   
   /**
@@ -140,7 +148,7 @@ public class DiscoveryData {
    * @return the scopes supported.
    */
   public JsonArray getScopesSupported() {
-<span class="fc" id="L143">    return json.getJsonArray(&quot;scopes_supported&quot;);</span>
+<span class="fc" id="L151">    return json.getJsonArray(&quot;scopes_supported&quot;);</span>
   }
   
   /**
@@ -153,7 +161,7 @@ public class DiscoveryData {
    * @return the response types supported.
    */
   public JsonArray getResponseTypesSupported() {
-<span class="fc" id="L156">    return json.getJsonArray(&quot;response_types_supported&quot;);</span>
+<span class="fc" id="L164">    return json.getJsonArray(&quot;response_types_supported&quot;);</span>
   }
 
   /**
@@ -166,7 +174,7 @@ public class DiscoveryData {
    * @return the response modes supported.
    */
   public JsonArray getResponseModesSupported() {
-<span class="fc" id="L169">    return json.getJsonArray(&quot;response_modes_supported&quot;);</span>
+<span class="fc" id="L177">    return json.getJsonArray(&quot;response_modes_supported&quot;);</span>
   }
 
   /**
@@ -180,7 +188,7 @@ public class DiscoveryData {
    * @return the grant types supported.
    */
   public JsonArray getGrantTypesSupported() {
-<span class="fc" id="L183">    return json.getJsonArray(&quot;grant_types_supported&quot;);</span>
+<span class="fc" id="L191">    return json.getJsonArray(&quot;grant_types_supported&quot;);</span>
   }
 
   /**
@@ -192,7 +200,7 @@ public class DiscoveryData {
    * @return the authentication context class references supposed.
    */
   public JsonArray getAcrValuesSupported() {
-<span class="fc" id="L195">    return json.getJsonArray(&quot;acr_values_supported&quot;);</span>
+<span class="fc" id="L203">    return json.getJsonArray(&quot;acr_values_supported&quot;);</span>
   }
   
   /**
@@ -205,7 +213,7 @@ public class DiscoveryData {
    * @return the subject types supported.
    */
   public JsonArray getSubjectTypesSupported() {
-<span class="fc" id="L208">    return json.getJsonArray(&quot;subject_types_supported&quot;);</span>
+<span class="fc" id="L216">    return json.getJsonArray(&quot;subject_types_supported&quot;);</span>
   }
 
   /**
@@ -219,7 +227,36 @@ public class DiscoveryData {
    * @return the token signing algorithms supported.
    */
   public JsonArray getIdTokenSigningAlgValuesSupported() {
-<span class="fc" id="L222">    return json.getJsonArray(&quot;id_token_signing_alg_values_supported&quot;);</span>
+<span class="fc" id="L230">    return json.getJsonArray(&quot;id_token_signing_alg_values_supported&quot;);</span>
+  }
+  
+  /**
+   * Get the end session endpoint for front channel logout.
+   * 
+   * REQUIRED (if front channel logout is supported). 
+   * URL at the OP to which an RP can perform a redirect to request that the End-User be logged out at the OP. 
+   * This URL MUST use the https scheme and MAY contain port, path, and query parameter components.
+   * 
+   * See: &lt;a href=&quot;https://openid.net/specs/openid-connect-rpinitiated-1_0.html&quot;&gt;openid-connect-rpinitiated-1_0&lt;/a&gt;.
+   * 
+   * @return the end session endpoint for front channel logout.
+   */
+  public String getEndSessionEndpoint() {
+<span class="nc" id="L245">    return json.getString(&quot;end_session_endpoint&quot;);</span>
+  }
+  
+  /**
+   * Get the revocation endpoint for back channel logout.
+   * 
+   * OPTIONAL.  
+   * The fully qualified URL of the server's revocation endpoint defined by OAuth 2.0 Token Revocation [RFC7009].
+   * 
+   * See: &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc7009&quot;&gt;rfc7009&lt;/a&gt;.
+   * 
+   * @return the revocation endpoint for back channel logout.
+   */
+  public String getRevocationEndpoint() {
+<span class="nc" id="L259">    return json.getString(&quot;revocation_endpoint&quot;);</span>
   }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

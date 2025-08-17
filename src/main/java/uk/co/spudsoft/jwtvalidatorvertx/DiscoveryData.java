@@ -48,6 +48,14 @@ public class DiscoveryData {
     return json.getValue(key);
   }
 
+  /**
+   * Get a string value from the response.
+   * @param key the key to extract from the response.
+   * @return the string value from the response with the given key.
+   */
+  public String getString(String key) {
+    return json.getString(key);
+  }
   
   /**
    * Get the issuer.
@@ -220,5 +228,34 @@ public class DiscoveryData {
    */
   public JsonArray getIdTokenSigningAlgValuesSupported() {
     return json.getJsonArray("id_token_signing_alg_values_supported");
+  }
+  
+  /**
+   * Get the end session endpoint for front channel logout.
+   * 
+   * REQUIRED (if front channel logout is supported). 
+   * URL at the OP to which an RP can perform a redirect to request that the End-User be logged out at the OP. 
+   * This URL MUST use the https scheme and MAY contain port, path, and query parameter components.
+   * 
+   * See: <a href="https://openid.net/specs/openid-connect-rpinitiated-1_0.html">openid-connect-rpinitiated-1_0</a>.
+   * 
+   * @return the end session endpoint for front channel logout.
+   */
+  public String getEndSessionEndpoint() {
+    return json.getString("end_session_endpoint");
+  }
+  
+  /**
+   * Get the revocation endpoint for back channel logout.
+   * 
+   * OPTIONAL.  
+   * The fully qualified URL of the server's revocation endpoint defined by OAuth 2.0 Token Revocation [RFC7009].
+   * 
+   * See: <a href="https://www.rfc-editor.org/rfc/rfc7009">rfc7009</a>.
+   * 
+   * @return the revocation endpoint for back channel logout.
+   */
+  public String getRevocationEndpoint() {
+    return json.getString("revocation_endpoint");
   }
 }

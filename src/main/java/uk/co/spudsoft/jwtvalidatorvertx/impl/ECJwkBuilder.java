@@ -60,16 +60,23 @@ public class ECJwkBuilder extends JwkBuilder {
     return key instanceof ECPublicKey;
   }
   
+  /**
+   * JDK 25 passes in the "secp*" variants, earlier passed in the OID variants.
+   * Need to support both.
+   * 
+   * @param oid
+   * @return 
+   */
   private static String oidToCurve(String oid) {
     switch (oid) {
       case "1.2.840.10045.3.1.7":
-        // return "secp256r1";
+      case "secp256r1":
         return "P-256";
       case "1.3.132.0.34":
-        // return "secp384r1";
+      case "secp384r1":
         return "P-384";
       case "1.3.132.0.35":
-        // return "secp521r1";
+      case "secp521r1":
         return "P-521";
       default:
         logger.warn("Unrecognised OID passed in: {}", oid);

@@ -40,6 +40,9 @@ public class AsyncLoadingCache<K, V> {
 
     /**
      * Constructor.
+     * 
+     * Note that expiryMs is an absolute time (ms since epoch) and not an offset.
+     * 
      * @param value The value being held.
      * @param expiryMS The time that the value should be held.
      */

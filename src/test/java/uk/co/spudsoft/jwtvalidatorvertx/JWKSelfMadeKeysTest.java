@@ -106,6 +106,71 @@ public class JWKSelfMadeKeysTest {
   }
   
   @Test  
+  public void testEcJwks256Oid() throws Throwable {    
+    String kid = "testEcJwks256";
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+    ECGenParameterSpec spec = new ECGenParameterSpec("1.2.840.10045.3.1.7");
+    keyGen.initialize(spec);
+    KeyPair pair = keyGen.genKeyPair();
+    ECPublicKey key = (ECPublicKey) pair.getPublic();
+    
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "ES256", key);    
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
+    
+    // We can't compare the key because the representation may differ, so can we validate something signed.
+    String signingInput = "Signing input";
+    byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES256, signingInput);
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.ES256, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
+  }
+  
+  @Test  
+  public void testEcJwks384Oid() throws Throwable {    
+    String kid = "testEcJwks384";
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+    ECGenParameterSpec spec = new ECGenParameterSpec("1.3.132.0.34");
+    keyGen.initialize(spec);
+    KeyPair pair = keyGen.genKeyPair();
+    ECPublicKey key = (ECPublicKey) pair.getPublic();
+    
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "ES384", key);    
+    // Can't determine hash size from key alone
+    jo.put("alg", "ES384");
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
+    
+    // We can't compare the key because the representation may differ, so can we validate something signed.
+    String signingInput = "Signing input";
+    byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES384, signingInput);
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.ES384, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
+  }
+  
+  @Test  
+  public void testEcJwks521Oid() throws Throwable {    
+    String kid = "testEcJwks521";
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+    ECGenParameterSpec spec = new ECGenParameterSpec("1.3.132.0.35");
+    keyGen.initialize(spec);
+    KeyPair pair = keyGen.genKeyPair();
+    ECPublicKey key = (ECPublicKey) pair.getPublic();
+    
+    JsonObject jo = JwkBuilder.get(key).toJson(kid, "ES512", key);
+    JWK jwk = new JWK(jo);
+    assertEquals(kid, jwk.getId());
+    
+    // We can't compare the key because the representation may differ, so can we validate something signed.
+    String signingInput = "Signing input";
+    byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES512, signingInput);
+    JWS jws = new JWS(jwk);
+    assertEquals(JWS.ES512, jwk.getAlgorithm());
+    jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
+  }
+  
+  @Test  
   public void testRsaJwks256() throws Throwable {    
     String kid = "testRsaJwks256";
     KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");

@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.util.Base64;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler {
   private final int port;
 
   private final HttpServer server;
-  private final Executor executor;
+  private final ExecutorService executor;
   
   private Cache<String, AlgorithmAndKeyPair> keyCache;
 
@@ -83,7 +82,7 @@ public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler {
     return new JdkJwksHandler(port, server, exeSvc);
   }
   
-  private JdkJwksHandler(int port, HttpServer server, Executor executor) {
+  private JdkJwksHandler(int port, HttpServer server, ExecutorService executor) {
     this.port = port;
     this.server = server;
     this.executor = executor;
@@ -98,6 +97,7 @@ public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler {
   @Override
   public void close() throws IOException {
     server.stop(1);
+    executor.shutdownNow();
   }
 
   private void sendResponse(HttpExchange exchange, int responseCode, String body) throws IOException {

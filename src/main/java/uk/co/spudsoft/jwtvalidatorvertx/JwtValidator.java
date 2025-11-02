@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 jtalbut
+ * Copyright (C) 2025 jtalbut
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,13 +77,30 @@ public interface JwtValidator {
    * Create a JwtValidatorVertx that will use a fixed set of URLs for downloading JWKs.
    * 
    * @param webClient The Vertx WebClient instance that will be used for asynchronous communication with JWKS endpoints.
-   * @param jwksEndpoints The object used to determine the acceptability of issuers.
+   * @param jwksEndpoints The URLs to be queried for JWK sets.
    * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
    * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
    * @return A newly created JwtValidatorVertx.
    */
   static JwtValidator createStatic(WebClient webClient, Collection<String> jwksEndpoints, Duration defaultJwkCacheDuration, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
     JsonWebKeySetHandler staticHandler = JsonWebKeySetKnownJwksHandler.create(webClient, jwksEndpoints, defaultJwkCacheDuration);
+    return create(staticHandler, issuerAcceptabilityHandler);
+  }
+  
+  /**
+   * Create a JwtValidatorVertx that will use a fixed set of URLs for downloading keys from AWS ELBs.
+   * 
+   * AWS ELBs do not use standard JWK sets:
+   * @see <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-authenticate-users.html#user-claims-encoding">listener-authenticate-users.html#user-claims-encoding</a>
+   * 
+   * @param webClient The Vertx WebClient instance that will be used for asynchronous communication with JWKS endpoints.
+   * @param keyBaseUrls The object used to determine the acceptability of issuers.
+   * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
+   * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
+   * @return A newly created JwtValidatorVertx.
+   */
+  static JwtValidator createAwsElb(WebClient webClient, Collection<String> keyBaseUrls, Duration defaultJwkCacheDuration, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
+    JsonWebKeySetHandler staticHandler = JsonWebKeySetAwsElbHandler.create(webClient, keyBaseUrls, defaultJwkCacheDuration);
     return create(staticHandler, issuerAcceptabilityHandler);
   }
 

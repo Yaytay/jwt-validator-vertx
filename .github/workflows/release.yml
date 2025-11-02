@@ -106,7 +106,7 @@ jobs:
         artifacts: "target/jwt-validator-vertx*.jar*"
         token: ${{ github.token }} 
         
-    - uses: actions/delete-package-versions@v3
+    - uses: actions/delete-package-versions@v5
       with: 
         package-name: 'uk.co.spudsoft.jwt-validator-vertx'
         min-versions-to-keep: 10

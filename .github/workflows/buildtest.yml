@@ -61,6 +61,7 @@ jobs:
       uses: actions/delete-package-versions@v5
       with: 
         package-name: 'uk.co.spudsoft.jwtvalidatorvertx'
+        package-type: maven
         min-versions-to-keep: 10
         delete-only-pre-release-versions: "true" 
                 

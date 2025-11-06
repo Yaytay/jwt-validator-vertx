@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtValidator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx</a> &gt; <span class="el_source">JwtValidator.java</span></div><h1>JwtValidator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2025 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx;
+
+import io.vertx.core.Future;
+import io.vertx.ext.web.client.WebClient;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.JwtValidatorVertxImpl;
+
+/**
+ * Validate JWTs.
+ * 
+ * There are two approaches that can be used for finding the keys necessary to validate the signature:
+ * &lt;UL&gt;
+ * &lt;LI&gt; The caller passes in the issuer, the validator performs OpenID Discovery to find the JWKS URL and then finds the keys from there.
+ * &lt;LI&gt; The configuration of the validator specifies a number of JWKS URLs.
+ * &lt;/UL&gt;
+ * &lt;p&gt;
+ * The former configuration is appropriate when used in a SAAS application with many issuers, each of which has it's own JWKS.
+ * If the validator is not being used in a SAAS application, or the issuers in a SAAS application share keys, then the second
+ * approach is a lot more memory efficient.
+ * &lt;p&gt;
+ * An instance of JwtValidator can only support one of these two models, determined by the JsonWebKeySetHandler that it uses (and you probably only want one JwtValidator in your service).
+ * &lt;p&gt;
+ * When a dynamic configuration is used the issuer acceptability must pass three steps:
+ * &lt;UL&gt;
+ * &lt;LI&gt;The issuer passed in to the JwtValidator must be non-null and acceptable.
+ * &lt;LI&gt;The issuer found in the token must be non-null and acceptable.
+ * &lt;LI&gt;The issuer passed in and the issuer in the token must be the same.
+ * &lt;/UL&gt;
+ * &lt;p&gt;
+ * With a static configuration the passed in issuer is optional, and thus the first and last steps may be skipped.
+ * If an issuer is passed in to a static configuration all three steps will take place.
+ * &lt;p&gt;
+ * There are circumstances in which a client will want to use a static JwtValidator, but also to use the {@link OpenIdDiscoveryHandler}.
+ * This is OK, but the caching of JWKSs will not be shared between the two sides because there is a fundamental difference in requirements between the two.
+ * When the OpenIdDiscoveryHandler is used to find JWKs the key IDs are specific to the issuer, but the static configuration requires all key IDs to be globally unique.
+ * &lt;p&gt;
+ * The WebClient passed in to create the JwtValidator does not have to be dedicated to it.
+ * 
+ * @author jtalbut
+ */
+public interface JwtValidator {
+  
+  /**
+   * Create a JwtValidatorVertx that will use an OpenIdDiscoveryHandler to find JWKs from any acceptable issuer.
+   * 
+   * @param webClient The Vertx WebClient instance that will be used for asynchronous communication with JWKS endpoints.
+   * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
+   * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
+   * @return A newly created JwtValidatorVertx.
+   */
+  static JwtValidator createDynamic(WebClient webClient, IssuerAcceptabilityHandler issuerAcceptabilityHandler, Duration defaultJwkCacheDuration) {
+<span class="fc" id="L72">    JsonWebKeySetHandler openIdDiscoveryHandler = JsonWebKeySetOpenIdDiscoveryHandler.create(webClient, issuerAcceptabilityHandler, defaultJwkCacheDuration);</span>
+<span class="fc" id="L73">    return create(openIdDiscoveryHandler, issuerAcceptabilityHandler);</span>
+  }
+  
+  /**
+   * Create a JwtValidatorVertx that will use a fixed set of URLs for downloading JWKs.
+   * 
+   * @param webClient The Vertx WebClient instance that will be used for asynchronous communication with JWKS endpoints.
+   * @param jwksEndpoints The URLs to be queried for JWK sets.
+   * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
+   * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
+   * @return A newly created JwtValidatorVertx.
+   */
+  static JwtValidator createStatic(WebClient webClient, Collection&lt;String&gt; jwksEndpoints, Duration defaultJwkCacheDuration, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
+<span class="fc" id="L86">    JsonWebKeySetHandler staticHandler = JsonWebKeySetKnownJwksHandler.create(webClient, jwksEndpoints, defaultJwkCacheDuration);</span>
+<span class="fc" id="L87">    return create(staticHandler, issuerAcceptabilityHandler);</span>
+  }
+  
+  /**
+   * Create a JwtValidatorVertx that will use a fixed set of URLs for downloading keys from AWS ELBs.
+   * 
+   * AWS ELBs do not use standard JWK sets:
+   * @see &lt;a href=&quot;https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-authenticate-users.html#user-claims-encoding&quot;&gt;listener-authenticate-users.html#user-claims-encoding&lt;/a&gt;
+   * 
+   * @param webClient The Vertx WebClient instance that will be used for asynchronous communication with JWKS endpoints.
+   * @param keyBaseUrls The object used to determine the acceptability of issuers.
+   * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
+   * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
+   * @return A newly created JwtValidatorVertx.
+   */
+  static JwtValidator createAwsElb(WebClient webClient, Collection&lt;String&gt; keyBaseUrls, Duration defaultJwkCacheDuration, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
+<span class="nc" id="L103">    JsonWebKeySetHandler staticHandler = JsonWebKeySetAwsElbHandler.create(webClient, keyBaseUrls, defaultJwkCacheDuration);</span>
+<span class="nc" id="L104">    return create(staticHandler, issuerAcceptabilityHandler);</span>
+  }
+
+  /**
+   * Create a JwtValidatorVertx.
+   * 
+   * @param jsonWebKeySetHandler The JsonWebKeySet handler used for OpenID discovery and JWK Set discovery.
+   * @param issuerAcceptabilityHandler The object used to determine the acceptability of issuers.
+   * @return A newly created JwtValidatorVertx.
+   */
+  static JwtValidator create(JsonWebKeySetHandler jsonWebKeySetHandler, IssuerAcceptabilityHandler issuerAcceptabilityHandler) {
+<span class="fc" id="L115">    jsonWebKeySetHandler.optimize();</span>
+<span class="fc" id="L116">    return new JwtValidatorVertxImpl(jsonWebKeySetHandler, issuerAcceptabilityHandler);</span>
+  }
+
+  /**
+   * Get a copy of the current set of permitted algorithms.
+   * @return a copy of the current set of permitted algorithms.
+   */
+  Set&lt;String&gt; getPermittedAlgorithms();
+  
+  /**
+   * Replace the current set of permitted algorithms with a new set.
+   * @param algorithms The new set of permitted algorithms.
+   * @return this for fluent configuration.
+   * @throws NoSuchAlgorithmException if any of the algorithms passed in are not recognised.
+   */
+  JwtValidator setPermittedAlgorithms(Set&lt;String&gt; algorithms) throws NoSuchAlgorithmException;
+  
+  /**
+   * Add a single algorithm to the current set of permitted algorithms.
+   * @param algorithm The algorithm to add to the current set of permitted algorithms.
+   * @return this for fluent configuration.
+   * @throws NoSuchAlgorithmException if the algorithm passed is not recognised.
+   */
+  JwtValidator addPermittedAlgorithm(String algorithm) throws NoSuchAlgorithmException;
+  
+  
+  
+  /**
+   * Set to true if the token is required to have an exp claim.
+   * @param requireExp true if the token is required to have an exp claim.
+   * @return this for fluent configuration.
+   */
+  JwtValidator setRequireExp(boolean requireExp);
+
+  /**
+   * Set to true if the token is required to have an nbf claim.
+   * @param requireNbf true if the token is required to have an nbf claim.
+   * @return this for fluent configuration.
+   */
+  JwtValidator setRequireNbf(boolean requireNbf);
+
+  /**
+   * Set the maximum amount of time that can pass between the exp and now.
+   * @param timeLeeway the maximum amount of time that can pass between the exp and now.
+   * @return this for fluent configuration.
+   */
+  JwtValidator setTimeLeeway(Duration timeLeeway);
+
+  /**
+   * Validate the token and either return a failed Future or return a Future containing the JWT's constituent parts.
+   * 
+   * There are two ways in which keys can be located for token verification:
+   * &lt;ul&gt;
+   * &lt;li&gt;If the issuer is not null it will be used to perform OpenID Discovery to locate the JWKS and thus to download the key.
+   * &lt;li&gt;If the issuer is null all of the configured JWKS endpoints will be queried to search for the key.
+   * &lt;/ul&gt;
+   * In both cases the key will be cached according to the Cache-Control max-age parameter, or for at least the configured minKeyCacheLifetime.
+   * In the case of a cache miss the JWKS endpoints (either configured or discovered) will always be requeried, so there isn't much harm in using a long key cache lifetime.
+   * 
+   * @param issuer            The token issuer.
+   * @param token             The token.
+   * @param requiredAudList   List of audiences, all of which must be claimed by the token. 
+   * @param ignoreRequiredAud Do not check for required audiences.
+   * @return The token's parts.
+   */
+  Future&lt;Jwt&gt; validateToken(String issuer, String token, List&lt;String&gt; requiredAudList, boolean ignoreRequiredAud);
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

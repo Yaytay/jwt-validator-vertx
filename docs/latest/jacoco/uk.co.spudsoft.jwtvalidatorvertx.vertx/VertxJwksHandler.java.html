@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VertxJwksHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.vertx</a> &gt; <span class="el_source">VertxJwksHandler.java</span></div><h1>VertxJwksHandler.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2025 njt
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.vertx;
+
+import com.google.common.cache.Cache;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.security.PublicKey;
+import java.util.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.AlgorithmAndKeyPair;
+import uk.co.spudsoft.jwtvalidatorvertx.JsonWebAlgorithm;
+import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
+import uk.co.spudsoft.jwtvalidatorvertx.JwksHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.TokenBuilder;
+import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkJwksHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkTokenBuilder;
+
+/**
+ * An implementation of JwksHandler as a Vertx {@link Handler}&amp;lt;{@link RoutingContext}&amp;gt;.
+ *
+ * @author njt
+ */
+public class VertxJwksHandler implements Handler&lt;RoutingContext&gt;, JwksHandler {
+
+  @SuppressWarnings(&quot;constantname&quot;)
+<span class="fc" id="L52">  private static final Logger logger = LoggerFactory.getLogger(JdkJwksHandler.class);</span>
+
+<span class="fc" id="L54">  private static final Base64.Encoder BASE64 = Base64.getUrlEncoder().withoutPadding();</span>
+  
+  private final Vertx vertx;
+  private final HttpServer httpServer;
+  
+  private final String host;
+  private final int port;
+  private final String basePath; 
+  private final String issuer;
+  private final String configUrl;
+  private final String jwksUrl;
+  private final String tokenUrl;
+  private final boolean withTokenBuilder;
+  
+  private Cache&lt;String, AlgorithmAndKeyPair&gt; keyCache;
+<span class="fc" id="L69">  private TokenBuilder tokenBuilder = null;</span>
+  
+  @Override
+  public void setKeyCache(Cache&lt;String, AlgorithmAndKeyPair&gt; keyCache) {
+<span class="fc" id="L73">    this.keyCache = keyCache;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">    if (withTokenBuilder) {</span>
+<span class="fc" id="L75">      tokenBuilder = new JdkTokenBuilder(keyCache);</span>
+    }
+<span class="fc" id="L77">  }</span>
+
+  @Override
+  public String getBaseUrl() {
+<span class="fc" id="L81">    return &quot;http://localhost:&quot; + port + basePath;</span>
+  }
+
+  /**
+   * Get the port that the handler is listening on.
+   * @return the port that the handler is listening on.
+   */
+  public int getPort() {
+<span class="fc" id="L89">    return port;</span>
+  }
+  
+  /**
+   * Factory method to create a new VertxJwksHandler.
+   * 
+   * Note that this differs from the constructor in that it creates a dedicated Vertx instance and {@link HttpServer}.
+   * If this factory method is used then {@link #start()} must be called, if the constructor is called directly then
+   * the caller may choose to control the lifetime of the HttpServer manually.
+   * 
+   * The URL generated from the host, post and basePath is the issuer that will be used in tokens.
+   * 
+   * @param host The hostname to use - typically this will just be localhost.
+   * @param port The port to use - may be 0 to choose a random available port.
+   * @param basePath The path to use - should being with a slash but not end with one.
+   * @param withTokenBuilder If true provide an endpoint for creating test tokens.
+   * @return A newly created (but not yet active) VertxJwksHandler.
+   * @throws IOException if port &amp;lt;= 0 and unable to find an available port.
+   */
+  public static VertxJwksHandler create(String host, int port, String basePath, boolean withTokenBuilder) throws IOException {
+
+<span class="fc bfc" id="L110" title="All 2 branches covered.">    if (port &lt;= 0) {</span>
+<span class="fc" id="L111">      try (ServerSocket s = new ServerSocket(0)) {</span>
+<span class="fc" id="L112">        port = s.getLocalPort();</span>
+      }
+    }
+    
+<span class="fc" id="L116">    Vertx vertx = Vertx.vertx();</span>
+<span class="fc" id="L117">    HttpServer httpServer = vertx.createHttpServer();</span>
+<span class="fc" id="L118">    Router router = Router.router(vertx);</span>
+<span class="fc" id="L119">    VertxJwksHandler handler = new VertxJwksHandler(vertx, httpServer, host, port, basePath, withTokenBuilder);</span>
+<span class="fc" id="L120">    router.route(basePath + &quot;/*&quot;).handler(handler);</span>
+<span class="fc" id="L121">    httpServer.requestHandler(router);</span>
+<span class="fc" id="L122">    return handler;</span>
+  }
+  
+  static String checkPath(String path) {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">    if (!path.startsWith(&quot;/&quot;)) {</span>
+<span class="fc" id="L127">      path = &quot;/&quot; + path;</span>
+    }
+<span class="fc bfc" id="L129" title="All 2 branches covered.">    if (path.endsWith(&quot;/&quot;)) {</span>
+<span class="fc" id="L130">      path = path.substring(0, path.length() - 1);</span>
+    }    
+<span class="fc" id="L132">    return path;</span>
+  }
+
+  /**
+   * Constructor.
+   * 
+   * The URL generated from the host, post and basePath is the issuer that will be used in tokens.
+   * 
+   * @param vertx The Vertx instance to be owned by the handler.
+   *        Pass in null if the lifetime of the Vertx instance is not managed by this handler.
+   * @param httpServer The Vertx server  to be owned by the handler.
+   *        Pass in null if the lifetime of the Vertx server is not managed by this handler.
+   * @param host The hostname to use in URLs generated and provided to clients.
+   * @param port The port to use in URLs generated and provided to clients.
+   *        Also the port to listen on if the httpServer is managed by this handler.
+   *        This must not be zero.
+   * @param basePath The path to use in URLs generated and provided to clients.
+   * @param withTokenBuilder If true provide an endpoint for creating test tokens.
+   *        
+   */
+<span class="fc" id="L152">  public VertxJwksHandler(Vertx vertx, HttpServer httpServer, String host, int port, String basePath, boolean withTokenBuilder) {</span>
+<span class="fc" id="L153">    this.vertx = vertx;</span>
+<span class="fc" id="L154">    this.httpServer = httpServer;</span>
+<span class="fc" id="L155">    this.host = host;</span>
+<span class="fc" id="L156">    this.port = port;</span>
+<span class="fc" id="L157">    this.basePath = checkPath(basePath);</span>
+<span class="fc" id="L158">    this.issuer = &quot;http://&quot; + host + &quot;:&quot; + port + basePath;</span>
+<span class="fc" id="L159">    this.configUrl = &quot;http://&quot; + host + &quot;:&quot; + port + basePath + &quot;/.well-known/openid-configuration&quot;;</span>
+<span class="fc" id="L160">    this.jwksUrl = &quot;http://&quot; + host + &quot;:&quot; + port + basePath + &quot;/jwks&quot;;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">    this.tokenUrl = withTokenBuilder ? &quot;http://&quot; + host + &quot;:&quot; + port + basePath + &quot;/token&quot; : &quot;&quot;;</span>
+<span class="fc" id="L162">    this.withTokenBuilder = withTokenBuilder;</span>
+<span class="fc" id="L163">  }</span>
+    
+  @Override
+  public void start() {
+<span class="fc bfc" id="L167" title="All 2 branches covered.">    if (httpServer != null) {</span>
+<span class="fc" id="L168">      httpServer.listen(port);</span>
+    }
+<span class="fc" id="L170">  }</span>
+
+  @Override
+  public void close() throws IOException {
+<span class="fc bfc" id="L174" title="All 2 branches covered.">    if (httpServer != null) {</span>
+<span class="fc" id="L175">      httpServer.close();</span>
+<span class="fc" id="L176">      vertx.close();</span>
+    }
+<span class="fc" id="L178">  }</span>
+  
+
+  private void sendResponse(RoutingContext exchange, int responseCode, String contentType, Buffer body) {
+<span class="fc" id="L182">    exchange.response()</span>
+<span class="fc" id="L183">            .setStatusCode(responseCode)</span>
+<span class="fc" id="L184">            .putHeader(&quot;Content-Type&quot;, contentType)</span>
+<span class="fc" id="L185">            .end(body);</span>
+<span class="fc" id="L186">  }</span>
+
+  @Override
+  public void handle(RoutingContext exchange) {
+<span class="fc" id="L190">    HttpServerRequest request = exchange.request();</span>
+<span class="fc" id="L191">    String url = request.absoluteURI();</span>
+<span class="fc" id="L192">    logger.debug(&quot;handle {} {}&quot;, request.method(), url);</span>
+
+<span class="fc bfc" id="L194" title="All 2 branches covered.">    if (request.method() == HttpMethod.GET) {</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">      if (configUrl.equals(url)) {</span>
+<span class="fc" id="L196">        handleConfigRequest(exchange);</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">      } else if (jwksUrl.equals(url)) {</span>
+<span class="fc" id="L198">        handleJwksRequest(exchange);</span>
+      } else {
+<span class="nc" id="L200">        exchange.next();</span>
+      }
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">    } else if (request.method() == HttpMethod.PUT) {</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">      if (tokenUrl.equals(url)) {</span>
+<span class="fc" id="L204">        handleTokenRequest(exchange);</span>
+      } else {
+<span class="nc" id="L206">        exchange.next();</span>
+      }
+    } else {
+<span class="nc" id="L209">      exchange.next();</span>
+    }
+<span class="fc" id="L211">  }</span>
+
+  private void handleConfigRequest(RoutingContext exchange) {
+<span class="fc" id="L214">    JsonObject config = new JsonObject();</span>
+<span class="fc" id="L215">    config.put(&quot;jwks_uri&quot;, jwksUrl);</span>
+<span class="fc" id="L216">    sendResponse(exchange, 200, &quot;application/json&quot;, config.toBuffer());</span>
+<span class="fc" id="L217">  }</span>
+
+  private void handleJwksRequest(RoutingContext exchange) {
+
+<span class="fc" id="L221">    JsonObject jwkSet = new JsonObject();</span>
+<span class="fc" id="L222">    JsonArray jwks = new JsonArray();</span>
+<span class="fc" id="L223">    jwkSet.put(&quot;keys&quot;, jwks);</span>
+<span class="fc" id="L224">    synchronized (keyCache) {</span>
+<span class="fc" id="L225">      keyCache.asMap().forEach((kid, akp) -&gt; {</span>
+<span class="fc" id="L226">        PublicKey key = akp.getKeyPair().getPublic();</span>
+        try {
+<span class="fc" id="L228">          JsonObject json = JwkBuilder.get(key).toJson(kid, akp.getAlgorithm().getName(), key);</span>
+<span class="fc" id="L229">          jwks.add(json);</span>
+<span class="nc" id="L230">        } catch (Exception ex) {</span>
+<span class="nc" id="L231">          logger.warn(&quot;Failed to add key {} to JWKS: &quot;, kid, ex);</span>
+<span class="fc" id="L232">        }</span>
+<span class="fc" id="L233">      });</span>
+<span class="fc" id="L234">    }</span>
+<span class="fc" id="L235">    exchange.response().putHeader(&quot;cache-control&quot;, &quot;max-age=100&quot;);</span>
+<span class="fc" id="L236">    sendResponse(exchange, 200, &quot;application/json&quot;, jwkSet.toBuffer());</span>
+<span class="fc" id="L237">  }</span>
+  
+  private void handleTokenRequest(RoutingContext exchange) {
+<span class="fc" id="L240">    HttpServerRequest request = exchange.request();</span>
+<span class="fc" id="L241">    request.body()</span>
+<span class="fc" id="L242">            .andThen(ar -&gt; {</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">              if (ar.succeeded()) {</span>
+                try {
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">                  JsonObject body = ar.result().length() &gt; 0 ? ar.result().toJsonObject() : new JsonObject();</span>
+                  
+<span class="fc" id="L247">                  long nbf = (System.currentTimeMillis() / 1000);</span>
+<span class="fc" id="L248">                  long exp = nbf + 60 * 60;                  </span>
+                  
+<span class="fc" id="L250">                  String token = tokenBuilder.buildToken(JsonWebAlgorithm.RS512, &quot;test&quot;, this.issuer, null, null, nbf, exp, body.getMap());</span>
+<span class="fc" id="L251">                  sendResponse(exchange, 200, &quot;text/plain&quot;, Buffer.buffer(token));</span>
+<span class="nc" id="L252">                } catch (Throwable ex) {</span>
+<span class="nc" id="L253">                  logger.debug(&quot;Failed to get request body as json: &quot;, ar.cause());</span>
+<span class="nc" id="L254">                  sendResponse(exchange, 400, &quot;text/plain&quot;, Buffer.buffer(&quot;Failed to read request body&quot;));</span>
+<span class="pc" id="L255">                }</span>
+              } else {
+<span class="nc" id="L257">                logger.debug(&quot;Failed to get request body: &quot;, ar.cause());</span>
+<span class="nc" id="L258">                sendResponse(exchange, 500, &quot;text/plain&quot;, Buffer.buffer(&quot;Failed to get request body&quot;));</span>
+              }
+<span class="fc" id="L260">            });</span>
+<span class="fc" id="L261">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EdECJwkBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.impl</a> &gt; <span class="el_source">EdECJwkBuilder.java</span></div><h1>EdECJwkBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2022 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.impl;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.primitives.Bytes;
+import io.vertx.core.json.JsonObject;
+import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.interfaces.EdECPublicKey;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
+
+/**
+  * JWKBuilder that parses and serializes Edwards-Curve elliptic curve (EC) public keys.
+ * 
+ * @author jtalbut
+ */
+public class EdECJwkBuilder extends JwkBuilder {
+  
+<span class="fc" id="L38">  private static final Logger logger = LoggerFactory.getLogger(EdECJwkBuilder.class);</span>
+  
+<span class="fc" id="L40">  private static final Set&lt;String&gt; VALID_ALGS = ImmutableSet.&lt;String&gt;builder()</span>
+<span class="fc" id="L41">          .add(&quot;EdDSA&quot;)</span>
+<span class="fc" id="L42">          .build();</span>
+  
+  private static final String KTY = &quot;OKP&quot;;
+
+  /**
+   * Constructor.
+   * 
+   * Typically it is not necessary to construct an explicit instance of this class, the methods in the {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder} class should suffice.
+   * 
+   */
+<span class="fc" id="L52">  public EdECJwkBuilder() {</span>
+<span class="fc" id="L53">  }</span>
+  
+  @Override
+  public boolean canHandleKey(PublicKey key) {
+<span class="fc" id="L57">    return key instanceof EdECPublicKey;</span>
+  }  
+  
+  @Override
+  public JsonObject toJson(String kid, String algorithm, PublicKey publicKey) throws NoSuchAlgorithmException {
+<span class="fc" id="L62">    EdECPublicKey key = (EdECPublicKey) publicKey;</span>
+            
+<span class="fc" id="L64">    JsonObject json = new JsonObject();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">    if (VALID_ALGS.contains(algorithm)) {</span>
+<span class="fc" id="L66">      json.put(&quot;alg&quot;, algorithm);</span>
+    } else {
+<span class="fc" id="L68">      logger.warn(&quot;The algorithm {} is not in {}&quot;, algorithm, VALID_ALGS);</span>
+<span class="fc" id="L69">      throw new NoSuchAlgorithmException(algorithm);</span>
+    }
+    
+<span class="fc" id="L72">    json.put(&quot;kid&quot;, kid);</span>
+<span class="fc" id="L73">    json.put(&quot;kty&quot;, KTY);</span>
+<span class="fc" id="L74">    json.put(&quot;crv&quot;, key.getParams().getName());</span>
+    
+<span class="fc" id="L76">    BigInteger y = key.getPoint().getY();</span>
+<span class="fc" id="L77">    byte[] arr = y.toByteArray();</span>
+<span class="fc" id="L78">    Bytes.reverse(arr, 0, arr.length);</span>
+//    if (key.getPoint().isXOdd()) {
+//      arr[arr.length - 1] |= 0x8;
+//    }
+<span class="fc" id="L82">    json.put(&quot;x&quot;, B64ENCODER.encodeToString(arr));</span>
+<span class="fc" id="L83">    return json;</span>
+  }
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

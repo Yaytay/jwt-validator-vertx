@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ECJwkBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.impl</a> &gt; <span class="el_source">ECJwkBuilder.java</span></div><h1>ECJwkBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2022 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.impl;
+
+import com.google.common.collect.ImmutableSet;
+import io.vertx.core.json.JsonObject;
+import java.math.BigInteger;
+import java.security.AlgorithmParameters;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.InvalidParameterSpecException;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
+
+/**
+ * JWKBuilder that parses and serializes elliptic curve (EC) public keys.
+ * 
+ * @author jtalbut
+ */
+public class ECJwkBuilder extends JwkBuilder {
+  
+<span class="fc" id="L40">  private static final Logger logger = LoggerFactory.getLogger(ECJwkBuilder.class);</span>
+  private static final String KTY = &quot;EC&quot;;
+
+<span class="fc" id="L43">  private static final Set&lt;String&gt; VALID_ALGS = ImmutableSet.&lt;String&gt;builder()</span>
+<span class="fc" id="L44">          .add(&quot;ES256&quot;)</span>
+<span class="fc" id="L45">          .add(&quot;ES384&quot;)</span>
+<span class="fc" id="L46">          .add(&quot;ES512&quot;)</span>
+<span class="fc" id="L47">          .build();</span>
+  
+  /**
+   * Constructor.
+   * 
+   * Typically it is not necessary to construct an explicit instance of this class, the methods in the {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder} class should suffice.
+   * 
+   */
+<span class="fc" id="L55">  public ECJwkBuilder() {</span>
+<span class="fc" id="L56">  }</span>
+  
+  @Override
+  public boolean canHandleKey(PublicKey key) {
+<span class="fc" id="L60">    return key instanceof ECPublicKey;</span>
+  }
+  
+  /**
+   * JDK 25 passes in the &quot;secp*&quot; variants, earlier passed in the OID variants.
+   * Need to support both.
+   * 
+   * @param oid
+   * @return 
+   */
+  private static String oidToCurve(String oid) {
+<span class="pc bpc" id="L71" title="1 of 4 branches missed.">    switch (oid) {</span>
+      case &quot;1.2.840.10045.3.1.7&quot;:
+      case &quot;secp256r1&quot;:
+<span class="fc" id="L74">        return &quot;P-256&quot;;</span>
+      case &quot;1.3.132.0.34&quot;:
+      case &quot;secp384r1&quot;:
+<span class="fc" id="L77">        return &quot;P-384&quot;;</span>
+      case &quot;1.3.132.0.35&quot;:
+      case &quot;secp521r1&quot;:
+<span class="fc" id="L80">        return &quot;P-521&quot;;</span>
+      default:
+<span class="nc" id="L82">        logger.warn(&quot;Unrecognised OID passed in: {}&quot;, oid);</span>
+<span class="nc" id="L83">        throw new IllegalArgumentException(&quot;Unknown OID&quot;);</span>
+    }
+  }
+  
+  /**
+   * Convert the coordinate to a byte array, ensuring that the result is at least fieldSize bits long.
+   * @param fieldSize The minimum number of bits in the resulting array.
+   * @param coordinate The BigInteger to convert.
+   * @return a byte array of at least fieldSize bits containing coordinate.
+   */
+  private static byte[] coordinateToByteArray(int fieldSize, BigInteger coordinate) {
+<span class="fc" id="L94">    byte[] coordinateByteArray = coordinate.toByteArray();</span>
+<span class="fc" id="L95">    int fullSize = (int) Math.ceil(fieldSize / 8d);</span>
+
+<span class="fc bfc" id="L97" title="All 2 branches covered.">    if (fullSize &gt; coordinateByteArray.length) {</span>
+<span class="fc" id="L98">      final byte[] fullSizeCoordinateByteArray = new byte[fullSize];</span>
+<span class="fc" id="L99">      System.arraycopy(coordinateByteArray, 0, fullSizeCoordinateByteArray, fullSize - coordinateByteArray.length, coordinateByteArray.length);</span>
+<span class="fc" id="L100">      return fullSizeCoordinateByteArray;</span>
+    } else {
+<span class="fc" id="L102">      return coordinateByteArray;</span>
+    }
+  }
+  
+  @Override
+  public JsonObject toJson(String kid, String algorithm, PublicKey publicKey) throws InvalidParameterSpecException, NoSuchAlgorithmException {
+<span class="fc" id="L108">    ECPublicKey key = (ECPublicKey) publicKey;</span>
+
+<span class="fc" id="L110">    JsonObject json = new JsonObject();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">    if (VALID_ALGS.contains(algorithm)) {</span>
+<span class="fc" id="L112">      json.put(&quot;alg&quot;, algorithm);</span>
+    } else {
+<span class="fc" id="L114">      logger.warn(&quot;The algorithm {} is not in {}&quot;, algorithm, VALID_ALGS);</span>
+<span class="fc" id="L115">      throw new NoSuchAlgorithmException(algorithm);</span>
+    }
+<span class="fc" id="L117">    json.put(&quot;kid&quot;, kid);</span>
+<span class="fc" id="L118">    json.put(&quot;kty&quot;, KTY);</span>
+    
+<span class="fc" id="L120">    AlgorithmParameters params = AlgorithmParameters.getInstance(&quot;EC&quot;);</span>
+<span class="fc" id="L121">    params.init(key.getParams());</span>
+<span class="fc" id="L122">    String oid = params.getParameterSpec(ECGenParameterSpec.class).getName();</span>
+<span class="fc" id="L123">    String curve = oidToCurve(oid);</span>
+<span class="fc" id="L124">    json.put(&quot;crv&quot;, curve);</span>
+    
+<span class="fc" id="L126">    int fieldSize = key.getParams().getCurve().getField().getFieldSize();</span>
+<span class="fc" id="L127">    json.put(&quot;x&quot;, B64ENCODER.encodeToString(coordinateToByteArray(fieldSize, key.getW().getAffineX())));</span>
+<span class="fc" id="L128">    json.put(&quot;y&quot;, B64ENCODER.encodeToString(coordinateToByteArray(fieldSize, key.getW().getAffineY())));</span>
+    
+<span class="fc" id="L130">    return json;</span>
+  }
+  
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

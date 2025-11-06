@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JdkJwksHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.jdk</a> &gt; <span class="el_source">JdkJwksHandler.java</span></div><h1>JdkJwksHandler.java</h1><pre class="source lang-java linenums">/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.jdk;
+
+import uk.co.spudsoft.jwtvalidatorvertx.JwksHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.cache.Cache;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
+import java.util.Base64;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.AlgorithmAndKeyPair;
+import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
+
+/**
+ * An implementation of JwksHandler as a JDK HttpHandler.
+ * &lt;p&gt;
+ * This provides the simplest (and easiest to deploy) implementation of JwksHandler, but it is not very compatible with a Vertx application.
+ * 
+ * @author jtalbut
+ */
+public class JdkJwksHandler implements HttpHandler, Closeable, JwksHandler {
+
+  @SuppressWarnings(&quot;constantname&quot;)
+<span class="fc" id="L42">  private static final Logger logger = LoggerFactory.getLogger(JdkJwksHandler.class);</span>
+
+<span class="fc" id="L44">  private static final Base64.Encoder BASE64 = Base64.getUrlEncoder().withoutPadding();</span>
+  
+<span class="fc" id="L46">  private static final ObjectMapper MAPPER = new ObjectMapper();</span>
+<span class="fc" id="L47">  private final String context = &quot;/bob&quot;;</span>
+<span class="fc" id="L48">  private final String configUrl = context + &quot;/.well-known/openid-configuration&quot;;</span>
+<span class="fc" id="L49">  private final String jwksUrl = context + &quot;/jwks&quot;;</span>
+
+  private final int port;
+
+  private final HttpServer server;
+  private final ExecutorService executor;
+  
+  private Cache&lt;String, AlgorithmAndKeyPair&gt; keyCache;
+
+  @Override
+  public void setKeyCache(Cache&lt;String, AlgorithmAndKeyPair&gt; keyCache) {
+<span class="fc" id="L60">    this.keyCache = keyCache;</span>
+<span class="fc" id="L61">  }</span>
+
+  @Override
+  public String getBaseUrl() {
+<span class="fc" id="L65">    return &quot;http://localhost:&quot; + port + context;</span>
+  }
+  
+  /**
+   * Factory method to create a new JdkJwsHandler on a random port.
+   * The {@link #start() } method must still be called on the returned object.
+   * @return A newly created (but not yet active) JdkJwsHandler.
+   * @throws IOException If the server cannot be created or started.
+   */
+  public static JdkJwksHandler create() throws IOException {
+    int port;
+<span class="fc" id="L76">    try (ServerSocket s = new ServerSocket(0)) {</span>
+<span class="fc" id="L77">      port = s.getLocalPort();</span>
+    }
+<span class="fc" id="L79">    ExecutorService exeSvc = Executors.newFixedThreadPool(2);</span>
+<span class="fc" id="L80">    HttpServer server = HttpServer.create(new InetSocketAddress(port), 2);</span>
+<span class="fc" id="L81">    server.setExecutor(exeSvc);</span>
+<span class="fc" id="L82">    return new JdkJwksHandler(port, server, exeSvc);</span>
+  }
+  
+<span class="fc" id="L85">  private JdkJwksHandler(int port, HttpServer server, ExecutorService executor) {</span>
+<span class="fc" id="L86">    this.port = port;</span>
+<span class="fc" id="L87">    this.server = server;</span>
+<span class="fc" id="L88">    this.executor = executor;</span>
+<span class="fc" id="L89">  }</span>
+  
+  @Override
+  public void start() {
+<span class="fc" id="L93">    server.createContext(context, this);</span>
+<span class="fc" id="L94">    server.start();</span>
+<span class="fc" id="L95">  }</span>
+
+  @Override
+  public void close() throws IOException {
+<span class="fc" id="L99">    server.stop(1);</span>
+<span class="fc" id="L100">    executor.shutdownNow();</span>
+<span class="fc" id="L101">  }</span>
+
+  private void sendResponse(HttpExchange exchange, int responseCode, String body) throws IOException {
+<span class="fc" id="L104">    byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);</span>
+<span class="fc" id="L105">    exchange.sendResponseHeaders(responseCode, bodyBytes.length);</span>
+<span class="fc" id="L106">    try (OutputStream os = exchange.getResponseBody()) {</span>
+<span class="fc" id="L107">      os.write(bodyBytes);</span>
+    }
+<span class="fc" id="L109">  }</span>
+
+  @Override
+  public void handle(HttpExchange exchange) throws IOException {
+<span class="fc" id="L113">    logger.debug(&quot;handle {} {}&quot;, exchange.getRequestMethod(), exchange.getRequestURI());</span>
+
+<span class="fc bfc" id="L115" title="All 3 branches covered.">    switch (exchange.getRequestURI().getPath()) {</span>
+      case configUrl:
+<span class="fc" id="L117">        handleConfigRequest(exchange);</span>
+<span class="fc" id="L118">        break;</span>
+      case jwksUrl:
+<span class="fc" id="L120">        handleJwksRequest(exchange);</span>
+<span class="fc" id="L121">        break;</span>
+      default:
+<span class="fc" id="L123">        sendResponse(exchange, 404, &quot;Not found&quot;);</span>
+    }
+<span class="fc" id="L125">  }</span>
+
+  private void handleConfigRequest(HttpExchange exchange) throws IOException {
+<span class="fc" id="L128">    ObjectNode config = MAPPER.createObjectNode();</span>
+<span class="fc" id="L129">    config.put(&quot;jwks_uri&quot;, &quot;http://localhost:&quot; + port + jwksUrl);</span>
+<span class="fc" id="L130">    sendResponse(exchange, 200, config.toString());</span>
+<span class="fc" id="L131">  }</span>
+
+  private void handleJwksRequest(HttpExchange exchange) throws IOException {
+
+<span class="fc" id="L135">    JsonObject jwkSet = new JsonObject();</span>
+<span class="fc" id="L136">    JsonArray jwks = new JsonArray();</span>
+<span class="fc" id="L137">    jwkSet.put(&quot;keys&quot;, jwks);</span>
+<span class="fc" id="L138">    synchronized (keyCache) {</span>
+<span class="fc" id="L139">      keyCache.asMap().forEach((kid, akp) -&gt; {</span>
+<span class="fc" id="L140">        PublicKey key = akp.getKeyPair().getPublic();</span>
+        try {
+<span class="fc" id="L142">          JsonObject json = JwkBuilder.get(key).toJson(kid, akp.getAlgorithm().getName(), key);</span>
+<span class="fc" id="L143">          jwks.add(json);</span>
+<span class="nc" id="L144">        } catch (Exception ex) {</span>
+<span class="nc" id="L145">          logger.warn(&quot;Failed to add key {} to JWKS: &quot;, kid, ex);</span>
+<span class="fc" id="L146">        }</span>
+<span class="fc" id="L147">      });</span>
+<span class="fc" id="L148">    }</span>
+<span class="fc" id="L149">    exchange.getResponseHeaders().add(&quot;cache-control&quot;, &quot;max-age=100&quot;);</span>
+<span class="fc" id="L150">    sendResponse(exchange, 200, jwkSet.encode());</span>
+<span class="fc" id="L151">  }</span>
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

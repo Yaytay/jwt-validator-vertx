@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwkBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx</a> &gt; <span class="el_source">JwkBuilder.java</span></div><h1>JwkBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2022 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx;
+
+import io.vertx.core.json.JsonObject;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidParameterSpecException;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.ECJwkBuilder;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.EdECJwkBuilder;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.RSAJwkBuilder;
+
+/**
+ * The JwkBuilder class is an SPI for containing the algorithm-specific conversions from Token to JWK or from JSON to JWK.
+ * 
+ * @author jtalbut
+ */
+public abstract class JwkBuilder {
+  
+<span class="fc" id="L39">  private static final Logger logger = LoggerFactory.getLogger(JwkBuilder.class);</span>
+  
+<span class="fc" id="L41">  private static final List&lt;JwkBuilder&gt; BUILDERS = Arrays.&lt;JwkBuilder&gt;asList(</span>
+          new RSAJwkBuilder()
+          , new EdECJwkBuilder()
+          , new ECJwkBuilder()
+  );
+
+  /**
+   * Get the appropriate builder for the given public key.
+   * @param publicKey The public key whose builder is being sought.
+   * @return A JwkBuilder able to work with the given public key.
+   * @throws IllegalArgumentException if now builder can be found for the provided key.
+   */
+  public static JwkBuilder get(PublicKey publicKey) {
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">    for (JwkBuilder builder : BUILDERS) {</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">      if (builder.canHandleKey(publicKey)) {</span>
+<span class="fc" id="L56">        return builder;</span>
+      }
+<span class="fc" id="L58">    }</span>
+<span class="nc" id="L59">    throw new IllegalArgumentException(&quot;Key cannot be handled&quot;);</span>
+  }
+  
+  /**
+   * Protected constructor used by subclasses.
+   */
+<span class="fc" id="L65">  protected JwkBuilder() {</span>
+<span class="fc" id="L66">  }</span>
+  
+  /**
+   * Instance of a {@link java.util.Base64.Encoder} for encoding values used in JWK JSON.
+   * Used when creating JSON for implementations of {@link uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder#toJson(java.lang.String, java.lang.String, java.security.PublicKey)}.
+   */
+<span class="fc" id="L72">  protected static final Base64.Encoder B64ENCODER = Base64.getUrlEncoder().withoutPadding();</span>
+
+  /**
+   * Return true if the builder can create a JWK by generating JSON for the given PublicKey.
+   * @param key The key that that this builder is being asked about.
+   * @return true if the builder can create a JWK by generating JSON for the given PublicKey.
+   */
+  public abstract boolean canHandleKey(PublicKey key);
+  
+  /**
+   * Convert the given public key into a valid JWK JSON representation.
+   * @param kid The ID for the key.
+   * @param algorithm The algorithm to be used with the key.
+   * @param publicKey The public key.
+   * @return The JWK representation of the key,
+   * @throws InvalidParameterSpecException if the security subsystem does so.
+   * @throws NoSuchAlgorithmException if the security subsystem does so.
+   */
+  public abstract JsonObject toJson(String kid, String algorithm, PublicKey publicKey) throws InvalidParameterSpecException, NoSuchAlgorithmException;
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

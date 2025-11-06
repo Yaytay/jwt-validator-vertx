@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AlgorithmAndKeyPair.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx</a> &gt; <span class="el_source">AlgorithmAndKeyPair.java</span></div><h1>AlgorithmAndKeyPair.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2023 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import java.security.KeyPair;
+import java.time.Duration;
+
+/**
+ * Associated the algorithm with a {@link java.security.KeyPair}. The keys for some algorithms (like RSA) can be used for
+ * different types of JWS algorithms (i.e. RS512 and RS256 use the same size RSA keys). In order for the token builder to work
+ * with the {@link uk.co.spudsoft.jwtvalidatorvertx.JwksHandler}
+ */
+public class AlgorithmAndKeyPair {
+
+  private final JsonWebAlgorithm algorithm;
+  private final KeyPair keyPair;
+
+  /**
+   * Create a guava cache with a configured key lifetime.
+   * @param keyLifetime The value to use for the expireAfterWrite setting.
+   * @return a guava cache with a configured key lifetime.
+   */
+  public static Cache&lt;String, AlgorithmAndKeyPair&gt; createCache(Duration keyLifetime) {
+<span class="fc" id="L40">    return CacheBuilder.newBuilder()</span>
+<span class="fc" id="L41">            .expireAfterWrite(keyLifetime)</span>
+<span class="fc" id="L42">            .build();</span>
+  }
+    
+  /**
+   * Constructor.
+   *
+   * @param algorithm The algorithm to use with this key.
+   * @param keyPair The key pair.
+   */
+<span class="fc" id="L51">  public AlgorithmAndKeyPair(JsonWebAlgorithm algorithm, KeyPair keyPair) {</span>
+<span class="fc" id="L52">    this.algorithm = algorithm;</span>
+<span class="fc" id="L53">    this.keyPair = keyPair;</span>
+<span class="fc" id="L54">  }</span>
+
+  /**
+   * Get the algorithm to use with this key.
+   * @return the algorithm to use with this key.
+   */
+  public JsonWebAlgorithm getAlgorithm() {
+<span class="fc" id="L61">    return algorithm;</span>
+  }
+
+  /**
+   * Get the KeyPair.
+   * @return the KeyPair.
+   */
+  public KeyPair getKeyPair() {
+<span class="fc" id="L69">    return keyPair;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

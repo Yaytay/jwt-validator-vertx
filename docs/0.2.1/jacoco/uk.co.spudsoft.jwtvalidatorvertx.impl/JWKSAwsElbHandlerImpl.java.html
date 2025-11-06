@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JWKSAwsElbHandlerImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.impl</a> &gt; <span class="el_source">JWKSAwsElbHandlerImpl.java</span></div><h1>JWKSAwsElbHandlerImpl.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2025 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.impl;
+
+import com.google.common.collect.ImmutableList;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.auth.PubSecKeyOptions;
+import io.vertx.ext.auth.impl.jose.JWK;
+import io.vertx.ext.web.client.WebClient;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.JsonWebKeySetAwsElbHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.impl.AsyncLoadingCache.TimedObject;
+
+/**
+ * Implementation of {@link JsonWebKeySetAwsElbHandler} that stores JWKs in a HashMap.
+ *
+ * @author jtalbut
+ */
+public class JWKSAwsElbHandlerImpl implements JsonWebKeySetAwsElbHandler {
+
+<span class="fc" id="L44">  private static final Logger logger = LoggerFactory.getLogger(JWKSOpenIdDiscoveryHandlerImpl.class);</span>
+
+  private final List&lt;String&gt; keyBaseUrls;
+  private final WebClient webClient;
+  private final long cacheDurationMillis;
+<span class="fc" id="L49">  private final Map&lt;String, TimedObject&lt;JWK&gt;&gt; keys = new HashMap&lt;&gt;();</span>
+
+  /**
+   * Constructor.
+   *
+   * With a static map of JWKs the security of the system is not compromised by allowing any issuer, though you should question
+   * why this is necessary.
+   *
+   * Each JWKs endpoint must use KIDs that are globally unique.
+   *
+   * When a KID is requested and cannot be found ALL the configured JWKS URLs will be queried and the single cache will be
+   * updated. Entries in the cache will be retained for a duration based on either the Cache-Control max-age header of the
+   * response or, if that is not present, the defaultJwkCacheDuration. Given that only positive responses are cached it is
+   * reasonable for the defaultJwkCacheDuration to be 24 hours (or more).
+   *
+   * @param webClient Vertx WebClient instance, that will be used for querying the JWKS URLs.
+   * @param keyBaseUrls Static set of base URLs that will be used for constructing the URLs to the AWS keys.
+   * @param defaultJwkCacheDuration Time to keep JWKs in cache if no cache-control: max-age header is found.
+   *
+   * The JWKS URLs must be accessed via https for the environment to offer any security. This is not enforced at the code level.
+   *
+   * @see &lt;a href=&quot;https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-authenticate-users.html#user-claims-encoding&quot;&gt;listener-authenticate-users.html#user-claims-encoding&lt;/a&gt;
+   */
+<span class="fc" id="L72">  public JWKSAwsElbHandlerImpl(WebClient webClient, Collection&lt;String&gt; keyBaseUrls, Duration defaultJwkCacheDuration) {</span>
+<span class="fc" id="L73">    this.webClient = webClient;</span>
+<span class="fc" id="L74">    this.cacheDurationMillis = defaultJwkCacheDuration.toMillis();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">    this.keyBaseUrls = keyBaseUrls.stream().map(url -&gt; url.endsWith(&quot;/&quot;) ? url : url + &quot;/&quot;).collect(ImmutableList.toImmutableList());</span>
+<span class="fc" id="L76">  }</span>
+
+  @Override
+  public void optimize() {
+<span class="fc" id="L80">  }</span>
+
+  private JWK findJwk(String kid) {
+<span class="fc" id="L83">    synchronized (keys) {</span>
+<span class="fc" id="L84">      TimedObject&lt;JWK&gt; jwk = keys.get(kid);</span>
+<span class="fc" id="L85">      long now = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">      if (null != jwk) {</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (jwk.expiredBefore(now)) {</span>
+<span class="nc" id="L88">          keys.remove(kid);</span>
+        } else {
+<span class="fc" id="L90">          return jwk.getValue();</span>
+        }
+      }
+<span class="fc" id="L93">      return null;</span>
+    }
+  }
+
+  @Override
+  public Future&lt;JWK&gt; findJwk(String issuer, String kid) {
+
+<span class="fc bfc" id="L100" title="All 2 branches covered.">    if (!kid.matches(&quot;^[A-Za-z0-9._~-]*$&quot;)) {</span>
+<span class="fc" id="L101">      logger.error(&quot;The kid \&quot;{}\&quot; is not a valid AWS ELB kid&quot;, kid);</span>
+<span class="fc" id="L102">      throw new IllegalArgumentException(&quot;The kid is not a valid AWS ELB kid.&quot;);</span>
+    }
+
+<span class="fc" id="L105">    JWK foundJwk = findJwk(kid);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">    if (foundJwk != null) {</span>
+<span class="fc" id="L107">      return Future.succeededFuture(foundJwk);</span>
+    }
+
+<span class="fc" id="L110">    Promise&lt;JWK&gt; resultPromise = Promise.promise();</span>
+<span class="fc" id="L111">    List&lt;Future&lt;Void&gt;&gt; trackingFutures = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">    for (String baseUrl : this.keyBaseUrls) {</span>
+<span class="fc" id="L114">      String awsKeyUrl = baseUrl + kid;</span>
+
+<span class="fc" id="L116">      Future&lt;Void&gt; future = webClient.getAbs(awsKeyUrl)</span>
+<span class="fc" id="L117">              .send()</span>
+<span class="fc" id="L118">              .compose(response -&gt; {</span>
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">                if (response.statusCode() &gt;= 200 &amp;&amp; response.statusCode() &lt; 300) {</span>
+                  JWK jwk;
+<span class="fc" id="L121">                  Buffer body = response.body();</span>
+                  try {
+<span class="fc" id="L123">                    jwk = pemToJwk(kid, body);</span>
+<span class="nc" id="L124">                  } catch (Throwable ex) {</span>
+<span class="nc" id="L125">                    logger.warn(&quot;From {} failed to parse body ({}) as JWKRequest: &quot;, awsKeyUrl, body, response.body());</span>
+<span class="nc" id="L126">                    return Future.&lt;Void&gt;succeededFuture();</span>
+<span class="fc" id="L127">                  }</span>
+<span class="fc" id="L128">                  synchronized (keys) {</span>
+<span class="fc" id="L129">                    keys.put(kid, new TimedObject&lt;&gt;(jwk, System.currentTimeMillis() + cacheDurationMillis));</span>
+<span class="fc" id="L130">                  }</span>
+
+<span class="fc" id="L132">                  resultPromise.tryComplete(jwk);</span>
+<span class="fc" id="L133">                } else {</span>
+<span class="fc" id="L134">                  logger.warn(&quot;Request to {} returned {}: {}&quot;, awsKeyUrl, response.statusCode(), response.body());</span>
+                }
+<span class="fc" id="L136">                return Future.&lt;Void&gt;succeededFuture();</span>
+              })
+<span class="fc" id="L138">              .recover(ex -&gt; {</span>
+<span class="nc" id="L139">                logger.warn(&quot;Failed request to {}: &quot;, awsKeyUrl, ex);</span>
+<span class="nc" id="L140">                return Future.&lt;Void&gt;succeededFuture();</span>
+              });
+
+<span class="fc" id="L143">      trackingFutures.add(future);</span>
+<span class="fc" id="L144">    }</span>
+
+    // After all requests finish, fail the promise if none succeeded
+<span class="fc" id="L147">    Future.all(trackingFutures).onComplete(ar -&gt; {</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">      if (!resultPromise.future().isComplete()) {</span>
+<span class="fc" id="L149">        resultPromise.fail(&quot;No valid response found&quot;);</span>
+      }
+<span class="fc" id="L151">    });</span>
+
+<span class="fc" id="L153">    return resultPromise.future();</span>
+  }
+
+  private static JWK pemToJwk(String kid, Buffer pem) {
+<span class="fc" id="L157">    PubSecKeyOptions keyOptions = new PubSecKeyOptions()</span>
+<span class="fc" id="L158">      .setAlgorithm(&quot;ES256&quot;)</span>
+<span class="fc" id="L159">      .setBuffer(pem)</span>
+<span class="fc" id="L160">      .setId(kid);</span>
+<span class="fc" id="L161">    return new JWK(keyOptions);</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

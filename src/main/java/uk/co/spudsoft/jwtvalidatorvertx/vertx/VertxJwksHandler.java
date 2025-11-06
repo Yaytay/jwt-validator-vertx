@@ -20,6 +20,7 @@ import com.google.common.cache.Cache;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
@@ -33,9 +34,12 @@ import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.AlgorithmAndKeyPair;
+import uk.co.spudsoft.jwtvalidatorvertx.JsonWebAlgorithm;
 import uk.co.spudsoft.jwtvalidatorvertx.JwkBuilder;
 import uk.co.spudsoft.jwtvalidatorvertx.JwksHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.TokenBuilder;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkJwksHandler;
+import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkTokenBuilder;
 
 /**
  * An implementation of JwksHandler as a Vertx {@link Handler}&lt;{@link RoutingContext}&gt;.
@@ -54,20 +58,35 @@ public class VertxJwksHandler implements Handler<RoutingContext>, JwksHandler {
   
   private final String host;
   private final int port;
-  private final String basePath;
+  private final String basePath; 
+  private final String issuer;
   private final String configUrl;
   private final String jwksUrl;
+  private final String tokenUrl;
+  private final boolean withTokenBuilder;
   
   private Cache<String, AlgorithmAndKeyPair> keyCache;
+  private TokenBuilder tokenBuilder = null;
   
   @Override
   public void setKeyCache(Cache<String, AlgorithmAndKeyPair> keyCache) {
     this.keyCache = keyCache;
+    if (withTokenBuilder) {
+      tokenBuilder = new JdkTokenBuilder(keyCache);
+    }
   }
 
   @Override
   public String getBaseUrl() {
     return "http://localhost:" + port + basePath;
+  }
+
+  /**
+   * Get the port that the handler is listening on.
+   * @return the port that the handler is listening on.
+   */
+  public int getPort() {
+    return port;
   }
   
   /**
@@ -82,10 +101,11 @@ public class VertxJwksHandler implements Handler<RoutingContext>, JwksHandler {
    * @param host The hostname to use - typically this will just be localhost.
    * @param port The port to use - may be 0 to choose a random available port.
    * @param basePath The path to use - should being with a slash but not end with one.
+   * @param withTokenBuilder If true provide an endpoint for creating test tokens.
    * @return A newly created (but not yet active) VertxJwksHandler.
    * @throws IOException if port &lt;= 0 and unable to find an available port.
    */
-  public static VertxJwksHandler create(String host, int port, String basePath) throws IOException {
+  public static VertxJwksHandler create(String host, int port, String basePath, boolean withTokenBuilder) throws IOException {
 
     if (port <= 0) {
       try (ServerSocket s = new ServerSocket(0)) {
@@ -96,8 +116,8 @@ public class VertxJwksHandler implements Handler<RoutingContext>, JwksHandler {
     Vertx vertx = Vertx.vertx();
     HttpServer httpServer = vertx.createHttpServer();
     Router router = Router.router(vertx);
-    VertxJwksHandler handler = new VertxJwksHandler(vertx, httpServer, host, port, basePath);
-    router.route().handler(handler);
+    VertxJwksHandler handler = new VertxJwksHandler(vertx, httpServer, host, port, basePath, withTokenBuilder);
+    router.route(basePath + "/*").handler(handler);
     httpServer.requestHandler(router);
     return handler;
   }
@@ -126,16 +146,20 @@ public class VertxJwksHandler implements Handler<RoutingContext>, JwksHandler {
    *        Also the port to listen on if the httpServer is managed by this handler.
    *        This must not be zero.
    * @param basePath The path to use in URLs generated and provided to clients.
+   * @param withTokenBuilder If true provide an endpoint for creating test tokens.
    *        
    */
-  public VertxJwksHandler(Vertx vertx, HttpServer httpServer, String host, int port, String basePath) {
+  public VertxJwksHandler(Vertx vertx, HttpServer httpServer, String host, int port, String basePath, boolean withTokenBuilder) {
     this.vertx = vertx;
     this.httpServer = httpServer;
     this.host = host;
     this.port = port;
     this.basePath = checkPath(basePath);
+    this.issuer = "http://" + host + ":" + port + basePath;
     this.configUrl = "http://" + host + ":" + port + basePath + "/.well-known/openid-configuration";
     this.jwksUrl = "http://" + host + ":" + port + basePath + "/jwks";
+    this.tokenUrl = withTokenBuilder ? "http://" + host + ":" + port + basePath + "/token" : "";
+    this.withTokenBuilder = withTokenBuilder;
   }
     
   @Override
@@ -167,10 +191,20 @@ public class VertxJwksHandler implements Handler<RoutingContext>, JwksHandler {
     String url = request.absoluteURI();
     logger.debug("handle {} {}", request.method(), url);
 
-    if (configUrl.equals(url)) {
-      handleConfigRequest(exchange);
-    } else if (jwksUrl.equals(url)) {
-      handleJwksRequest(exchange);
+    if (request.method() == HttpMethod.GET) {
+      if (configUrl.equals(url)) {
+        handleConfigRequest(exchange);
+      } else if (jwksUrl.equals(url)) {
+        handleJwksRequest(exchange);
+      } else {
+        exchange.next();
+      }
+    } else if (request.method() == HttpMethod.PUT) {
+      if (tokenUrl.equals(url)) {
+        handleTokenRequest(exchange);
+      } else {
+        exchange.next();
+      }
     } else {
       exchange.next();
     }
@@ -178,7 +212,7 @@ public class VertxJwksHandler implements Handler<RoutingContext>, JwksHandler {
 
   private void handleConfigRequest(RoutingContext exchange) {
     JsonObject config = new JsonObject();
-    config.put("jwks_uri", "http://localhost:" + port + jwksUrl);
+    config.put("jwks_uri", jwksUrl);
     sendResponse(exchange, 200, "application/json", config.toBuffer());
   }
 
@@ -200,5 +234,29 @@ public class VertxJwksHandler implements Handler<RoutingContext>, JwksHandler {
     }
     exchange.response().putHeader("cache-control", "max-age=100");
     sendResponse(exchange, 200, "application/json", jwkSet.toBuffer());
+  }
+  
+  private void handleTokenRequest(RoutingContext exchange) {
+    HttpServerRequest request = exchange.request();
+    request.body()
+            .andThen(ar -> {
+              if (ar.succeeded()) {
+                try {
+                  JsonObject body = ar.result().length() > 0 ? ar.result().toJsonObject() : new JsonObject();
+                  
+                  long nbf = (System.currentTimeMillis() / 1000);
+                  long exp = nbf + 60 * 60;                  
+                  
+                  String token = tokenBuilder.buildToken(JsonWebAlgorithm.RS512, "test", this.issuer, null, null, nbf, exp, body.getMap());
+                  sendResponse(exchange, 200, "text/plain", Buffer.buffer(token));
+                } catch (Throwable ex) {
+                  logger.debug("Failed to get request body as json: ", ar.cause());
+                  sendResponse(exchange, 400, "text/plain", Buffer.buffer("Failed to read request body"));
+                }
+              } else {
+                logger.debug("Failed to get request body: ", ar.cause());
+                sendResponse(exchange, 500, "text/plain", Buffer.buffer("Failed to get request body"));
+              }
+            });
   }
 }

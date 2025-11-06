@@ -96,7 +96,7 @@ public class IssuerAcceptabilityHandlerImpl implements IssuerAcceptabilityHandle
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
     this.acceptableIssuersFile = Strings.isNullOrEmpty(acceptableIssuersFile) ? null : new File(acceptableIssuersFile);
-    this.pollPeriodMs = pollPeriod.toMillis();
+    this.pollPeriodMs = pollPeriod == null ? 60000 : pollPeriod.toMillis();
   }
   
 
@@ -109,22 +109,24 @@ public class IssuerAcceptabilityHandlerImpl implements IssuerAcceptabilityHandle
       logger.warn("Invalid issuer: {}", (issuer == null ? "<null>" : "<blank>"));
       return false;
     }
-    synchronized (lock) {
-      now = System.currentTimeMillis();
-      if (lastFileCheck + pollPeriodMs < now) {
-        lastFileCheck = now;
-        shouldUpdate = true;
-      } 
-      localAcceptableIssuers = acceptableIssuers;
-    }
-    if (shouldUpdate) {
-      checkFile(now);
+    if (acceptableIssuersFile != null) {
       synchronized (lock) {
+        now = System.currentTimeMillis();
+        if (lastFileCheck + pollPeriodMs < now) {
+          lastFileCheck = now;
+          shouldUpdate = true;
+        } 
         localAcceptableIssuers = acceptableIssuers;
       }
-    }
-    if (localAcceptableIssuers.contains(issuer)) {
-      return true;
+      if (shouldUpdate) {
+        checkFile(now);
+        synchronized (lock) {
+          localAcceptableIssuers = acceptableIssuers;
+        }
+      }
+      if (localAcceptableIssuers.contains(issuer)) {
+        return true;
+      }
     }
     for (Pattern acceptableIssuer : acceptableIssuerRegexes) {
       if (acceptableIssuer.matcher(issuer).matches()) {

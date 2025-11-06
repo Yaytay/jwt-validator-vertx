@@ -3,7 +3,6 @@ package uk.co.spudsoft.jwtvalidatorvertx.vertx;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.restassured.RestAssured;
-import io.vertx.ext.web.Router;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.security.KeyPair;
@@ -16,6 +15,8 @@ import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.co.spudsoft.jwtvalidatorvertx.AlgorithmAndKeyPair;
 import uk.co.spudsoft.jwtvalidatorvertx.JsonWebAlgorithm;
 
@@ -23,23 +24,29 @@ import uk.co.spudsoft.jwtvalidatorvertx.JsonWebAlgorithm;
  * Integration-style unit tests for VertxJwksHandler using a real Vert.x HttpServer and RestAssured.
  */
 public class VertxJwksHandlerTest {
+  
+  private static final Logger logger = LoggerFactory.getLogger(VertxJwksHandlerTest.class);
 
   private VertxJwksHandler handler;
   private int port;
   private String basePath;
 
+  private static int count = 0;
   
   @BeforeEach
   void setUp() throws IOException {
         
-    
-    // Choose a random available port
-    try (ServerSocket s = new ServerSocket(0)) {
-      port = s.getLocalPort();
+    port = -1;
+    if (++count % 2 == 0) {
+      // Choose a random available port
+      try (ServerSocket s = new ServerSocket(0)) {
+        port = s.getLocalPort();
+      }
     }
     basePath = "/auth";
 
-    handler = VertxJwksHandler.create("localhost", port, basePath);
+    handler = VertxJwksHandler.create("localhost", port, basePath, false);
+    port = handler.getPort();
     handler.start();
 
     // RestAssured base URL
@@ -67,7 +74,7 @@ public class VertxJwksHandlerTest {
         .get(basePath + "/.well-known/openid-configuration")
         .then()
         .statusCode(200)
-        .body("jwks_uri", Matchers.equalTo("http://localhost:" + port + "http://localhost:" + port + basePath + "/jwks"));
+        .body("jwks_uri", Matchers.equalTo("http://localhost:" + port + basePath + "/jwks"));
   }
 
   @Test
@@ -113,7 +120,7 @@ public class VertxJwksHandlerTest {
         .then()
         .statusCode(Matchers.anyOf(Matchers.is(404), Matchers.is(200)));
   }
-
+  
   // Helpers
 
   private Cache<String, AlgorithmAndKeyPair> emptyCache() {

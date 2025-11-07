@@ -145,11 +145,18 @@ public class JWKSStaticSetHandlerImpl implements JsonWebKeySetKnownJwksHandler {
                       .compose(tjo -> {
                         return addKeysToCache(jwksUrl, tjo, result);
                       })
+                      .onFailure(ex -> {
+                        logger.warn("Failed to get JWKS from {}: ", jwksUrl, ex);
+                      })
       );
     }
     
-    return Future.all(futures)
+    return Future.join(futures)
             .compose(cf -> {
+              return Future.succeededFuture(result);
+            })
+            .recover(ex -> {
+              logger.warn("There were some failures to download JWKSs: ", ex);
               return Future.succeededFuture(result);
             });
   }

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IssuerAcceptabilityHandlerImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JWT Validator - Vertx</a> &gt; <a href="index.source.html" class="el_package">uk.co.spudsoft.jwtvalidatorvertx.impl</a> &gt; <span class="el_source">IssuerAcceptabilityHandlerImpl.java</span></div><h1>IssuerAcceptabilityHandlerImpl.java</h1><pre class="source lang-java linenums">/*
+ * Copyright (C) 2023 jtalbut
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+ */
+package uk.co.spudsoft.jwtvalidatorvertx.impl;
+
+import com.google.common.base.Strings;
+import java.io.File;
+import java.nio.file.Files;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.spudsoft.jwtvalidatorvertx.IssuerAcceptabilityHandler;
+
+/**
+ * The standard IssuerAcceptabilityHandler.
+ * 
+ * Provides two approaches, which can be used in isolation or together:
+ * &lt;ol&gt;
+ * &lt;li&gt; A list of acceptable issuers can be provided in a file.
+ * The file can be changed whilst the system is up, but the path to the file is fixed.
+ * It is recommended that the file be updated atomically (e.g. by changing a soft link).
+ * &lt;li&gt; A list of regular expressions can be provided.
+ * Each regular expression will be checked, one at a time.
+ * &lt;/ol&gt;
+ * 
+ * The use of a file is generally more secure, but there are some situations in which a small number of regular expressions can be useful.
+ * 
+ * Each line in the file is trimmed before adding to an internal Set, so leading and trailing whitespace is removed (and the line ending of the file is irrelevant).
+ * It is strongly recommended that each line of the file be an https URL.
+ * 
+ * @author yaytay
+ */
+public class IssuerAcceptabilityHandlerImpl implements IssuerAcceptabilityHandler {
+  
+<span class="fc" id="L56">  private static final Logger logger = LoggerFactory.getLogger(IssuerAcceptabilityHandlerImpl.class);</span>
+  
+  private final List&lt;Pattern&gt; acceptableIssuerRegexes;
+  private final File acceptableIssuersFile;
+  private final long pollPeriodMs;
+  
+<span class="fc" id="L62">  private final Object lock = new Object();</span>
+<span class="fc" id="L63">  private long lastFileCheck = 0;</span>
+<span class="fc" id="L64">  private Set&lt;String&gt; acceptableIssuers = Collections.emptySet();</span>
+<span class="fc" id="L65">  private long fileLastModified = 0;</span>
+
+  @Override
+  public void validate() throws IllegalArgumentException {
+<span class="pc bpc" id="L69" title="1 of 4 branches missed.">    if (acceptableIssuerRegexes.isEmpty() &amp;&amp; acceptableIssuersFile == null) {</span>
+<span class="fc" id="L70">      throw new IllegalArgumentException(&quot;No acceptable issuers configured - neither regular expressions nor file configured&quot;);</span>
+    }
+<span class="fc" id="L72">  }</span>
+
+  /**
+   * Constructor.
+   * @param acceptableIssuerRegexes The List of regular expressions (as Strings) that are acceptable.
+   * @param acceptableIssuersFile   The path to a file that contains valid issuers, one per line.
+   * @param pollPeriod              The time period between file checks (the check just looks at the last modified time, so make this about a minute).
+   */
+<span class="fc" id="L80">  public IssuerAcceptabilityHandlerImpl(List&lt;String&gt; acceptableIssuerRegexes, String acceptableIssuersFile, Duration pollPeriod) {</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">    this.acceptableIssuerRegexes = acceptableIssuerRegexes == null ? Collections.emptyList() : acceptableIssuerRegexes.stream()</span>
+<span class="fc" id="L82">                    .map(re -&gt; {</span>
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">                      if (re == null || re.isBlank()) {</span>
+<span class="fc" id="L84">                        logger.warn(&quot;Null or empty pattern cannot be used: &quot;, re);</span>
+<span class="fc" id="L85">                        return null;</span>
+                      }
+                      try {
+<span class="fc" id="L88">                        Pattern pattern = Pattern.compile(re);</span>
+<span class="fc" id="L89">                        logger.trace(&quot;Compiled acceptable issuer regex as {}&quot;, pattern.pattern());</span>
+<span class="fc" id="L90">                        return pattern;</span>
+<span class="fc" id="L91">                      } catch (Throwable ex) {</span>
+<span class="fc" id="L92">                        logger.warn(&quot;The pattern \&quot;{}\&quot; cannot be compiled: &quot;, re, ex);</span>
+<span class="fc" id="L93">                        return null;</span>
+                      }
+                    })
+<span class="fc" id="L96">                    .filter(Objects::nonNull)</span>
+<span class="fc" id="L97">                    .collect(Collectors.toList());</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">    this.acceptableIssuersFile = Strings.isNullOrEmpty(acceptableIssuersFile) ? null : new File(acceptableIssuersFile);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">    this.pollPeriodMs = pollPeriod == null ? 60000 : pollPeriod.toMillis();</span>
+<span class="fc" id="L100">  }</span>
+  
+
+  @Override
+  public boolean isAcceptable(String issuer) {
+    Set&lt;String&gt; localAcceptableIssuers;
+<span class="fc" id="L106">    boolean shouldUpdate = false;</span>
+    long now;
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">    if (Strings.isNullOrEmpty(issuer)) {</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">      logger.warn(&quot;Invalid issuer: {}&quot;, (issuer == null ? &quot;&lt;null&gt;&quot; : &quot;&lt;blank&gt;&quot;));</span>
+<span class="nc" id="L110">      return false;</span>
+    }
+<span class="fc bfc" id="L112" title="All 2 branches covered.">    if (acceptableIssuersFile != null) {</span>
+<span class="fc" id="L113">      synchronized (lock) {</span>
+<span class="fc" id="L114">        now = System.currentTimeMillis();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (lastFileCheck + pollPeriodMs &lt; now) {</span>
+<span class="fc" id="L116">          lastFileCheck = now;</span>
+<span class="fc" id="L117">          shouldUpdate = true;</span>
+        } 
+<span class="fc" id="L119">        localAcceptableIssuers = acceptableIssuers;</span>
+<span class="fc" id="L120">      }</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">      if (shouldUpdate) {</span>
+<span class="fc" id="L122">        checkFile(now);</span>
+<span class="fc" id="L123">        synchronized (lock) {</span>
+<span class="fc" id="L124">          localAcceptableIssuers = acceptableIssuers;</span>
+<span class="fc" id="L125">        }</span>
+      }
+<span class="fc bfc" id="L127" title="All 2 branches covered.">      if (localAcceptableIssuers.contains(issuer)) {</span>
+<span class="fc" id="L128">        return true;</span>
+      }
+    }
+<span class="fc bfc" id="L131" title="All 2 branches covered.">    for (Pattern acceptableIssuer : acceptableIssuerRegexes) {</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">      if (acceptableIssuer.matcher(issuer).matches()) {</span>
+<span class="fc" id="L133">        return true;</span>
+      }
+<span class="fc" id="L135">    }</span>
+<span class="fc" id="L136">    return false;</span>
+  }
+  
+  private void checkFile(long now) {
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">    if (acceptableIssuersFile == null) {</span>
+<span class="nc" id="L141">      return ;</span>
+    }
+    try {
+<span class="fc bfc" id="L144" title="All 2 branches covered.">      if (acceptableIssuersFile.isFile()) {</span>
+<span class="fc" id="L145">        long lastModNew = acceptableIssuersFile.lastModified();</span>
+<span class="pc bpc" id="L146" title="2 of 4 branches missed.">        if (lastModNew != fileLastModified &amp;&amp; lastModNew + pollPeriodMs &lt; now) {</span>
+<span class="fc" id="L147">          fileLastModified = lastModNew;</span>
+          
+<span class="fc" id="L149">          Set&lt;String&gt; newSet = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L150">          try (Stream&lt;String&gt; stream = Files.lines(acceptableIssuersFile.toPath())) {</span>
+<span class="fc" id="L151">            stream</span>
+<span class="fc" id="L152">                    .forEach(l -&gt; {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                      if (l != null) {</span>
+<span class="fc" id="L154">                        l = l.trim();</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">                        if (!l.isEmpty()) {</span>
+<span class="fc" id="L156">                          newSet.add(l);</span>
+                        }
+                      }
+<span class="fc" id="L159">                    })</span>
+                    ;
+          }
+<span class="fc" id="L162">          synchronized (lock) {</span>
+<span class="fc" id="L163">            acceptableIssuers = newSet;</span>
+<span class="fc" id="L164">          }</span>
+        }
+<span class="fc" id="L166">      } else {</span>
+<span class="fc" id="L167">        synchronized (lock) {</span>
+<span class="fc" id="L168">          acceptableIssuers = Collections.emptySet();</span>
+<span class="fc" id="L169">        }</span>
+      }
+<span class="nc" id="L171">    } catch (Throwable ex) {</span>
+<span class="nc" id="L172">      logger.error(&quot;Error loading acceptable issuers file: &quot;, ex);</span>
+<span class="fc" id="L173">    }</span>
+<span class="fc" id="L174">  }</span>
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

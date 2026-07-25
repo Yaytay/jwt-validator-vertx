@@ -1,6 +1,7 @@
 package uk.co.spudsoft.jwtvalidatorvertx;
 
 import com.google.common.cache.Cache;
+import io.vertx.junit5.CountingCheckpoint;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkJwksHandler;
 import uk.co.spudsoft.jwtvalidatorvertx.jdk.JdkTokenBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -19,6 +20,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -126,21 +128,22 @@ public class JdkTokenValidatorDynamicTest {
   @Test
   @Order(2)
   public void testInvalidStructureNotThreeParts(VertxTestContext testContext) {
-    Checkpoint checkpoint = testContext.checkpoint(4);
+    Checkpoint checkpoint = testContext.checkpoint();
+    CountDownLatch latch = checkpoint.asLatch(4);
     defaultValidator.validateToken(null, "a.b", Arrays.asList("aud"), false)
-            .onFailure(ex -> checkpoint.flag())
+            .onFailure(ex -> latch.countDown())
             .onSuccess(s -> testContext.failNow("Should have thrown"))
             ;
     defaultValidator.validateToken(null, "a.b.c.d", Arrays.asList("aud"), false)
-            .onFailure(ex -> checkpoint.flag())
+            .onFailure(ex -> latch.countDown())
             .onSuccess(s -> testContext.failNow("Should have thrown"))
             ;
     defaultValidator.validateToken(null, "a.b.c.d.e", Arrays.asList("aud"), false)
-            .onFailure(ex -> checkpoint.flag())
+            .onFailure(ex -> latch.countDown())
             .onSuccess(s -> testContext.failNow("Should have thrown"))
             ;
     defaultValidator.validateToken(null, "a.b.c.d.e.f", Arrays.asList("aud"), false)
-            .onFailure(ex -> checkpoint.flag())
+            .onFailure(ex -> latch.countDown())
             .onSuccess(s -> testContext.failNow("Should have thrown"))
             ;
   }

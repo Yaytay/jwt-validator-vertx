@@ -57,7 +57,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES256, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.ES256, jwk.getAlgorithm());
+    assertEquals("ES256", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -80,7 +80,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES384, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.ES384, jwk.getAlgorithm());
+    assertEquals("ES384", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -101,7 +101,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES512, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.ES512, jwk.getAlgorithm());
+    assertEquals("ES512", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -122,7 +122,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES256, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.ES256, jwk.getAlgorithm());
+    assertEquals("ES256", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -145,7 +145,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES384, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.ES384, jwk.getAlgorithm());
+    assertEquals("ES384", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -166,7 +166,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.ES512, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.ES512, jwk.getAlgorithm());
+    assertEquals("ES512", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -186,7 +186,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.RS256, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.RS256, jwk.getAlgorithm());
+    assertEquals("RS256", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -206,7 +206,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.RS384, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.RS384, jwk.getAlgorithm());
+    assertEquals("RS384", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -226,7 +226,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.RS512, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.RS512, jwk.getAlgorithm());
+    assertEquals("RS512", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   
@@ -246,7 +246,7 @@ public class JWKSelfMadeKeysTest {
     String signingInput = "Signing input";
     byte[] signature = JdkTokenBuilder.generateSignature(pair.getPrivate(), JsonWebAlgorithm.EdDSA, signingInput);
     JWS jws = new JWS(jwk);
-    assertEquals(JWS.EdDSA, jwk.getAlgorithm());
+    assertEquals("EdDSA", jwk.getAlgorithm());
     jws.verify(signature, signingInput.getBytes(StandardCharsets.UTF_8));
   }
   

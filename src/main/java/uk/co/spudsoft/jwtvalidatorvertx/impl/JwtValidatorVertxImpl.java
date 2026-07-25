@@ -36,21 +36,21 @@ public class JwtValidatorVertxImpl implements JwtValidator {
   private static final Base64.Decoder B64DECODER = Base64.getUrlDecoder();
   
   private static final Set<String> DEFAULT_PERMITTED_ALGS = ImmutableSet.of(
-          JWS.EdDSA
+          "EdDSA",
 
-          , JWS.ES256
-          , JWS.ES384
-          , JWS.ES512
+          "ES256",
+          "ES384",
+          "ES512",
 
-          , JWS.PS256
-          , JWS.PS384
-          , JWS.PS512
+          "PS256",
+          "PS384",
+          "PS512",
 
-          , JWS.ES256K
+          "ES256K",
 
-          , JWS.RS256
-          , JWS.RS384
-          , JWS.RS512
+          "RS256",
+          "RS384",
+          "RS512"
   );
   
   private Set<String> permittedAlgs;

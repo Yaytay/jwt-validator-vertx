@@ -17,6 +17,7 @@
 package uk.co.spudsoft.jwtvalidatorvertx;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import io.vertx.core.json.JsonObject;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A JWT as defined by <A href="https://datatracker.ietf.org/doc/html/rfc7519">RFC7519</A>.
@@ -97,6 +99,14 @@ public class Jwt {
    */
   public Object getClaim(String claim) {
     return payload.getValue(claim);
+  }
+
+  /**
+   * Get a read-only map of the claims in the payload.
+   * @return a read-only map of the claims in the payload.
+   */
+  public Map<String, Object> getClaim() {
+    return ImmutableMap.copyOf(payload.getMap());
   }
   
   /**

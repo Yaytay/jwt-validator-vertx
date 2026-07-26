@@ -525,8 +525,7 @@
           <suppressionFiles>
             dependency-check-supressions.xml
           </suppressionFiles>
-          <nvdDatafeedUrl>https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-{0}.json.gz</nvdDatafeedUrl>
-        </configuration>
+git         </configuration>
         <executions>
           <execution>
             <goals>

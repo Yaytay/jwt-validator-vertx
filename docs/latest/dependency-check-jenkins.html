@@ -326,169 +326,18 @@ arising out of or in connection with the use of this tool, the analysis performe
 Getting Help: <a href="https://github.com/dependency-check/DependencyCheck/issues" target="_blank">github issues</a></h3>
 
             <h2 class="">Project:&nbsp;JWT Validator - Vertx</h2>
-            <h4>uk.co.spudsoft:jwt-validator-vertx:0.2.6</h4>
+            <h4>uk.co.spudsoft:jwt-validator-vertx:0.2.7</h4>
             <div class="">
 
                 Scan Information:<br/>
                     <ul class="indent">
                         <li><i>dependency-check version</i>: 13.0.0</li>
-                        <li><i>Report Generated On</i>: Sat, 3 Oct 2026 04:10:03 GMT</li>
-                        <li><i>Dependencies Scanned</i>:&nbsp;48 (48 unique)</li>
+                        <li><i>Report Generated On</i>: Wed, 18 Nov 2026 15:59:43 GMT</li>
+                        <li><i>Dependencies Scanned</i>:&nbsp;48 (28 unique)</li>
                         <li><i>Vulnerable Dependencies</i>:&nbsp;<span id="vulnerableCount">0</span></li>
                         <li><i>Vulnerabilities Found</i>:&nbsp;0</li>
                         <li><i>Vulnerabilities Suppressed</i>:&nbsp;0</li>
                     </ul><br/>
-        <h2>Analysis Exceptions</h2>
-        
-        
-        
-        <h4 id="header1" class="subsectionheader expandable expandablesubsection white">The execution of the download was interrupted</h4>
-        <div id="content1" class="subsectioncontent standardsubsection hidden">
-        <b>exception</b>: org.owasp.dependencycheck.data.update.exception.UpdateException: The execution of the download was interrupted
-            <pre>
-                org.owasp.dependencycheck.data.update.NvdApiDataSource.processDownload(NvdApiDataSource.java:272)<br/>
-                org.owasp.dependencycheck.data.update.NvdApiDataSource.processDatafeed(NvdApiDataSource.java:161)<br/>
-                org.owasp.dependencycheck.data.update.NvdApiDataSource.update(NvdApiDataSource.java:126)<br/>
-                org.owasp.dependencycheck.Engine.doUpdates(Engine.java:873)<br/>
-                org.owasp.dependencycheck.Engine.initializeAndUpdateDatabase(Engine.java:678)<br/>
-                org.owasp.dependencycheck.Engine.analyzeDependencies(Engine.java:605)<br/>
-                org.owasp.dependencycheck.maven.BaseDependencyCheckMojo.runCheck(BaseDependencyCheckMojo.java:2072)<br/>
-                org.owasp.dependencycheck.maven.BaseDependencyCheckMojo.generate(BaseDependencyCheckMojo.java:1320)<br/>
-                org.apache.maven.plugins.site.render.ReportDocumentRenderer.renderDocument(ReportDocumentRenderer.java:196)<br/>
-                org.apache.maven.doxia.siterenderer.DefaultSiteRenderer.render(DefaultSiteRenderer.java:395)<br/>
-                org.apache.maven.plugins.site.render.SiteMojo.renderNonDoxiaDocuments(SiteMojo.java:299)<br/>
-                org.apache.maven.plugins.site.render.SiteMojo.renderLocale(SiteMojo.java:164)<br/>
-                org.apache.maven.plugins.site.render.SiteMojo.execute(SiteMojo.java:125)<br/>
-                org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo(DefaultBuildPluginManager.java:126)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2(MojoExecutor.java:342)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.doExecute(MojoExecutor.java:330)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:213)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:175)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.access$000(MojoExecutor.java:76)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor$1.run(MojoExecutor.java:163)<br/>
-                org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute(DefaultMojosExecutionStrategy.java:39)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:160)<br/>
-                org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject(LifecycleModuleBuilder.java:105)<br/>
-                org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject(LifecycleModuleBuilder.java:73)<br/>
-                org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build(SingleThreadedBuilder.java:53)<br/>
-                org.apache.maven.lifecycle.internal.LifecycleStarter.execute(LifecycleStarter.java:118)<br/>
-                org.apache.maven.DefaultMaven.doExecute(DefaultMaven.java:261)<br/>
-                org.apache.maven.DefaultMaven.doExecute(DefaultMaven.java:173)<br/>
-                org.apache.maven.DefaultMaven.execute(DefaultMaven.java:101)<br/>
-                org.apache.maven.cli.MavenCli.execute(MavenCli.java:910)<br/>
-                org.apache.maven.cli.MavenCli.doMain(MavenCli.java:283)<br/>
-                org.apache.maven.cli.MavenCli.main(MavenCli.java:206)<br/>
-                java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)<br/>
-                java.base/java.lang.reflect.Method.invoke(Method.java:580)<br/>
-                org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced(Launcher.java:283)<br/>
-                org.codehaus.plexus.classworlds.launcher.Launcher.launch(Launcher.java:226)<br/>
-                org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode(Launcher.java:407)<br/>
-                org.codehaus.plexus.classworlds.launcher.Launcher.main(Launcher.java:348)<br/>
-            </pre>
-        
-        
-        
-        <h4 id="header2" class="subsectionheader expandable expandablesubsection white">org.owasp.dependencycheck.utils.DownloadFailedException: Download failed, unable to copy 'https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-2009.json.gz' to '/tmp/dctemp6d7de5e5-6e3a-4eae-9324-f51821a7cb55/nvd-datafeed-57327ddb-649b-497c-8608-648cf20fd1dc.json.gz'; Read timed out</h4>
-        <div id="content2" class="subsectioncontent standardsubsection hidden">
-        <b>cause</b>: java.util.concurrent.ExecutionException: org.owasp.dependencycheck.utils.DownloadFailedException: Download failed, unable to copy 'https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-2009.json.gz' to '/tmp/dctemp6d7de5e5-6e3a-4eae-9324-f51821a7cb55/nvd-datafeed-57327ddb-649b-497c-8608-648cf20fd1dc.json.gz'; Read timed out
-            <pre>
-                java.base/java.util.concurrent.FutureTask.report(FutureTask.java:122)<br/>
-                java.base/java.util.concurrent.FutureTask.get(FutureTask.java:191)<br/>
-                org.owasp.dependencycheck.data.update.NvdApiDataSource.processDownload(NvdApiDataSource.java:262)<br/>
-                org.owasp.dependencycheck.data.update.NvdApiDataSource.processDatafeed(NvdApiDataSource.java:161)<br/>
-                org.owasp.dependencycheck.data.update.NvdApiDataSource.update(NvdApiDataSource.java:126)<br/>
-                org.owasp.dependencycheck.Engine.doUpdates(Engine.java:873)<br/>
-                org.owasp.dependencycheck.Engine.initializeAndUpdateDatabase(Engine.java:678)<br/>
-                org.owasp.dependencycheck.Engine.analyzeDependencies(Engine.java:605)<br/>
-                org.owasp.dependencycheck.maven.BaseDependencyCheckMojo.runCheck(BaseDependencyCheckMojo.java:2072)<br/>
-                org.owasp.dependencycheck.maven.BaseDependencyCheckMojo.generate(BaseDependencyCheckMojo.java:1320)<br/>
-                org.apache.maven.plugins.site.render.ReportDocumentRenderer.renderDocument(ReportDocumentRenderer.java:196)<br/>
-                org.apache.maven.doxia.siterenderer.DefaultSiteRenderer.render(DefaultSiteRenderer.java:395)<br/>
-                org.apache.maven.plugins.site.render.SiteMojo.renderNonDoxiaDocuments(SiteMojo.java:299)<br/>
-                org.apache.maven.plugins.site.render.SiteMojo.renderLocale(SiteMojo.java:164)<br/>
-                org.apache.maven.plugins.site.render.SiteMojo.execute(SiteMojo.java:125)<br/>
-                org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo(DefaultBuildPluginManager.java:126)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2(MojoExecutor.java:342)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.doExecute(MojoExecutor.java:330)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:213)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:175)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.access$000(MojoExecutor.java:76)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor$1.run(MojoExecutor.java:163)<br/>
-                org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute(DefaultMojosExecutionStrategy.java:39)<br/>
-                org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:160)<br/>
-                org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject(LifecycleModuleBuilder.java:105)<br/>
-                org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject(LifecycleModuleBuilder.java:73)<br/>
-                org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build(SingleThreadedBuilder.java:53)<br/>
-                org.apache.maven.lifecycle.internal.LifecycleStarter.execute(LifecycleStarter.java:118)<br/>
-                org.apache.maven.DefaultMaven.doExecute(DefaultMaven.java:261)<br/>
-                org.apache.maven.DefaultMaven.doExecute(DefaultMaven.java:173)<br/>
-                org.apache.maven.DefaultMaven.execute(DefaultMaven.java:101)<br/>
-                org.apache.maven.cli.MavenCli.execute(MavenCli.java:910)<br/>
-                org.apache.maven.cli.MavenCli.doMain(MavenCli.java:283)<br/>
-                org.apache.maven.cli.MavenCli.main(MavenCli.java:206)<br/>
-                java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)<br/>
-                java.base/java.lang.reflect.Method.invoke(Method.java:580)<br/>
-                org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced(Launcher.java:283)<br/>
-                org.codehaus.plexus.classworlds.launcher.Launcher.launch(Launcher.java:226)<br/>
-                org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode(Launcher.java:407)<br/>
-                org.codehaus.plexus.classworlds.launcher.Launcher.main(Launcher.java:348)<br/>
-            </pre>
-        
-        
-        
-        <h4 id="header3" class="subsectionheader expandable expandablesubsection white">Download failed, unable to copy 'https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-2009.json.gz' to '/tmp/dctemp6d7de5e5-6e3a-4eae-9324-f51821a7cb55/nvd-datafeed-57327ddb-649b-497c-8608-648cf20fd1dc.json.gz'; Read timed out</h4>
-        <div id="content3" class="subsectioncontent standardsubsection hidden">
-        <b>cause</b>: org.owasp.dependencycheck.utils.DownloadFailedException: Download failed, unable to copy 'https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-2009.json.gz' to '/tmp/dctemp6d7de5e5-6e3a-4eae-9324-f51821a7cb55/nvd-datafeed-57327ddb-649b-497c-8608-648cf20fd1dc.json.gz'; Read timed out
-            <pre>
-                org.owasp.dependencycheck.utils.Downloader.fetchFile(Downloader.java:425)<br/>
-                org.owasp.dependencycheck.utils.Downloader.fetchFile(Downloader.java:467)<br/>
-                org.owasp.dependencycheck.data.update.nvd.api.DownloadTask.call(DownloadTask.java:88)<br/>
-                org.owasp.dependencycheck.data.update.nvd.api.DownloadTask.call(DownloadTask.java:39)<br/>
-                java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)<br/>
-                java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)<br/>
-                java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)<br/>
-                java.base/java.lang.Thread.run(Thread.java:1583)<br/>
-            </pre>
-        
-        
-        
-        <h4 id="header4" class="subsectionheader expandable expandablesubsection white">Read timed out</h4>
-        <div id="content4" class="subsectioncontent standardsubsection hidden">
-        <b>cause</b>: java.net.SocketTimeoutException: Read timed out
-            <pre>
-                java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)<br/>
-                java.base/sun.nio.ch.NioSocketImpl.implRead(NioSocketImpl.java:304)<br/>
-                java.base/sun.nio.ch.NioSocketImpl.read(NioSocketImpl.java:346)<br/>
-                java.base/sun.nio.ch.NioSocketImpl$1.read(NioSocketImpl.java:796)<br/>
-                java.base/java.net.Socket$SocketInputStream.read(Socket.java:1099)<br/>
-                java.base/sun.security.ssl.SSLSocketInputRecord.read(SSLSocketInputRecord.java:489)<br/>
-                java.base/sun.security.ssl.SSLSocketInputRecord.readHeader(SSLSocketInputRecord.java:483)<br/>
-                java.base/sun.security.ssl.SSLSocketInputRecord.bytesInCompletePacket(SSLSocketInputRecord.java:70)<br/>
-                java.base/sun.security.ssl.SSLSocketImpl.readApplicationRecord(SSLSocketImpl.java:1460)<br/>
-                java.base/sun.security.ssl.SSLSocketImpl$AppInputStream.read(SSLSocketImpl.java:1066)<br/>
-                org.apache.hc.core5.http.impl.io.SessionInputBufferImpl.read(SessionInputBufferImpl.java:195)<br/>
-                org.apache.hc.core5.http.impl.io.ContentLengthInputStream.read(ContentLengthInputStream.java:174)<br/>
-                org.apache.hc.core5.http.io.EofSensorInputStream.read(EofSensorInputStream.java:138)<br/>
-                java.base/java.nio.channels.Channels$ReadableByteChannelImpl.read(Channels.java:316)<br/>
-                org.owasp.dependencycheck.utils.SaveToFileResponseHandler.handleEntity(SaveToFileResponseHandler.java:50)<br/>
-                org.owasp.dependencycheck.utils.SaveToFileResponseHandler.handleEntity(SaveToFileResponseHandler.java:32)<br/>
-                org.apache.hc.client5.http.impl.classic.AbstractHttpClientResponseHandler.handleResponse(AbstractHttpClientResponseHandler.java:71)<br/>
-                org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)<br/>
-                org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)<br/>
-                org.owasp.dependencycheck.utils.Downloader.fetchFile(Downloader.java:410)<br/>
-                org.owasp.dependencycheck.utils.Downloader.fetchFile(Downloader.java:467)<br/>
-                org.owasp.dependencycheck.data.update.nvd.api.DownloadTask.call(DownloadTask.java:88)<br/>
-                org.owasp.dependencycheck.data.update.nvd.api.DownloadTask.call(DownloadTask.java:39)<br/>
-                java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)<br/>
-                java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)<br/>
-                java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)<br/>
-                java.base/java.lang.Thread.run(Thread.java:1583)<br/>
-            </pre>
-        </div>
-        </div>
-        </div>
-        </div>
-        <br/>
 <h2>Summary</h2>
                 <table id="summaryTable" class="lined">
                     <thead><tr style="text-align:left">
@@ -503,26 +352,6 @@ Getting Help: <a href="https://github.com/dependency-check/DependencyCheck/issue
                 </table>
                 <h2>Dependencies</h2>
                  </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
-                </div>
                 </div>
                 </div>
                 </div>

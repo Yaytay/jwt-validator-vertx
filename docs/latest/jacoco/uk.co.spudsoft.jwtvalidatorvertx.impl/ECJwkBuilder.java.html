@@ -94,10 +94,10 @@ public class ECJwkBuilder extends JwkBuilder {
 <span class="fc" id="L94">    byte[] coordinateByteArray = coordinate.toByteArray();</span>
 <span class="fc" id="L95">    int fullSize = (int) Math.ceil(fieldSize / 8d);</span>
 
-<span class="fc bfc" id="L97" title="All 2 branches covered.">    if (fullSize &gt; coordinateByteArray.length) {</span>
-<span class="fc" id="L98">      final byte[] fullSizeCoordinateByteArray = new byte[fullSize];</span>
-<span class="fc" id="L99">      System.arraycopy(coordinateByteArray, 0, fullSizeCoordinateByteArray, fullSize - coordinateByteArray.length, coordinateByteArray.length);</span>
-<span class="fc" id="L100">      return fullSizeCoordinateByteArray;</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">    if (fullSize &gt; coordinateByteArray.length) {</span>
+<span class="nc" id="L98">      final byte[] fullSizeCoordinateByteArray = new byte[fullSize];</span>
+<span class="nc" id="L99">      System.arraycopy(coordinateByteArray, 0, fullSizeCoordinateByteArray, fullSize - coordinateByteArray.length, coordinateByteArray.length);</span>
+<span class="nc" id="L100">      return fullSizeCoordinateByteArray;</span>
     } else {
 <span class="fc" id="L102">      return coordinateByteArray;</span>
     }
@@ -132,4 +132,4 @@ public class ECJwkBuilder extends JwkBuilder {
   
   
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.16.202610240946</span></div></body></html>

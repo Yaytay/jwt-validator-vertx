@@ -22,9 +22,9 @@
                         "url": "https://github.com/dependency-check/DependencyCheck/"
         },
 
-        "end_time": "2026-10-03T04:10:03",
-                "start_time": "2026-10-03T04:10:03",
-                "status":  "failure"  ,
+        "end_time": "2026-11-18T15:59:43",
+                "start_time": "2026-11-18T15:59:43",
+                "status":  "success"  ,
                 "type": "dependency_scanning"
 
                                     },
@@ -39,7 +39,7 @@
                         "package": {
                             "name": "com.google.errorprone:error_prone_annotations"
                         },
-                        "version": "2.50.0"
+                        "version": "2.52.0"
 
                                                                                                                     }
 ,                    {
@@ -53,7 +53,7 @@
                         "package": {
                             "name": "com.google.guava:guava"
                         },
-                        "version": "33.7.2-jre"
+                        "version": "33.8.0-jre"
 
                                                                                                                     }
 ,                    {
@@ -67,56 +67,49 @@
                         "package": {
                             "name": "com.fasterxml.jackson.core:jackson-annotations"
                         },
-                        "version": "2.22"
+                        "version": "2.23"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "com.fasterxml.jackson.core:jackson-core"
                         },
-                        "version": "2.22.3"
+                        "version": "2.23.0"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "tools.jackson.core:jackson-core"
                         },
-                        "version": "3.1.6"
+                        "version": "3.1.8"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "com.fasterxml.jackson.core:jackson-databind"
                         },
-                        "version": "2.22.3"
+                        "version": "2.23.0"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "tools.jackson.core:jackson-databind"
                         },
-                        "version": "3.1.6"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "com.fasterxml.jackson.dataformat:jackson-dataformat-properties"
-                        },
-                        "version": "2.22.3"
+                        "version": "3.1.8"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
                         },
-                        "version": "2.22.3"
+                        "version": "2.23.0"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
                         },
-                        "version": "2.22.3"
+                        "version": "2.23.0"
 
                                                                                                                     }
 ,                    {
@@ -135,69 +128,6 @@
                                                                                                                     }
 ,                    {
                         "package": {
-                            "name": "io.netty:netty-buffer"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-codec-base"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-codec-classes-quic"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-codec-compression"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-codec-dns"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-codec-http"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-codec-http2"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-codec-http3"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-codec-socks"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
                             "name": "org.jctools:jctools-core-jdk11"
                         },
                         "version": "4.0.7"
@@ -212,58 +142,16 @@
                                                                                                                     }
 ,                    {
                         "package": {
-                            "name": "io.netty:netty-common"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-handler"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-handler-proxy"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-resolver"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-resolver-dns"
-                        },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
                             "name": "io.netty:netty-tcnative-classes"
                         },
-                        "version": "2.0.84.Final"
+                        "version": "2.0.85.Final"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.netty:netty-transport"
                         },
-                        "version": "4.2.18.Final"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.netty:netty-transport-native-unix-common"
-                        },
-                        "version": "4.2.18.Final"
+                        "version": "4.2.20.Final"
 
                                                                                                                     }
 ,                    {
@@ -284,91 +172,63 @@
                         "package": {
                             "name": "io.vertx:vertx-auth-common"
                         },
-                        "version": "5.2.0"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.vertx:vertx-bridge-common"
-                        },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.vertx:vertx-codegen"
                         },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.vertx:vertx-codegen-api"
                         },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.vertx:vertx-codegen-json"
                         },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.vertx:vertx-codegen-processor"
                         },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.vertx:vertx-core"
                         },
-                        "version": "5.2.0"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.vertx:vertx-core-logging"
-                        },
-                        "version": "5.2.0"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.vertx:vertx-eventbus-bridge-common"
-                        },
-                        "version": "5.2.0"
-
-                                                                                                                    }
-,                    {
-                        "package": {
-                            "name": "io.vertx:vertx-uri-template"
-                        },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.vertx:vertx-web"
                         },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.vertx:vertx-web-client"
                         },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
 ,                    {
                         "package": {
                             "name": "io.vertx:vertx-web-common"
                         },
-                        "version": "5.2.0"
+                        "version": "5.2.3"
 
                                                                                                                     }
             ]
